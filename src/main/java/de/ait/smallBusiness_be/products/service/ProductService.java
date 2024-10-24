@@ -16,8 +16,8 @@ import java.util.List;
 public interface ProductService {
 
     ProductDto addProduct(NewProductDto newProductDto);
-    ProductDto getProductById(int id);
-    void deleteProductById(int id);
-    ProductDto updateProduct(int id, NewProductDto newProductDto);
+    ProductDto getProductById(Long id);
+    ProductDto deleteProductById(Long id);
+    ProductDto updateProduct(Long id, NewProductDto newProductDto);
     List<ProductDto> findAllProducts();
 }

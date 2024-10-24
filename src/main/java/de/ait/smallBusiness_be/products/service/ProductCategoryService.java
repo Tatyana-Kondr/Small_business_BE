@@ -16,7 +16,7 @@ import java.util.List;
 public interface ProductCategoryService {
     ProductCategoryDto addProductCategory(NewProductCategoryDto newProductCategoryDto);
     ProductCategoryDto getProductCategoryById(int id);
-    void deleteProductCategoryById(int id);
+    ProductCategoryDto deleteProductCategoryById(int id);
     ProductCategoryDto updateProductCategory(int id, NewProductCategoryDto newProductCategoryDto);
     List<ProductCategoryDto> findAllProductCategories();
 
