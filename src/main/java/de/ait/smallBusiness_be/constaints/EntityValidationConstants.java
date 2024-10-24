@@ -1,4 +1,4 @@
-package de.ait.smallBusiness_be.constants;
+package de.ait.smallBusiness_be.constaints;
 
 /**
  * 19.09.2024
