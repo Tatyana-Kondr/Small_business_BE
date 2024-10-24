@@ -8,7 +8,7 @@ import lombok.*;
 
 import java.util.Objects;
 
-import static de.ait.smallBusiness_be.constants.EntityValidationConstants.NAME_REGEX;
+import static de.ait.smallBusiness_be.constaints.EntityValidationConstants.NAME_REGEX;
 
 /**
  * 19.09.2024
