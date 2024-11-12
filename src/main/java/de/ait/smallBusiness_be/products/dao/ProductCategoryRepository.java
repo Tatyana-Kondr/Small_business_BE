@@ -5,6 +5,8 @@ import de.ait.smallBusiness_be.products.model.ProductCategory;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 /**
  * SmallBusiness_BE
  * 24.10.2024
@@ -13,5 +15,7 @@ import org.springframework.stereotype.Repository;
  */
 
 @Repository
-public interface ProductCategoryRepository extends JpaRepository<ProductCategory, Long> {
+public interface ProductCategoryRepository extends JpaRepository<ProductCategory, Integer> {
+
+    Optional<ProductCategory> findByName(String name);
 }
