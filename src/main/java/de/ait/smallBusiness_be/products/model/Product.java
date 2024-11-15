@@ -5,7 +5,7 @@ import jakarta.validation.constraints.*;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.Objects;
 
 import static de.ait.smallBusiness_be.constaints.EntityValidationConstants.DESCRIPTION_REGEX;
@@ -37,7 +37,7 @@ public class Product {
     @Pattern(regexp = NAME_REGEX, message = "{name.Pattern.message}")
     private String name;   // наименование продукта
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     @Size(max = 30, message = "{validation.max.size}")
     private String article; // артикль который должен присваиваться автоматически или лучше сказать генерироваться, но также должна быть возможность его забивать вручную
 
@@ -57,12 +57,12 @@ public class Product {
 
     @Column(nullable = false)
     @NotBlank(message = "{validation.notBlank}")
-    private String unitOfMeasurement; // единица измерения.
+    private String unitOfMeasurement; // единица измерения.- переделать на enam
 
-    @Column(nullable = true)
+    @Column(nullable = true, precision = 8, scale = 3)
     @DecimalMin(value = "0.0", inclusive = true, message = "{validation.weight.min}")
     @Digits(integer = 5, fraction = 3, message = "{validation.weight.digits}")
-    private Float weight; // вес будет измерятся только в кг
+    private BigDecimal weight; // вес будет измерятся только в кг
 
     @Column(nullable = true)
     @Size(max = 50, message = "{validation.max.size}")
@@ -84,7 +84,7 @@ public class Product {
 
     @Column(nullable = true)
     @PastOrPresent(message = "{validation.dateOfLastPurchase.pastOrPresent}")
-    private Date dateOfLastPurchase; // дата последней закупки/каталога
+    private LocalDate dateOfLastPurchase; // дата последней закупки/каталога
 
     @Override
     public boolean equals(Object o) {
