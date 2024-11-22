@@ -3,6 +3,7 @@ package de.ait.smallBusiness_be.products.service.impl;
 import de.ait.smallBusiness_be.products.dao.ProductRepository;
 import de.ait.smallBusiness_be.products.dto.NewProductDto;
 import de.ait.smallBusiness_be.products.dto.ProductDto;
+import de.ait.smallBusiness_be.products.model.Product;
 import de.ait.smallBusiness_be.products.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -26,7 +27,15 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductDto addProduct(NewProductDto newProductDto) {
-        return null;
+
+        Product product = modelMapper.map(newProductDto, Product.class);
+
+        Product saveProduct = productRepository.save(product);
+
+          if(product.getArticle()==null){
+            saveProduct.setArticle(String.valueOf(product.getId()));
+        }
+        return modelMapper.map(saveProduct, ProductDto.class);
     }
 
     @Override

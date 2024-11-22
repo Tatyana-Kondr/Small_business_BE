@@ -45,12 +45,12 @@ public class Product {
     @Size(max = 30, message = "{validation.max.size}")
     private String vendorArticle;  // артикль от поставщика
 
-    @Column(nullable = true)
+    @Column
     @DecimalMin(value = "0.0", inclusive = true, message = "{validation.price.min}")
     @Digits(integer = 10, fraction = 2, message = "{validation.price.digits}")
     private BigDecimal purchasingPrice; // закупочная цена, по идее должна присваиваться цена с последней накладной, если ее значение превышает предыдущее
 
-    @Column(nullable = true)
+    @Column
     @DecimalMin(value = "0.0", inclusive = true, message = "{validation.price.min}")
     @Digits(integer = 10, fraction = 2, message = "{validation.price.digits}")
     private BigDecimal sellingPrice;  // продажная цена, по идее должна присваиваться цена с последней прожажи. Если продаж еще не было, то цена формируется из закупочной цены + 20%. Нужно ли это поле?
@@ -59,17 +59,17 @@ public class Product {
     @NotBlank(message = "{validation.notBlank}")
     private String unitOfMeasurement; // единица измерения.- переделать на enam
 
-    @Column(nullable = true, precision = 8, scale = 3)
+    @Column(precision = 8, scale = 3)
     @DecimalMin(value = "0.0", inclusive = true, message = "{validation.weight.min}")
     @Digits(integer = 5, fraction = 3, message = "{validation.weight.digits}")
     private BigDecimal weight; // вес будет измерятся только в кг
 
-    @Column(nullable = true)
+    @Column
     @Size(max = 50, message = "{validation.max.size}")
     private String size; //размеры деталей
 
     @ManyToOne
-    @JoinColumn(name = "productCategory_id", referencedColumnName = "id", nullable = false)
+    @JoinColumn(name = "product_category_id", referencedColumnName = "id", nullable = false)
     @NotNull(message = "{validation.notNull}")
     private ProductCategory productCategory; // категории продуктов, например электрика, механика, превматика и т.д.
 
@@ -78,11 +78,11 @@ public class Product {
     @Pattern(regexp = DESCRIPTION_REGEX, message = "{description.Pattern.message}")
     private String description; // доп.информация
 
-    @Column(nullable = true)
+    @Column
     @Size(max = 20, message = "{validation.max.size}")
     private String customsNumber; // таможенный номер
 
-    @Column(nullable = true)
+    @Column
     @PastOrPresent(message = "{validation.dateOfLastPurchase.pastOrPresent}")
     private LocalDate dateOfLastPurchase; // дата последней закупки/каталога
 

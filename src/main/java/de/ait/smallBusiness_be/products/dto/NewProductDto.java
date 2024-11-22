@@ -16,7 +16,7 @@ public record NewProductDto(
         @Size(min = 3, max = 100, message = "{validation.name.size}")
         String name,
 
-        @NotBlank(message = "{validation.notBlank}")
+        //@NotBlank(message = "{validation.notBlank}")
         @Size(min = 3, max = 50, message = "{validation.name.size}")
         String article,
 
