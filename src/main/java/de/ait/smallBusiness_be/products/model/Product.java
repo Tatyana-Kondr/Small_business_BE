@@ -5,11 +5,11 @@ import jakarta.validation.constraints.*;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.Objects;
 
-import static de.ait.smallBusiness_be.constants.EntityValidationConstants.DESCRIPTION_REGEX;
-import static de.ait.smallBusiness_be.constants.EntityValidationConstants.NAME_REGEX;
+import static de.ait.smallBusiness_be.constaints.EntityValidationConstants.DESCRIPTION_REGEX;
+import static de.ait.smallBusiness_be.constaints.EntityValidationConstants.NAME_REGEX;
 
 /**
  * 19.09.2024
@@ -35,56 +35,56 @@ public class Product {
     @NotBlank(message = "validation.notBlank")
     @Size(min = 3, max = 100, message = "{validation.name.size}")
     @Pattern(regexp = NAME_REGEX, message = "{name.Pattern.message}")
-    private String name;
+    private String name;   // наименование продукта
+
+    @Column(nullable = false, unique = true)
+    @Size(max = 30, message = "{validation.max.size}")
+    private String article; // артикль который должен присваиваться автоматически или лучше сказать генерироваться, но также должна быть возможность его забивать вручную
 
     @Column(nullable = false)
     @Size(max = 30, message = "{validation.max.size}")
-    private String article;
-
-    @Column(nullable = false)
-    @Size(max = 30, message = "{validation.max.size}")
-    private String vendorArticle;
+    private String vendorArticle;  // артикль от поставщика
 
     @Column(nullable = true)
     @DecimalMin(value = "0.0", inclusive = true, message = "{validation.price.min}")
     @Digits(integer = 10, fraction = 2, message = "{validation.price.digits}")
-    private BigDecimal purchasingPrice;
+    private BigDecimal purchasingPrice; // закупочная цена, по идее должна присваиваться цена с последней накладной, если ее значение превышает предыдущее
 
     @Column(nullable = true)
     @DecimalMin(value = "0.0", inclusive = true, message = "{validation.price.min}")
     @Digits(integer = 10, fraction = 2, message = "{validation.price.digits}")
-    private BigDecimal sellingPrice;
+    private BigDecimal sellingPrice;  // продажная цена, по идее должна присваиваться цена с последней прожажи. Если продаж еще не было, то цена формируется из закупочной цены + 20%. Нужно ли это поле?
 
     @Column(nullable = false)
     @NotBlank(message = "{validation.notBlank}")
-    private String unitOfMeasurement; // единица измерения
+    private String unitOfMeasurement; // единица измерения.- переделать на enam
 
-    @Column(nullable = true)
+    @Column(nullable = true, precision = 8, scale = 3)
     @DecimalMin(value = "0.0", inclusive = true, message = "{validation.weight.min}")
     @Digits(integer = 5, fraction = 3, message = "{validation.weight.digits}")
-    private Float weight; // вес будет измерятся только в кг
+    private BigDecimal weight; // вес будет измерятся только в кг
 
     @Column(nullable = true)
     @Size(max = 50, message = "{validation.max.size}")
-    private String size;
+    private String size; //размеры деталей
 
     @ManyToOne
     @JoinColumn(name = "productCategory_id", referencedColumnName = "id", nullable = false)
     @NotNull(message = "{validation.notNull}")
-    private ProductCategory productCategory;
+    private ProductCategory productCategory; // категории продуктов, например электрика, механика, превматика и т.д.
 
-    @NotBlank(message = "{validation.notBlank}" )
+    //@NotBlank(message = "{validation.notBlank}" )
     @Size(min = 3, max = 1024, message = "{validation.description.size}")
     @Pattern(regexp = DESCRIPTION_REGEX, message = "{description.Pattern.message}")
-    private String description;
+    private String description; // доп.информация
 
     @Column(nullable = true)
     @Size(max = 20, message = "{validation.max.size}")
-    private String customsNumber;
+    private String customsNumber; // таможенный номер
 
     @Column(nullable = true)
     @PastOrPresent(message = "{validation.dateOfLastPurchase.pastOrPresent}")
-    private Date dateOfLastPurchase;
+    private LocalDate dateOfLastPurchase; // дата последней закупки/каталога
 
     @Override
     public boolean equals(Object o) {

@@ -8,7 +8,7 @@ import lombok.*;
 
 import java.util.Objects;
 
-import static de.ait.smallBusiness_be.constants.EntityValidationConstants.NAME_REGEX;
+import static de.ait.smallBusiness_be.constaints.EntityValidationConstants.NAME_REGEX;
 
 /**
  * 19.09.2024
@@ -30,7 +30,7 @@ public class ProductCategory {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     @NotBlank(message = "{validation.notBlank}")
     @Size(min = 3, max = 50, message = "{validation.name.size}")
     @Pattern(regexp = NAME_REGEX, message = "{name.Pattern.message}")
