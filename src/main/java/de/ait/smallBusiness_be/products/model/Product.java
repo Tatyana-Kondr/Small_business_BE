@@ -100,10 +100,10 @@ public class Product {
     @LastModifiedDate
     private LocalDateTime lastModifiedDate;
 
-    @PostPersist
-    public void postPersist() {
-        generateArticle();
-    }
+//    @PostPersist
+//    public void postPersist() {
+//        generateArticle();
+//    }
 
     @PrePersist
     @PreUpdate
@@ -111,11 +111,6 @@ public class Product {
         calculateSellingPrice();
     }
 
-    public void generateArticle() {
-        if (this.article == null || this.article.isBlank()) {
-            this.article = this.productCategory.getArtName() + "-" + this.id;
-        }
-    }
 
     public void calculateSellingPrice() {
         if (this.sellingPrice == null) {
