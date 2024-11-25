@@ -38,7 +38,9 @@ public enum ErrorDescription {
     CATEGORY_ALREADY_EXISTS("Category already exists"),
 
     PRODUCT_NOT_FOUND("User not found"),
-    PRODUCT_ALREADY_EXISTS("Product with the same name and article already exists.");
+    PRODUCT_ALREADY_EXISTS("Product with the same name and article already exists."),
+
+    INVALID_UNIT_OF_MEASUREMENT("Invalid unit of measurement format");
 
 
     private final String description;
