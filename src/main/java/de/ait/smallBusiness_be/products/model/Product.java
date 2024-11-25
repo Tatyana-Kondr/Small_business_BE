@@ -3,10 +3,17 @@ package de.ait.smallBusiness_be.products.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Objects;
+import java.util.StringJoiner;
+import java.util.UUID;
 
 import static de.ait.smallBusiness_be.constaints.EntityValidationConstants.DESCRIPTION_REGEX;
 import static de.ait.smallBusiness_be.constaints.EntityValidationConstants.NAME_REGEX;
@@ -25,6 +32,7 @@ import static de.ait.smallBusiness_be.constaints.EntityValidationConstants.NAME_
 @Builder(toBuilder = true)
 @Entity
 @Table(name = "products")
+@EntityListeners(AuditingEntityListener.class)
 public class Product {
 
     @Id
@@ -46,34 +54,33 @@ public class Product {
     private String vendorArticle;  // артикль от поставщика
 
     @Column
-    @DecimalMin(value = "0.0", inclusive = true, message = "{validation.price.min}")
+    @DecimalMin(value = "0.0", message = "{validation.price.min}")
     @Digits(integer = 10, fraction = 2, message = "{validation.price.digits}")
     private BigDecimal purchasingPrice; // закупочная цена, по идее должна присваиваться цена с последней накладной, если ее значение превышает предыдущее
 
     @Column
-    @DecimalMin(value = "0.0", inclusive = true, message = "{validation.price.min}")
+    @DecimalMin(value = "0.0", message = "{validation.price.min}")
     @Digits(integer = 10, fraction = 2, message = "{validation.price.digits}")
-    private BigDecimal sellingPrice;  // продажная цена, по идее должна присваиваться цена с последней прожажи. Если продаж еще не было, то цена формируется из закупочной цены + 20%. Нужно ли это поле?
+    private BigDecimal sellingPrice;  // продажная цена, по идее должна присваиваться цена с последней продажи. Если продаж еще не было, то цена формируется из закупочной цены + 20%
 
-    @Column(nullable = false)
-    @NotBlank(message = "{validation.notBlank}")
-    private String unitOfMeasurement; // единица измерения.- переделать на enam
+    @Enumerated(EnumType.STRING)
+    @Column//(nullable = false)
+    //@NotNull(message = "{validation.notNull}")
+    private UnitOfMeasurement unitOfMeasurement; // единица измерения
 
     @Column(precision = 8, scale = 3)
-    @DecimalMin(value = "0.0", inclusive = true, message = "{validation.weight.min}")
+    @DecimalMin(value = "0.0", message = "{validation.weight.min}")
     @Digits(integer = 5, fraction = 3, message = "{validation.weight.digits}")
     private BigDecimal weight; // вес будет измерятся только в кг
 
-    @Column
-    @Size(max = 50, message = "{validation.max.size}")
-    private String size; //размеры деталей
+    @Embedded
+    private Dimensions dimensions; //размеры деталей
 
     @ManyToOne
     @JoinColumn(name = "product_category_id", referencedColumnName = "id", nullable = false)
     @NotNull(message = "{validation.notNull}")
-    private ProductCategory productCategory; // категории продуктов, например электрика, механика, превматика и т.д.
+    private ProductCategory productCategory; // категории продуктов, например электрика, механика, пневматика и т.д.
 
-    //@NotBlank(message = "{validation.notBlank}" )
     @Size(min = 3, max = 1024, message = "{validation.description.size}")
     @Pattern(regexp = DESCRIPTION_REGEX, message = "{description.Pattern.message}")
     private String description; // доп.информация
@@ -85,6 +92,44 @@ public class Product {
     @Column
     @PastOrPresent(message = "{validation.dateOfLastPurchase.pastOrPresent}")
     private LocalDate dateOfLastPurchase; // дата последней закупки/каталога
+
+    @CreatedDate
+    @Column(updatable = false)
+    private LocalDateTime createdDate;// под вопросом
+
+    @LastModifiedDate
+    private LocalDateTime lastModifiedDate;
+
+    @PostPersist
+    public void postPersist() {
+        generateArticle();
+    }
+
+    @PrePersist
+    @PreUpdate
+    public void onSaveOrUpdate() {
+        calculateSellingPrice();
+    }
+
+    public void generateArticle() {
+        if (this.article == null || this.article.isBlank()) {
+            this.article = this.productCategory.getArtName() + "-" + this.id;
+        }
+    }
+
+    public void calculateSellingPrice() {
+        if (this.sellingPrice == null) {
+            if (this.purchasingPrice != null && this.purchasingPrice.compareTo(BigDecimal.ZERO) > 0) {
+
+                this.sellingPrice = this.purchasingPrice
+                        .multiply(BigDecimal.valueOf(1.2))
+                        .setScale(2, RoundingMode.HALF_UP);
+            } else {
+
+                this.sellingPrice = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+            }
+        }
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -101,21 +146,20 @@ public class Product {
 
     @Override
     public String toString() {
-        return String.format("Product: ID - %d, name - %s, article - %s, vendor_Article - %s, purchasing_Price - %.2f, date Of Last Purchase - %s," +
-                " selling_Price - %.2f, unit Of Measurement - %s, weight - %.3f, size -%s, product_Category - %s," +
-                " description - %s, customs_Number - %s",
-                id,
-                name,
-                article != null ? article : "N/A",  // Проверка на null для article
-                vendorArticle != null ? vendorArticle : "N/A",  // Проверка на null для vendor_Article
-                purchasingPrice != null ? purchasingPrice.setScale(2).toPlainString() : "0.00",  // Округление для BigDecimal
-                dateOfLastPurchase != null ? dateOfLastPurchase.toString() : "N/A",  // Проверка на null для даты
-                sellingPrice != null ? sellingPrice.setScale(2).toPlainString() : "0.00",  // Округление для BigDecimal
-                unitOfMeasurement,
-                weight != null ? weight : 0.0f,  // Проверка на null для weight
-                size != null ? size : "N/A",  // Проверка на null для size
-                productCategory != null ? productCategory.getName() : "N/A",  // Проверка на null для категории
-                description != null ? description : "N/A",  // Проверка на null для description
-                customsNumber != null ? customsNumber : "N/A");  // Проверка на null для customsNumber
+        return new StringJoiner(", ", Product.class.getSimpleName() + "[", "]")
+                .add("id=" + id)
+                .add("name='" + name + "'")
+                .add("article='" + (article != null ? article : "N/A") + "'")
+                .add("vendorArticle='" + (vendorArticle != null ? vendorArticle : "N/A") + "'")
+                .add("purchasingPrice=" + (purchasingPrice != null ? purchasingPrice.setScale(2,RoundingMode.HALF_UP) : "0.00"))
+                .add("sellingPrice=" + (sellingPrice != null ? sellingPrice.setScale(2,RoundingMode.HALF_UP) : "0.00"))
+                .add("unitOfMeasurement='" + unitOfMeasurement + "'")
+                .add("weight=" + (weight != null ? weight : 0.0f))
+                .add("size='" + (dimensions != null ? dimensions : "N/A") + "'")
+                .add("productCategory=" + (productCategory != null ? productCategory.getName() : "N/A"))
+                .add("description='" + (description != null ? description : "N/A") + "'")
+                .add("customsNumber='" + (customsNumber != null ? customsNumber : "N/A") + "'")
+                .add("dateOfLastPurchase=" + (dateOfLastPurchase != null ? dateOfLastPurchase : "N/A"))
+                .toString();
     }
 }
