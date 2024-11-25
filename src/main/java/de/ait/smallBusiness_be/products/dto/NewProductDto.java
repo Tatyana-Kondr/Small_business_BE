@@ -6,7 +6,6 @@ import jakarta.validation.constraints.*;
 import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
-
 /**
  * 11/25/2024
  * Small_business_BE
