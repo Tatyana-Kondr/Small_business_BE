@@ -35,7 +35,10 @@ public enum ErrorDescription {
     NO_ROLE("No roles found for the user."),
 
     CATEGORY_NOT_FOUND("Category not found"),
-    CATEGORY_ALREADY_EXISTS("Category already exists");
+    CATEGORY_ALREADY_EXISTS("Category already exists"),
+
+    PRODUCT_NOT_FOUND("User not found"),
+    PRODUCT_ALREADY_EXISTS("Product with the same name and article already exists.");
 
 
     private final String description;
