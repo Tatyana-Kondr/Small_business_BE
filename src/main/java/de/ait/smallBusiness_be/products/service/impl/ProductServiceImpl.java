@@ -2,6 +2,7 @@ package de.ait.smallBusiness_be.products.service.impl;
 
 import de.ait.smallBusiness_be.products.dao.ProductRepository;
 import de.ait.smallBusiness_be.products.dto.NewProductDto;
+import de.ait.smallBusiness_be.products.dto.UpdateProductDto;
 import de.ait.smallBusiness_be.products.dto.ProductDto;
 import de.ait.smallBusiness_be.products.model.Product;
 import de.ait.smallBusiness_be.products.service.ProductService;
@@ -32,9 +33,6 @@ public class ProductServiceImpl implements ProductService {
 
         Product saveProduct = productRepository.save(product);
 
-          if(product.getArticle()==null){
-            saveProduct.setArticle(String.valueOf(product.getId()));
-        }
         return modelMapper.map(saveProduct, ProductDto.class);
     }
 
@@ -49,7 +47,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public ProductDto updateProduct(Long id, NewProductDto newProductDto) {
+    public ProductDto updateProduct(Long id, UpdateProductDto updateProductDto) {
         return null;
     }
 

@@ -2,6 +2,7 @@ package de.ait.smallBusiness_be.products.service;
 
 
 import de.ait.smallBusiness_be.products.dto.NewProductDto;
+import de.ait.smallBusiness_be.products.dto.UpdateProductDto;
 import de.ait.smallBusiness_be.products.dto.ProductDto;
 
 import java.util.List;
@@ -18,6 +19,6 @@ public interface ProductService {
     ProductDto addProduct(NewProductDto newProductDto);
     ProductDto getProductById(Long id);
     ProductDto deleteProductById(Long id);
-    ProductDto updateProduct(Long id, NewProductDto newProductDto);
+    ProductDto updateProduct(Long id, UpdateProductDto updateProductDto);
     List<ProductDto> findAllProducts();
 }
