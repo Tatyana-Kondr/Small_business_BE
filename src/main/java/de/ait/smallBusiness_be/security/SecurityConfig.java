@@ -33,18 +33,19 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .httpBasic(AbstractHttpConfigurer::disable)
-                .csrf(csrf -> csrf
-                        .ignoringRequestMatchers(AUTH_WHITELIST) // Отключение CSRF для Swagger
-                )
+                .csrf(AbstractHttpConfigurer::disable)
+//                .csrf(csrf -> csrf
+//                        .ignoringRequestMatchers(AUTH_WHITELIST) // Отключение CSRF для Swagger
+//                )
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(AUTH_WHITELIST).permitAll() // Swagger доступен всем
-                        .requestMatchers(HttpMethod.GET, "/api/product/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/product").permitAll()
-                        .requestMatchers(HttpMethod.PUT, "/api/product/{id}").permitAll()
-                        .requestMatchers(HttpMethod.DELETE, "/api/product/{id}").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/products/**", "api/product-categories/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/products", "api/product-categories").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/api/products/{id}", "api/product-categories/{id}").permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/api/products/{id}", "api/product-categories/{id}").permitAll()
                         .anyRequest().permitAll()
                 );
 

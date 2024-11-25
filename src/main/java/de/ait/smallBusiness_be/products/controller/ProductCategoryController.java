@@ -23,7 +23,6 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class ProductCategoryController {
 
-    @Autowired
     final ProductCategoryService productCategoryService;
 
     @PostMapping

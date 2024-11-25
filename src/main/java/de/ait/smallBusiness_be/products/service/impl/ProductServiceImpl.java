@@ -4,8 +4,11 @@ import de.ait.smallBusiness_be.exceptions.ErrorDescription;
 import de.ait.smallBusiness_be.exceptions.RestApiException;
 import de.ait.smallBusiness_be.products.dao.ProductRepository;
 import de.ait.smallBusiness_be.products.dto.NewProductDto;
+import de.ait.smallBusiness_be.products.dto.UpdateProductDto;
 import de.ait.smallBusiness_be.products.dto.ProductDto;
+import de.ait.smallBusiness_be.products.model.Dimensions;
 import de.ait.smallBusiness_be.products.model.Product;
+import de.ait.smallBusiness_be.products.model.UnitOfMeasurement;
 import de.ait.smallBusiness_be.products.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -32,12 +35,23 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ProductDto addProduct(NewProductDto newProductDto) {
 
-        boolean exists = productRepository.existsByNameAndArticle(newProductDto.name(), newProductDto.article());
+        boolean exists = productRepository
+                .existsByNameAndVendorArticleAndPurchasingPriceAndProductCategory(
+                        newProductDto.getName(),
+                        newProductDto.getVendorArticle(),
+                        newProductDto.getPurchasingPrice(),
+                        newProductDto.getProductCategory()
+                );
         if (exists) {
             throw new RestApiException(ErrorDescription.PRODUCT_ALREADY_EXISTS, HttpStatus.CONFLICT);
         }
+
         Product product = modelMapper.map(newProductDto, Product.class);
         Product savedProduct = productRepository.save(product);
+        String art = newProductDto.getProductCategory().getArtName() + "-" + savedProduct.getId();
+        savedProduct.setArticle(art);
+        productRepository.save(savedProduct);
+
         return modelMapper.map(savedProduct, ProductDto.class);
 
     }
@@ -60,21 +74,34 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public ProductDto updateProduct(Long id, NewProductDto newProductDto){
+    public ProductDto updateProduct(Long id, UpdateProductDto updateProductDto){
 
     Product product = productRepository.findById(id)
             .orElseThrow(() -> new RestApiException(ErrorDescription.PRODUCT_NOT_FOUND, HttpStatus.CONFLICT));
-        product.setName(newProductDto.name());
-        product.setArticle(newProductDto.article());
-        product.setPurchasingPrice(newProductDto.purchasingPrice());
-        product.setSellingPrice(newProductDto.sellingPrice());
-        product.setUnitOfMeasurement(newProductDto.unitOfMeasurement());
-        product.setWeight(newProductDto.weight());
-        product.setSize(newProductDto.size());
-        product.setProductCategory(newProductDto.productCategory());
-        product.setDescription(newProductDto.description());
-        product.setCustomsNumber(newProductDto.customsNumber());
-        product.setDateOfLastPurchase(newProductDto.dateOfLastPurchase());
+        product.setName(updateProductDto.getName());
+        product.setArticle(updateProductDto.getArticle());
+        product.setPurchasingPrice(updateProductDto.getPurchasingPrice());
+        product.setSellingPrice(updateProductDto.getSellingPrice());
+
+        if (updateProductDto.getUnitOfMeasurement() != null) {
+            try {
+                UnitOfMeasurement unit = UnitOfMeasurement.valueOf(updateProductDto.getUnitOfMeasurement().toUpperCase());
+                product.setUnitOfMeasurement(unit);
+            } catch (IllegalArgumentException e) {
+                throw new RestApiException(ErrorDescription.INVALID_UNIT_OF_MEASUREMENT, HttpStatus.BAD_REQUEST);
+            }
+        }
+
+        product.setWeight(updateProductDto.getWeight());
+
+        if (updateProductDto.getNewDimensions() != null) {
+            Dimensions dimensions = modelMapper.map(updateProductDto.getNewDimensions(), Dimensions.class);
+            product.setDimensions(dimensions);
+        }
+        product.setProductCategory(updateProductDto.getProductCategory());
+        product.setDescription(updateProductDto.getDescription());
+        product.setCustomsNumber(updateProductDto.getCustomsNumber());
+        product.setDateOfLastPurchase(updateProductDto.getDateOfLastPurchase());
 
         Product updatedProduct = productRepository.save(product);
         return modelMapper.map(updatedProduct, ProductDto.class);

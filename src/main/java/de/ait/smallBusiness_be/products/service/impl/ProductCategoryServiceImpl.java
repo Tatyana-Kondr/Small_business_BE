@@ -34,7 +34,7 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
     @Override
     public ProductCategoryDto addProductCategory(NewProductCategoryDto newProductCategoryDto) {
 
-        if (productCategoryRepository.findByName(newProductCategoryDto.name()).isPresent()) {
+        if (productCategoryRepository.findByNameIgnoreCase(newProductCategoryDto.getName()).isPresent()) {
             throw new RestApiException(ErrorDescription.CATEGORY_ALREADY_EXISTS, HttpStatus.CONFLICT);
         }
             ProductCategory productCategory = modelMapper.map(newProductCategoryDto, ProductCategory.class);
@@ -66,7 +66,7 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
                 .orElseThrow(() -> new EntityNotFoundException("Product category not found"));
 
         // Обновляем поля
-        productCategory.setName(newProductCategoryDto.name());
+        productCategory.setName(newProductCategoryDto.getName());
 
         // Сохраняем обновленную категорию
         ProductCategory updatedCategory = productCategoryRepository.save(productCategory);

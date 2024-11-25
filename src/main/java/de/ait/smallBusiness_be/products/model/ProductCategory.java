@@ -36,6 +36,11 @@ public class ProductCategory {
     @Pattern(regexp = NAME_REGEX, message = "{name.Pattern.message}")
     private String name;
 
+    @Column(nullable = false, unique = true)
+    @NotBlank(message = "{validation.notBlank}")
+    @Size(min=2, max = 6, message = "{validation.name.size}")
+    private String artName;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

@@ -3,10 +3,10 @@ package de.ait.smallBusiness_be.products.controller;
 
 import de.ait.smallBusiness_be.exceptions.RestApiException;
 import de.ait.smallBusiness_be.products.dto.NewProductDto;
+import de.ait.smallBusiness_be.products.dto.UpdateProductDto;
 import de.ait.smallBusiness_be.products.dto.ProductDto;
 import de.ait.smallBusiness_be.products.service.ProductService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,7 +23,6 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class ProductController {
 
-    @Autowired
     final ProductService productService;
 
     @PostMapping
@@ -47,9 +46,9 @@ public class ProductController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ProductDto> updateProductById(@PathVariable Long id, @RequestBody NewProductDto newProductDto) throws RestApiException {
+    public ResponseEntity<ProductDto> updateProductById(@PathVariable Long id, @RequestBody UpdateProductDto updateProductDto) throws RestApiException {
         try{
-            ProductDto updatedProductDto = productService.updateProduct(id, newProductDto);
+            ProductDto updatedProductDto = productService.updateProduct(id, updateProductDto);
             return ResponseEntity.ok(updatedProductDto);
         } catch (RestApiException e){
             return ResponseEntity.status(e.getStatus()).body(null);
