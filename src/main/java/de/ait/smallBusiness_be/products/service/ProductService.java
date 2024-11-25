@@ -18,6 +18,6 @@ public interface ProductService {
     ProductDto addProduct(NewProductDto newProductDto);
     ProductDto getProductById(Long id);
     ProductDto deleteProductById(Long id);
-    ProductDto updateProduct(Long id, NewProductDto newProductDto);
+    ProductDto updateProduct(Long id, NewProductDto NewProductDto);
     List<ProductDto> findAllProducts();
 }
