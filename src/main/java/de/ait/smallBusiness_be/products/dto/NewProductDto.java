@@ -6,6 +6,7 @@ import jakarta.validation.constraints.*;
 import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Date;
 
 import static de.ait.smallBusiness_be.constaints.EntityValidationConstants.DESCRIPTION_REGEX;
@@ -36,7 +37,7 @@ public record NewProductDto(
 
         @DecimalMin(value = "0.0", inclusive = true, message = "{validation.weight.min}")
         @Digits(integer = 5, fraction = 3, message = "{validation.weight.digits}")
-        Float weight,
+        BigDecimal weight,
 
         @Size(max = 50, message = "{validation.max.size}")
         String size,
@@ -52,7 +53,7 @@ public record NewProductDto(
         String customsNumber,
 
         @PastOrPresent(message = "{validation.dateOfLastPurchase.pastOrPresent}")
-        Date dateOfLastPurchase) implements Serializable {
+        LocalDate dateOfLastPurchase) implements Serializable {
 
         @Serial
         private static final long serialVersionUID = 1L;
