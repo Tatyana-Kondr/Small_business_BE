@@ -2,9 +2,11 @@ package de.ait.smallBusiness_be.products.dto;
 
 import de.ait.smallBusiness_be.products.model.ProductCategory;
 import jakarta.validation.constraints.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import java.io.Serial;
-import java.io.Serializable;
 import java.math.BigDecimal;
 /**
  * 11/25/2024
@@ -12,22 +14,23 @@ import java.math.BigDecimal;
  *
  * @author Chechkina (AIT TR)
  */
-public record NewProductDto(
-        @NotBlank(message = "{validation.notBlank}")
-        @Size(min = 3, max = 100, message = "{validation.name.size}")
-        String name,
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+public class NewProductDto{
 
-        @Size(min = 3, max = 50, message = "{validation.name.size}")
-        String vendorArticle,
+    @NotBlank(message = "{validation.notBlank}")
+    @Size(min = 3, max = 100, message = "{validation.name.size}")
+    String name;
 
-        @DecimalMin(value = "0.0", message = "{validation.price.min}")
-        @Digits(integer = 10, fraction = 2, message = "{validation.price.digits}")
-        BigDecimal purchasingPrice,
+    @Size(min = 3, max = 50, message = "{validation.name.size}")
+    String vendorArticle;
 
-        @NotNull(message = "{validation.notNull}")
-        ProductCategory productCategory
-) implements Serializable {
+    @DecimalMin(value = "0.0", message = "{validation.price.min}")
+    @Digits(integer = 10, fraction = 2, message = "{validation.price.digits}")
+    BigDecimal purchasingPrice;
 
-    @Serial
-    private static final long serialVersionUID = 1L;
+    @NotNull(message = "{validation.notNull}")
+    ProductCategory productCategory;
 }
