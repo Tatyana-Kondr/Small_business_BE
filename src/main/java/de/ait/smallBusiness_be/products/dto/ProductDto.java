@@ -2,6 +2,10 @@ package de.ait.smallBusiness_be.products.dto;
 
 
 import de.ait.smallBusiness_be.products.model.ProductCategory;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -15,21 +19,23 @@ import java.util.Date;
  * @author Kondratyeva
  */
 
-public record ProductDto(
-        Long id,
-        String name,
-        String article,
-        String vendorArticle,
-        BigDecimal purchasingPrice,
-        BigDecimal sellingPrice,
-        String unitOfMeasurement,
-        Float weight,
-        String size,
-        ProductCategory productCategory,
-        String description,
-        String customsNumber,
-        Date dateOfLastPurchase) implements Serializable {
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+public class ProductDto{
 
-    @Serial
-    private static final long serialVersionUID = 1L;
+    Long id;
+    String name;
+    String article;
+    String vendorArticle;
+    BigDecimal purchasingPrice;
+    BigDecimal sellingPrice;
+    String unitOfMeasurement;
+    Float weight;
+    String size;
+    ProductCategory productCategory;
+    String description;
+    String customsNumber;
+    Date dateOfLastPurchase;
 }
