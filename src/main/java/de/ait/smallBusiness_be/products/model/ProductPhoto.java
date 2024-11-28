@@ -1,8 +1,8 @@
 package de.ait.smallBusiness_be.products.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.util.Objects;
@@ -32,11 +32,9 @@ public class ProductPhoto {
     @NotNull(message = "{validation.notNull}")
     private Product product;
 
-    @Lob
-    @Column(nullable = false)
-    @NotNull(message = "{validation.notNull}")
-    @Size(min = 1, message = "{validation.notEmpty}")
-    private byte[] image;
+    private String originFileName;
+
+    private String fileUrl;
 
     @Override
     public boolean equals(Object o) {
