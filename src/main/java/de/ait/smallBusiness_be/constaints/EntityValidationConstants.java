@@ -45,7 +45,7 @@ public class EntityValidationConstants {
      *   <li>abc-def-ghij</li> (contains letters, which are not allowed)</li>
      * </ul>
      */
-    public static final String PHONE_REGEX = "^\\+?[(]?[0-9]{3}[)]?[-\\s.]?[0-9]{3}[-\\s.]?[0-9]{4,6}$";
+    public static final String PHONE_REGEX = "^\\+?[0-9]{1,3}[-\\s.]?[0-9]{1,4}[-\\s.]?[0-9]{1,4}[-\\s.]?[0-9]{1,9}$";
 
     /**
      * Regular expression pattern for validating restaurant descriptions.
@@ -151,7 +151,7 @@ public class EntityValidationConstants {
      * </ul>
      */
 
-    public static final String RESTAURANT_POSTAL_CODE_REGEX = "^([A-Z]{1,2}\\d[A-Z\\d]? \\d[A-Z]{2}|\\d{5}(-\\d{4})?|[A-Z]\\d[A-Z] \\d[A-Z]\\d|\\d{4}|\\d{4} [A-Z]{2}|\\d{3} \\d{2}|\\d{5})$";
+    public static final String POSTAL_CODE_REGEX = "^([A-Z]{1,2}\\d[A-Z\\d]? \\d[A-Z]{2}|\\d{5}(-\\d{4})?|[A-Z]\\d[A-Z] \\d[A-Z]\\d|\\d{4}|\\d{4} [A-Z]{2}|\\d{3} \\d{2}|\\d{5})$";
 
     /**
      * Regular expression pattern for Country and City names validation.
@@ -192,7 +192,7 @@ public class EntityValidationConstants {
      * </ul>
      */
 
-    public static final String RESTAURANT_COUNTRY_CITY_REGEX = "^[A-Za-zÄÖÜäöüß\\-\\s'\\.]+$";
+    public static final String CITY_REGEX = "^[A-Za-zÄÖÜäöüß\\-\\s'\\.]+$";
 
 
     /**
@@ -235,7 +235,7 @@ public class EntityValidationConstants {
      * </ul>
      */
 
-    public static final String RESTAURANT_STREET_REGEX = "^[A-Za-z0-9ÄÖÜäöüß\\-\\s'\\.]+$";
+    public static final String STREET_REGEX = "^[A-Za-z0-9ÄÖÜäöüß\\-\\s'\\.]+$";
 
     /**
      * Regular expression pattern for validating house numbers.
@@ -271,7 +271,7 @@ public class EntityValidationConstants {
      * </ul>
      */
 
-    public static final String RESTAURANT_BUILDING_REGEX = "^(?!\\s)(?!.*\\s{2,})[A-Za-z0-9-]+(?<!\\s)$";
+    public static final String BUILDING_REGEX = "^(?!\\s)(?!.*\\s{2,})[A-Za-z0-9-]+(?<!\\s)$";
 
     /**
      * Regular expression pattern for validating restaurant category names.
@@ -366,6 +366,40 @@ public class EntityValidationConstants {
      *   <li>"Peter@"</li> (contains invalid character '@')
      * </ul>
      */
+
+    public static final String WEBSITE_REGEX = "^(https?://)?([\\w-]+\\.)+[\\w-]+(/[\\w-./?%&=]*)?$";
+
+    /**
+     * Regular expression pattern for validating website URLs.
+     * <p>
+     * This pattern allows URLs that include:
+     * <ul>
+     *   <li>Optional schemes: http or https (e.g., "http://", "https://").</li>
+     *   <li>Domain names, which can include subdomains, hyphens, and periods.</li>
+     *   <li>Optional paths, query parameters, and fragments.</li>
+     * </ul>
+     * <p>
+     * Valid examples:
+     * <ul>
+     *   <li>"http://example.com"</li>
+     *   <li>"https://example.com"</li>
+     *   <li>"http://sub.example.com"</li>
+     *   <li>"http://example.com/path/to/resource"</li>
+     *   <li>"https://example.com?query=1&value=test"</li>
+     *   <li>"https://example.com#fragment"</li>
+     *   <li>"example.com"</li> (optional "http://" or "https://")
+     * </ul>
+     * <p>
+     * Invalid examples:
+     * <ul>
+     *   <li>"htp://example.com"</li> (invalid scheme)
+     *   <li>"http:/example.com"</li> (missing one '/')
+     *   <li>"example"</li> (no top-level domain)
+     *   <li>"http://example..com"</li> (invalid domain format)
+     *   <li>"http://example.com/ path"</li> (contains space in the path)
+     * </ul>
+     */
+
     public static final String FIRST_LAST_NAME_REGEX = "^[A-Za-züöäßÜÄÖ0-9\\-\\s]+$";
 
     /**
