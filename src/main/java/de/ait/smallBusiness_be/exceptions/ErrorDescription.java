@@ -40,7 +40,17 @@ public enum ErrorDescription {
     PRODUCT_NOT_FOUND("User not found"),
     PRODUCT_ALREADY_EXISTS("Product with the same name and article already exists."),
 
-    INVALID_UNIT_OF_MEASUREMENT("Invalid unit of measurement format");
+    INVALID_UNIT_OF_MEASUREMENT("Invalid unit of measurement format"),
+    UNSUPPORTED_FILE_TYPE("Unsupported file type"),
+    INVALID_FILE_NAME("Invalid file name"),
+    FILE_NOT_FOUND("File not found"),
+    DIRECTORY_CREATION_FAILED("Directory path creation failed"),
+    FILE_UPLOAD_FAILED("The file could not be uploaded"),
+    FILE_STORAGE_FAILED("Error storing file"),
+    UNSUPPORTED_OPERATION("Unsupported operation on the filesystem"),
+    FILE_DELETE_FAILED("File could not be deleted"),
+    FILE_CONVERTING_FAILED("File could not be converted to Base64"),
+    CUSTOMER_ALREADY_EXISTS("Customer already exists");
 
 
     private final String description;
