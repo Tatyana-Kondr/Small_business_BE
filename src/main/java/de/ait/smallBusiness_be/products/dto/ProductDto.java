@@ -7,10 +7,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.io.Serial;
-import java.io.Serializable;
 import java.math.BigDecimal;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 /**
  * SmallBusiness_BE
@@ -32,10 +30,12 @@ public class ProductDto{
     BigDecimal purchasingPrice;
     BigDecimal sellingPrice;
     String unitOfMeasurement;
-    Float weight;
-    String size;
+    BigDecimal weight;
+    NewDimensionsDto newDimensions;
     ProductCategory productCategory;
     String description;
     String customsNumber;
-    Date dateOfLastPurchase;
+    LocalDateTime createdDate;
+    LocalDateTime dateOfLastPurchase;
+    LocalDateTime lastModifiedDate;
 }
