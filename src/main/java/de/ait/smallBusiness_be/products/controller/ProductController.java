@@ -9,7 +9,6 @@ import de.ait.smallBusiness_be.products.dto.ProductDto;
 import de.ait.smallBusiness_be.products.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
@@ -70,10 +69,13 @@ public class ProductController implements ProductsApi {
     }
 
     @Override
-    public Page<ProductDto> getAllProducts(
-            @PageableDefault(size = 10) Pageable pageable,
-            @RequestParam(defaultValue = "name") String sort) {
+    public Page<ProductDto> getAllProducts(Pageable pageable) {
         return productService.findAllProducts(pageable);
+    }
+
+    @Override
+    public Page<ProductDto> getProductsByCategory(int categoryId, Pageable pageable) {
+        return productService.findProductsByCategoryId(categoryId, pageable);
     }
 
 }

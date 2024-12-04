@@ -124,4 +124,15 @@ public class ProductServiceImpl implements ProductService {
 
         return productsPage.map(product -> modelMapper.map(product, ProductDto.class));
     }
+
+    @Override
+    public Page<ProductDto> findProductsByCategoryId(int categoryId, Pageable pageable) {
+
+        Page<Product> productsPage = productRepository.findByProductCategory_Id(categoryId, pageable);
+        if (productsPage.isEmpty()) {
+            throw new RestApiException(ErrorDescription.LIST_PRODUCTS_IS_EMPTY, HttpStatus.NOT_FOUND);
+        }
+
+        return productsPage.map(product -> modelMapper.map(product, ProductDto.class));
+    }
 }

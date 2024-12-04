@@ -161,7 +161,26 @@ public interface ProductsApi {
     })
     @ResponseStatus(HttpStatus.OK)
     Page<ProductDto> getAllProducts(
-            @PageableDefault(size = 10) Pageable pageable,
-            @RequestParam(defaultValue = "name") String sort);
+            @PageableDefault(size = 10, sort = "name") Pageable pageable);
+
+    @GetMapping("/category/{category-id}")
+    @Operation(
+            summary = "Get all products by category",
+            description = "Retrieve a list of all products by category. Allowed to all users.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200",
+                    description = "List of products retrieved successfully.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ProductDto[].class))),
+            @ApiResponse(responseCode = "404",
+                    description = "No products found.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDto.class)))
+    })
+    @ResponseStatus(HttpStatus.OK)
+    Page<ProductDto> getProductsByCategory(
+            @PathVariable("category-id") int categoryId,
+            @PageableDefault(size = 10, sort = "name") Pageable pageable
+            );
 
 }
