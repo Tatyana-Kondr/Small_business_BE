@@ -2,13 +2,15 @@ package de.ait.smallBusiness_be.products.controller;
 
 
 import de.ait.smallBusiness_be.exceptions.RestApiException;
+import de.ait.smallBusiness_be.products.controller.api.ProductsApi;
 import de.ait.smallBusiness_be.products.dto.NewProductDto;
 import de.ait.smallBusiness_be.products.dto.UpdateProductDto;
 import de.ait.smallBusiness_be.products.dto.ProductDto;
 import de.ait.smallBusiness_be.products.service.ProductService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -19,60 +21,59 @@ import org.springframework.web.bind.annotation.*;
  */
 
 @RestController
-@RequestMapping("api/products")
 @RequiredArgsConstructor
-public class ProductController {
+public class ProductController implements ProductsApi {
 
     final ProductService productService;
+    // final AuthService authService;
 
-    @PostMapping
-    public ResponseEntity<ProductDto> createProduct(@RequestBody NewProductDto newProductDto) throws RestApiException {
-        try{
-            ProductDto productDto = productService.addProduct(newProductDto);
-            return ResponseEntity.status(HttpStatus.CREATED).body(productDto);
-        } catch (RestApiException e){
-            return ResponseEntity.status(e.getStatus()).body(null);
-        }
+    @Override
+    public ProductDto createProduct(
+            NewProductDto newProductDto
+            //, AuthenticatedUser currentUser
+            ) {
+
+        // User authenticatedUser = currentUser.getUser();
+        return productService.addProduct(newProductDto
+                //, authenticatedUser
+        );
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<ProductDto> getProductById(@PathVariable Long id) throws RestApiException {
-        try{
-            ProductDto productDto = productService.getProductById(id);
-            return ResponseEntity.ok(productDto);
-        } catch (RestApiException e){
-            return ResponseEntity.status(e.getStatus()).body(null);
-        }
+    @Override
+    public ProductDto getProductById(Long id) throws RestApiException {
+            return productService.getProductById(id);
+
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<ProductDto> updateProductById(@PathVariable Long id, @RequestBody UpdateProductDto updateProductDto) throws RestApiException {
-        try{
-            ProductDto updatedProductDto = productService.updateProduct(id, updateProductDto);
-            return ResponseEntity.ok(updatedProductDto);
-        } catch (RestApiException e){
-            return ResponseEntity.status(e.getStatus()).body(null);
-        }
+    @Override
+    public ProductDto updateProductById(
+            Long id,
+            UpdateProductDto updateProductDto
+            //, AuthenticatedUser currentUser
+    ) {
+        // User authenticatedUser = currentUser.getUser();
+            return productService.updateProduct(
+                    id,
+                    updateProductDto
+                    //, authenticatedUser
+            );
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<ProductDto> removeProductById(@PathVariable Long id) throws RestApiException {
-        try{
-            ProductDto deletedProductDto = productService.deleteProductById(id);
-            return ResponseEntity.ok(deletedProductDto);
-        } catch (RestApiException e){
-            return ResponseEntity.status(e.getStatus()).body(null);
-        }
+    @Override
+    public void removeProductById(Long id
+            //, AuthenticatedUser currentUser
+    ) {
+            // User authenticatedUser = currentUser.getUser();
+               productService.deleteProductById(id
+                //, authenticatedUser
+        );
     }
 
-    @GetMapping
-    public ResponseEntity<Iterable<ProductDto>> getAllProducts() throws RestApiException {
-        try{
-            Iterable<ProductDto> products = productService.findAllProducts();
-            return ResponseEntity.ok(products);
-        } catch (RestApiException e){
-            return ResponseEntity.status(e.getStatus()).body(null);
-        }
+    @Override
+    public Page<ProductDto> getAllProducts(
+            @PageableDefault(size = 10) Pageable pageable,
+            @RequestParam(defaultValue = "name") String sort) {
+        return productService.findAllProducts(pageable);
     }
 
 }
