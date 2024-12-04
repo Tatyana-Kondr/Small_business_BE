@@ -7,11 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.io.Serial;
-import java.io.Serializable;
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.Date;
 
 import static de.ait.smallBusiness_be.constaints.EntityValidationConstants.DESCRIPTION_REGEX;
 
@@ -58,7 +54,7 @@ public class UpdateProductDto{
 
         @Size(max = 20, message = "{validation.max.size}")
         String customsNumber;
-
-        @PastOrPresent(message = "{validation.dateOfLastPurchase.pastOrPresent}")
-        LocalDate dateOfLastPurchase;
+//
+//        @PastOrPresent(message = "{validation.dateOfLastPurchase.pastOrPresent}")
+//        LocalDateTime dateOfLastPurchase;
 }
