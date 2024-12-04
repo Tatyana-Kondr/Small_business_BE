@@ -45,11 +45,11 @@ public class Product {
     @Pattern(regexp = NAME_REGEX, message = "{name.Pattern.message}")
     private String name;   // наименование продукта
 
-    @Column(nullable = false, unique = true)
+    @Column(unique = true)
     @Size(max = 30, message = "{validation.max.size}")
     private String article; // артикль который должен присваиваться автоматически или лучше сказать генерироваться, но также должна быть возможность его забивать вручную
 
-    @Column(nullable = false)
+    @Column
     @Size(max = 30, message = "{validation.max.size}")
     private String vendorArticle;  // артикль от поставщика
 
@@ -91,11 +91,11 @@ public class Product {
 
     @Column
     @PastOrPresent(message = "{validation.dateOfLastPurchase.pastOrPresent}")
-    private LocalDate dateOfLastPurchase; // дата последней закупки/каталога
+    private LocalDateTime dateOfLastPurchase; // дата последней закупки/каталога
 
     @CreatedDate
     @Column(updatable = false)
-    private LocalDateTime createdDate;// под вопросом
+    private LocalDateTime createdDate = LocalDateTime.now();// под вопросом
 
     @LastModifiedDate
     private LocalDateTime lastModifiedDate;
