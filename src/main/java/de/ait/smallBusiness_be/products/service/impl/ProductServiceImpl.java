@@ -3,6 +3,7 @@ package de.ait.smallBusiness_be.products.service.impl;
 import de.ait.smallBusiness_be.exceptions.ErrorDescription;
 import de.ait.smallBusiness_be.exceptions.RestApiException;
 import de.ait.smallBusiness_be.products.dao.ProductRepository;
+import de.ait.smallBusiness_be.products.dto.NewDimensionsDto;
 import de.ait.smallBusiness_be.products.dto.NewProductDto;
 import de.ait.smallBusiness_be.products.dto.UpdateProductDto;
 import de.ait.smallBusiness_be.products.dto.ProductDto;
@@ -12,9 +13,12 @@ import de.ait.smallBusiness_be.products.model.UnitOfMeasurement;
 import de.ait.smallBusiness_be.products.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -60,24 +64,23 @@ public class ProductServiceImpl implements ProductService {
     public ProductDto getProductById(Long id) {
 
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new RestApiException(ErrorDescription.PRODUCT_NOT_FOUND, HttpStatus.CONFLICT));
+                .orElseThrow(() -> new RestApiException(ErrorDescription.PRODUCT_NOT_FOUND, HttpStatus.NOT_FOUND));
         return modelMapper.map(product, ProductDto.class);
     }
 
     @Override
-    public ProductDto deleteProductById(Long id) {
+    public void deleteProductById(Long id) {
 
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new RestApiException(ErrorDescription.PRODUCT_NOT_FOUND, HttpStatus.CONFLICT));
+                .orElseThrow(() -> new RestApiException(ErrorDescription.PRODUCT_NOT_FOUND, HttpStatus.NOT_FOUND));
         productRepository.delete(product);
-        return modelMapper.map(product, ProductDto.class);
     }
 
     @Override
     public ProductDto updateProduct(Long id, UpdateProductDto updateProductDto){
 
     Product product = productRepository.findById(id)
-            .orElseThrow(() -> new RestApiException(ErrorDescription.PRODUCT_NOT_FOUND, HttpStatus.CONFLICT));
+            .orElseThrow(() -> new RestApiException(ErrorDescription.PRODUCT_NOT_FOUND, HttpStatus.NOT_FOUND));
         product.setName(updateProductDto.getName());
         product.setArticle(updateProductDto.getArticle());
         product.setPurchasingPrice(updateProductDto.getPurchasingPrice());
@@ -101,18 +104,24 @@ public class ProductServiceImpl implements ProductService {
         product.setProductCategory(updateProductDto.getProductCategory());
         product.setDescription(updateProductDto.getDescription());
         product.setCustomsNumber(updateProductDto.getCustomsNumber());
-        product.setDateOfLastPurchase(updateProductDto.getDateOfLastPurchase());
+        //product.setDateOfLastPurchase(updateProductDto.getDateOfLastPurchase());
+        product.setLastModifiedDate(LocalDateTime.now());
 
         Product updatedProduct = productRepository.save(product);
-        return modelMapper.map(updatedProduct, ProductDto.class);
+        ProductDto productDto = modelMapper.map(updatedProduct, ProductDto.class);
+        NewDimensionsDto updatedDimensions = modelMapper.map(updatedProduct.getDimensions(), NewDimensionsDto.class);
+        productDto.setNewDimensions(updatedDimensions);
+        return productDto;
     }
 
     @Override
-    public List<ProductDto> findAllProducts() {
+    public Page<ProductDto> findAllProducts(Pageable pageable) {
 
-        List<Product> products = productRepository.findAll();
-            return products.stream()
-                .map(product -> modelMapper.map(product, ProductDto.class))
-                .collect(Collectors.toList());
+        Page<Product> productsPage = productRepository.findAll(pageable);
+        if (productsPage.isEmpty()) {
+            throw new RestApiException(ErrorDescription.LIST_PRODUCTS_IS_EMPTY, HttpStatus.NOT_FOUND);
+        }
+
+        return productsPage.map(product -> modelMapper.map(product, ProductDto.class));
     }
 }

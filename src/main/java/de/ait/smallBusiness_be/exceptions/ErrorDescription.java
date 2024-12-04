@@ -37,8 +37,9 @@ public enum ErrorDescription {
     CATEGORY_NOT_FOUND("Category not found"),
     CATEGORY_ALREADY_EXISTS("Category already exists"),
 
-    PRODUCT_NOT_FOUND("User not found"),
+    PRODUCT_NOT_FOUND("Product not found"),
     PRODUCT_ALREADY_EXISTS("Product with the same name and article already exists."),
+    LIST_PRODUCTS_IS_EMPTY("List of products is empty"),
 
     INVALID_UNIT_OF_MEASUREMENT("Invalid unit of measurement format"),
     UNSUPPORTED_FILE_TYPE("Unsupported file type"),
@@ -51,7 +52,6 @@ public enum ErrorDescription {
     FILE_DELETE_FAILED("File could not be deleted"),
     FILE_CONVERTING_FAILED("File could not be converted to Base64"),
     CUSTOMER_ALREADY_EXISTS("Customer already exists");
-
 
     private final String description;
 
