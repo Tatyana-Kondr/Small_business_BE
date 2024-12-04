@@ -23,4 +23,5 @@ public interface ProductService {
     void deleteProductById(Long id);
     ProductDto updateProduct(Long id, UpdateProductDto updateProductDto);
     Page<ProductDto> findAllProducts(Pageable pageable);
+    Page<ProductDto> findProductsByCategoryId(int categoryId, Pageable pageable);
 }
