@@ -26,7 +26,7 @@ public class CustomerDto {
 
     String customerNumber;
 
-    AddressDto addressDto;
+    Address address;
 
     String phone;
 
