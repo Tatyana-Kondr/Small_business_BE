@@ -35,7 +35,7 @@ public class Customer {
     @Size(min = 3, max = 6, message = "{validation.name.size}")
     private String customerNumber;
 
-    //@Embedded
+    @Embedded
     private Address address;
 
     @Column
