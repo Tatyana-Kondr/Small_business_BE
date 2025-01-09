@@ -62,6 +62,7 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
 
     @Override
     public ProductCategoryDto updateProductCategory(int id, NewProductCategoryDto newProductCategoryDto) {
+        // TODO ввела неверны id, сделать метод: нати по id
         ProductCategory productCategory = productCategoryRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Product category not found"));
 
