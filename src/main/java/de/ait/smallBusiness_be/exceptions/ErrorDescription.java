@@ -51,7 +51,9 @@ public enum ErrorDescription {
     UNSUPPORTED_OPERATION("Unsupported operation on the filesystem"),
     FILE_DELETE_FAILED("File could not be deleted"),
     FILE_CONVERTING_FAILED("File could not be converted to Base64"),
-    CUSTOMER_ALREADY_EXISTS("Customer already exists");
+    CUSTOMER_ALREADY_EXISTS("Customer already exists"),
+    LIST_CUSTOMERS_IS_EMPTY("List of customers is empty"),
+    CUSTOMER_NOT_FOUND("Customer not found");
 
     private final String description;
 
