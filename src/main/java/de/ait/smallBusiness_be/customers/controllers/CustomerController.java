@@ -5,6 +5,8 @@ import de.ait.smallBusiness_be.customers.dto.CustomerDto;
 import de.ait.smallBusiness_be.customers.dto.NewCustomerDto;
 import de.ait.smallBusiness_be.customers.services.CustomerService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -17,15 +19,35 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class CustomerController implements CustomersApi {
  private final CustomerService customerService;
-// final AuthService authService;
 
     @Override
-    public CustomerDto createCustomer(NewCustomerDto newCustomerDto
-    //, AuthenticatedUser currentUser
-    ) {
-        // User authenticatedUser = currentUser.getUser();
-        return customerService.createCustomer(newCustomerDto
-        //, authenticatedUser
-        );
+    public CustomerDto createCustomer(NewCustomerDto newCustomerDto) {
+
+        return customerService.createCustomer(newCustomerDto);
+    }
+
+    @Override
+    public Page<CustomerDto> getAllCustomers(Pageable pageable, String sort) {
+        return customerService.getAllCustomers(pageable);
+    }
+
+    @Override
+    public Page<CustomerDto> getAllCustomersWithCustomerNumber(Pageable pageable, String sort) {
+        return customerService.getAllCustomersWithCustomerNumber(pageable);
+    }
+
+    @Override
+    public CustomerDto getCustomerById(Long id) {
+        return customerService.getCustomerById(id);
+    }
+
+    @Override
+    public CustomerDto updateCustomer(Long id, NewCustomerDto newCustomerDto) {
+        return customerService.updateCustomer(id, newCustomerDto);
+    }
+
+    @Override
+    public void deleteCustomer(Long id) {
+        customerService.deleteCustomer(id);
     }
 }
