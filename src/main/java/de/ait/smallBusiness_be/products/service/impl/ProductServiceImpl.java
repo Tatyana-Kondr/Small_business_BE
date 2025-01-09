@@ -17,6 +17,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -37,6 +38,7 @@ public class ProductServiceImpl implements ProductService {
     final ModelMapper modelMapper;
 
     @Override
+    @Transactional
     public ProductDto addProduct(NewProductDto newProductDto) {
 
         boolean exists = productRepository
@@ -77,6 +79,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional
     public ProductDto updateProduct(Long id, UpdateProductDto updateProductDto){
 
     Product product = productRepository.findById(id)
