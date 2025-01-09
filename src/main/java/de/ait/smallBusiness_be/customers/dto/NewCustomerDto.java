@@ -34,30 +34,6 @@ public class NewCustomerDto {
 
     AddressDto addressDto;
 
-//    @Length(min = 4, max = 10, message = "{javax.validation.constraints.Size.message}")
-//    @Pattern(regexp = POSTAL_CODE_REGEX, message = "{address.postalCode.Pattern.message}")
-//    @Schema(description = "Postal code", example = "60365")
-//    String postalCode;
-//
-//    @NotBlank(message = "{javax.validation.constraints.NotBlank.message}")
-//    @Schema(description = "Country name", example = "DE")
-//    String country;
-//
-//    @Length(min = 3, max = 50, message = "{javax.validation.constraints.Size.message}")
-//    @Pattern(regexp = CITY_REGEX, message = "{address.city.Pattern.message}")
-//    @Schema(description = "City name", example = "Frankfurt")
-//    String city;
-//
-//    @Length(min = 3, max = 100, message = "{javax.validation.constraints.Size.message}")
-//    @Pattern(regexp = STREET_REGEX, message = "{address.street.Pattern.message}")
-//    @Schema(description = "Street name", example = "Willy-Brandt-Platz")
-//    String street;
-//
-//    @Length(min = 1, max = 6, message = "{javax.validation.constraints.Size.message}")
-//    @Pattern(regexp = BUILDING_REGEX, message = "{address.building.Pattern.message}")
-//    @Schema(description = "Building number", example = "12")
-//    String building;
-
     @Pattern(regexp = PHONE_REGEX, message = "{phone.Pattern.message}")
     @Schema(description = "The customer's phone number", example = "+4917654875612")
     String phone;
