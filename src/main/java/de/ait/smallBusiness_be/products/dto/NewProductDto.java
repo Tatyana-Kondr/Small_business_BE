@@ -36,10 +36,5 @@ public class NewProductDto{
     BigDecimal purchasingPrice;
 
     @NotNull(message = "{validation.notNull}")
-    @Schema(description = "Product's category", example = "{\n" +
-            "    \"id\": 7,\n" +
-            "    \"name\": \"ELEKTRIK\",\n" +
-            "    \"artName\": \"EL\"\n" +
-            "  }")
     ProductCategory productCategory;
 }
