@@ -65,16 +65,14 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ProductDto getProductById(Long id) {
 
-        Product product = productRepository.findById(id)
-                .orElseThrow(() -> new RestApiException(ErrorDescription.PRODUCT_NOT_FOUND, HttpStatus.NOT_FOUND));
+        Product product = getProductOrThrow(id);
         return modelMapper.map(product, ProductDto.class);
     }
 
     @Override
     public void deleteProductById(Long id) {
 
-        Product product = productRepository.findById(id)
-                .orElseThrow(() -> new RestApiException(ErrorDescription.PRODUCT_NOT_FOUND, HttpStatus.NOT_FOUND));
+        Product product = getProductOrThrow(id);
         productRepository.delete(product);
     }
 
@@ -82,8 +80,7 @@ public class ProductServiceImpl implements ProductService {
     @Transactional
     public ProductDto updateProduct(Long id, UpdateProductDto updateProductDto){
 
-    Product product = productRepository.findById(id)
-            .orElseThrow(() -> new RestApiException(ErrorDescription.PRODUCT_NOT_FOUND, HttpStatus.NOT_FOUND));
+    Product product = getProductOrThrow(id);
         product.setName(updateProductDto.getName());
         product.setArticle(updateProductDto.getArticle());
         product.setPurchasingPrice(updateProductDto.getPurchasingPrice());
@@ -137,5 +134,10 @@ public class ProductServiceImpl implements ProductService {
         }
 
         return productsPage.map(product -> modelMapper.map(product, ProductDto.class));
+    }
+
+    private Product getProductOrThrow(Long id) {
+        return productRepository.findById(id)
+                .orElseThrow(() -> new RestApiException(ErrorDescription.PRODUCT_NOT_FOUND, HttpStatus.NOT_FOUND));
     }
 }

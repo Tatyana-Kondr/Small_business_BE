@@ -43,17 +43,15 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
     }
 
     @Override
-    public ProductCategoryDto getProductCategoryById(int id) {
-        ProductCategory productCategory = productCategoryRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Product category not found"));
+    public ProductCategoryDto getProductCategoryById(Integer id) {
+        ProductCategory productCategory = getProductCategoryOrThrow(id);
 
         return modelMapper.map(productCategory, ProductCategoryDto.class);
     }
 
     @Override
-    public ProductCategoryDto deleteProductCategoryById(int id) {
-        ProductCategory productCategory = productCategoryRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Product category not found"));
+    public ProductCategoryDto deleteProductCategoryById(Integer id) {
+        ProductCategory productCategory = getProductCategoryOrThrow(id);
 
         productCategoryRepository.delete(productCategory);
 
@@ -61,10 +59,8 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
     }
 
     @Override
-    public ProductCategoryDto updateProductCategory(int id, NewProductCategoryDto newProductCategoryDto) {
-        // TODO ввела неверны id, сделать метод: нати по id
-        ProductCategory productCategory = productCategoryRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Product category not found"));
+    public ProductCategoryDto updateProductCategory(Integer id, NewProductCategoryDto newProductCategoryDto) {
+        ProductCategory productCategory = getProductCategoryOrThrow(id);
 
         // Обновляем поля
         productCategory.setName(newProductCategoryDto.getName());
@@ -82,5 +78,11 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
         return categories.stream()
                 .map(category -> modelMapper.map(category, ProductCategoryDto.class))
                 .collect(Collectors.toList());
+    }
+
+    private ProductCategory getProductCategoryOrThrow(Integer id) {
+        return productCategoryRepository
+                .findById(id)
+                .orElseThrow(() -> new RestApiException(ErrorDescription.CATEGORY_NOT_FOUND, HttpStatus.NOT_FOUND));
     }
 }
