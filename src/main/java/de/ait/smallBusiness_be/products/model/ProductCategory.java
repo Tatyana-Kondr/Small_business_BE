@@ -28,7 +28,7 @@ public class ProductCategory {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private Integer id;
 
     @Column(nullable = false, unique = true)
     @NotBlank(message = "{validation.notBlank}")

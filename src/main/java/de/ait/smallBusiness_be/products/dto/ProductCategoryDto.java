@@ -18,7 +18,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ProductCategoryDto{
-        int id;
+        Integer id;
         String name;
         String artName;
 }
