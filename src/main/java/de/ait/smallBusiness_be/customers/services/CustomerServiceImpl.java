@@ -50,7 +50,7 @@ public class CustomerServiceImpl implements  CustomerService{
         Page<Customer> customers = customerRepository.findAll(pageable);
 
         if (customers.isEmpty()) {
-            throw new RestApiException(ErrorDescription.LIST_CUSTOMERS_IS_EMPTY, HttpStatus.NOT_FOUND);
+            throw new RestApiException(ErrorDescription.LIST_IS_EMPTY, HttpStatus.NOT_FOUND);
         }
         return customers.map(customer -> modelMapper.map(customer, CustomerDto.class));
     }
