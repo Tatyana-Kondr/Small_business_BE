@@ -52,7 +52,7 @@ public enum ErrorDescription {
     FILE_DELETE_FAILED("File could not be deleted"),
     FILE_CONVERTING_FAILED("File could not be converted to Base64"),
     CUSTOMER_ALREADY_EXISTS("Customer already exists"),
-    LIST_CUSTOMERS_IS_EMPTY("List of customers is empty"),
+    LIST_IS_EMPTY("List is empty"),
     CUSTOMER_NOT_FOUND("Customer not found");
 
     private final String description;
