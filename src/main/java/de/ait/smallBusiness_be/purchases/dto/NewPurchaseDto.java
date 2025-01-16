@@ -67,5 +67,8 @@ public class NewPurchaseDto {
     @Schema(description = "Total amount", example = "146.37")
     BigDecimal total; // Общая сумма
 
-    List<PurchaseItem> purchaseItems = new ArrayList<>(); // может лучше сделать отдельное ДТО?
+    @Schema(description = "Status of payment", example = "NICHT_BEZAHLT")
+    String paymentStatus;
+
+    List<NewPurchaseItemDto> purchaseItems;
 }
