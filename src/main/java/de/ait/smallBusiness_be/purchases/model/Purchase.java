@@ -72,6 +72,10 @@ public class Purchase {
     @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
     BigDecimal total; // Общая сумма
 
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    PaymentStatus paymentStatus;
+
     @OneToMany(mappedBy = "purchase", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     List<PurchaseItem> purchaseItems = new ArrayList<>(); // Список позиций
