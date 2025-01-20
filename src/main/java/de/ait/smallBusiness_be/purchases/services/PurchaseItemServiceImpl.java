@@ -39,12 +39,12 @@ public class PurchaseItemServiceImpl implements PurchaseItemService {
     }
 
     @Override
-    public Page<PurchaseItemDto> getAllPurchaseItemsByPurchaseId(Pageable pageable, Long id) {
+    public Page<PurchaseItemDto> getAllPurchaseItemsByPurchaseId(Pageable pageable, Long purchaseId) {
 
-        if (!purchaseRepository.existsById(id)) {
-            throw new IllegalArgumentException("Purchase not found with ID: " + id);
+        if (!purchaseRepository.existsById(purchaseId)) {
+            throw new IllegalArgumentException("Purchase not found with ID: " + purchaseId);
         }
-        return purchaseItemRepository.findByPurchaseId(pageable, id)
+        return purchaseItemRepository.findByPurchaseId(pageable, purchaseId)
                 .map(item -> modelMapper.map(item, PurchaseItemDto.class));
     }
 
