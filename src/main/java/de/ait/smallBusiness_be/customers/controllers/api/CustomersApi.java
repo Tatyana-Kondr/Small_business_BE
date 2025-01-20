@@ -131,8 +131,8 @@ public interface CustomersApi {
     //@PreAuthorize("isAuthenticated()")
     @PutMapping("/{id}")
     @Operation(
-            summary = "Update a new customer",
-            description = "Update a new customer. Admin is allowed.")
+            summary = "Update the customer",
+            description = "Update the customer. Admin is allowed.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
                     description = "Customer updated successfully.",
@@ -173,7 +173,7 @@ public interface CustomersApi {
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = String.class))),
             @ApiResponse(responseCode = "403",
-                    description = "The user is not the owner of the restaurant.",
+                    description = "Forbidden.",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponseDto.class))),
             @ApiResponse(responseCode = "404",
