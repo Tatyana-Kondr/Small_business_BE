@@ -22,7 +22,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @Tags(
-        @Tag(name = "Products")
+        @Tag(name = "Product controller")
 )
 @RequestMapping("/api/products")
 public interface ProductsApi {
