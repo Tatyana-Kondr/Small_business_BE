@@ -4,6 +4,9 @@ import de.ait.smallBusiness_be.customers.dao.CustomerRepository;
 import de.ait.smallBusiness_be.customers.model.Customer;
 import de.ait.smallBusiness_be.exceptions.ErrorDescription;
 import de.ait.smallBusiness_be.exceptions.RestApiException;
+import de.ait.smallBusiness_be.products.dao.ProductRepository;
+import de.ait.smallBusiness_be.products.model.Product;
+import de.ait.smallBusiness_be.purchases.dao.PurchaseItemRepository;
 import de.ait.smallBusiness_be.purchases.dao.PurchaseRepository;
 import de.ait.smallBusiness_be.purchases.dto.NewPurchaseDto;
 import de.ait.smallBusiness_be.purchases.dto.PurchaseDto;
@@ -19,6 +22,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 16.01.2025
@@ -33,7 +38,8 @@ public class PurchaseServiceImpl implements PurchaseService{
 
     private final PurchaseRepository purchaseRepository;
     private final CustomerRepository customerRepository;
-    private final PurchaseItemService purchaseItemService;
+    private final ProductRepository productRepository;
+    private final PurchaseItemRepository purchaseItemRepository;
     private final ModelMapper modelMapper;
 
     @Override
@@ -41,18 +47,36 @@ public class PurchaseServiceImpl implements PurchaseService{
     public PurchaseDto createPurchase(NewPurchaseDto newPurchaseDto) {
         Customer customer = customerRepository.findById(newPurchaseDto.getVendorId())
                 .orElseThrow(() -> new EntityNotFoundException("Vendor not found"));
+
         Purchase purchase = modelMapper.map(newPurchaseDto, Purchase.class);
         purchase.setVendor(customer);
-        Purchase savedPurchase = purchaseRepository.save(purchase);
 
-        // После сохранения закупки, сохраняем элементы закупки (PurchaseItems)
-        if (newPurchaseDto.getPurchaseItems() != null) {
-            newPurchaseDto.getPurchaseItems().forEach(newPurchaseItemDto -> {
-                // Присваиваем правильный ID для каждого элемента и сохраняем его
-                //newPurchaseItemDto.setPurchaseId(savedPurchase.getId());
-                purchaseItemService.createPurchaseItem(newPurchaseItemDto);
-            });
+        // Проверяем и добавляем PurchaseItem к Purchase
+        if (newPurchaseDto.getPurchaseItems() != null && !newPurchaseDto.getPurchaseItems().isEmpty()) {
+            List<PurchaseItem> purchaseItems = newPurchaseDto.getPurchaseItems().stream()
+                    .map(newPurchaseItemDto -> {
+                        // Находим продукт по ID
+                        Product product = productRepository.findById(newPurchaseItemDto.getProduct().getId())
+                                .orElseThrow(() -> new IllegalArgumentException(
+                                        "Product not found with ID: " + newPurchaseItemDto.getProduct().getId()
+                                ));
+
+                        // Создаем PurchaseItem и устанавливаем продукт
+                        PurchaseItem purchaseItem = modelMapper.map(newPurchaseItemDto, PurchaseItem.class);
+                        purchaseItem.setProduct(product);
+
+                        // Устанавливаем связь с Purchase
+                        purchaseItem.setPurchase(purchase);
+
+                        return purchaseItem;
+                    })
+                    .collect(Collectors.toList());
+
+            // Устанавливаем PurchaseItems в Purchase
+            purchase.setPurchaseItems(purchaseItems);
         }
+
+        Purchase savedPurchase = purchaseRepository.save(purchase);
 
         return modelMapper.map(savedPurchase, PurchaseDto.class);
     }
