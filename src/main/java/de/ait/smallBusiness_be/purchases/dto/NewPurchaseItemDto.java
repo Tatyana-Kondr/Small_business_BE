@@ -29,12 +29,8 @@ import java.math.BigDecimal;
 public class NewPurchaseItemDto {
 
     @NotNull(message = "{validation.notNull}")
-    @Schema(description = "Product's id", example = "1548")
-    Product productId;
-
-    @NotNull(message = "{validation.notNull}")
-    @Schema(description = "Purchase's id", example = "1")
-    Purchase purchaseId;
+   // @Schema(description = "Product's id", example = "1548")
+    Product product;
 
     @NotNull(message = "{validation.notNull}")
     @Schema(description = "Amount without percentage", example = "123.00")
