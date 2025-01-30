@@ -31,14 +31,13 @@ public class PurchaseItemServiceImpl implements PurchaseItemService {
     private final ModelMapper modelMapper;
 
     @Override
-    public PurchaseItemDto createPurchaseItem(NewPurchaseItemDto newPurchaseItemDto) {
+    public PurchaseItemDto createPurchaseItem(NewPurchaseItemDto newPurchaseItemDto) {  //если нужно добавлять PurchaseItem в уже существующую закупку (Purchase)
 
-        //Purchase purchase = newPurchaseItemDto.getPurchase().;
-        Product product = productRepository.findById(newPurchaseItemDto.getProductId().getId())
-                .orElseThrow(() -> new IllegalArgumentException("Product not found with ID: " + newPurchaseItemDto.getProductId()));
+        Product product = productRepository.findById(newPurchaseItemDto.getProduct().getId())
+                .orElseThrow(() -> new IllegalArgumentException("Product not found with ID: " + newPurchaseItemDto.getProduct().getId()));
 
         PurchaseItem purchaseItem = modelMapper.map(newPurchaseItemDto, PurchaseItem.class);
-        //purchaseItem.setPurchase(purchase);
+
         purchaseItem.setProduct(product);
         PurchaseItem savedPurchaseItem = purchaseItemRepository.save(purchaseItem);
         return modelMapper.map(savedPurchaseItem, PurchaseItemDto.class);
@@ -65,11 +64,7 @@ public class PurchaseItemServiceImpl implements PurchaseItemService {
     public PurchaseItemDto updatePurchaseItem(Long id, NewPurchaseItemDto newPurchaseItemDto) {
         PurchaseItem purchaseItem =  purchaseItemRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Purchase item not found with ID: " + id));
-        Purchase purchase = purchaseRepository.findById(newPurchaseItemDto.getPurchaseId().getId())
-                .orElseThrow(() -> new IllegalArgumentException("Purchase not found with ID: " + newPurchaseItemDto.getPurchaseId()));
-
         modelMapper.map(newPurchaseItemDto, purchaseItem);
-        purchaseItem.setPurchase(purchase);
         PurchaseItem updatedPurchaseItem = purchaseItemRepository.save(purchaseItem);
 
         return modelMapper.map(updatedPurchaseItem, PurchaseItemDto.class);
