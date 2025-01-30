@@ -31,15 +31,24 @@ public class PurchaseItemServiceImpl implements PurchaseItemService {
     private final ModelMapper modelMapper;
 
     @Override
-    public PurchaseItemDto createPurchaseItem(NewPurchaseItemDto newPurchaseItemDto) {  //если нужно добавлять PurchaseItem в уже существующую закупку (Purchase)
+    public PurchaseItemDto createPurchaseItem(NewPurchaseItemDto newPurchaseItemDto, Long purchaseId) {//если нужно добавлять PurchaseItem в уже существующую закупку (Purchase)
+
+        if (purchaseId == null) {
+            throw new IllegalArgumentException("Purchase ID must not be null");
+        }
+
+        Purchase purchase = purchaseRepository.findById(purchaseId)
+                .orElseThrow(() -> new IllegalArgumentException("Purchase not found with ID: " + purchaseId));
 
         Product product = productRepository.findById(newPurchaseItemDto.getProduct().getId())
                 .orElseThrow(() -> new IllegalArgumentException("Product not found with ID: " + newPurchaseItemDto.getProduct().getId()));
 
         PurchaseItem purchaseItem = modelMapper.map(newPurchaseItemDto, PurchaseItem.class);
-
         purchaseItem.setProduct(product);
+        purchaseItem.setPurchase(purchase);
+
         PurchaseItem savedPurchaseItem = purchaseItemRepository.save(purchaseItem);
+
         return modelMapper.map(savedPurchaseItem, PurchaseItemDto.class);
     }
 

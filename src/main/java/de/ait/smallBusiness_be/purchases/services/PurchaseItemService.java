@@ -7,7 +7,7 @@ import org.springframework.data.domain.Pageable;
 
 
 public interface PurchaseItemService {
-    PurchaseItemDto createPurchaseItem(NewPurchaseItemDto newPurchaseItemDto);
+    PurchaseItemDto createPurchaseItem(NewPurchaseItemDto newPurchaseItemDto, Long purchaseId);
     Page<PurchaseItemDto> getAllPurchaseItemsByPurchaseId(Pageable pageable, Long purchaseId);
     PurchaseItemDto getPurchaseItemById(Long id);
     PurchaseItemDto updatePurchaseItem(Long id, NewPurchaseItemDto newPurchaseItemDto);
