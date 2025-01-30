@@ -28,7 +28,7 @@ import java.util.List;
 @Schema(name = "New Purchase", description = "Data for registration of new purchases")
 public class NewPurchaseDto {
 
-    @NotBlank(message = "{validation.notBlank}")
+    @NotNull(message = "{validation.notNull}")
     @Schema(description = "Customer's id", example = "1")
     Long vendorId;
 

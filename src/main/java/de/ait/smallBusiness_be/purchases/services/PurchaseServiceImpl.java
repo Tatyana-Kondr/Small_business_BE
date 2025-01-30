@@ -7,10 +7,7 @@ import de.ait.smallBusiness_be.exceptions.RestApiException;
 import de.ait.smallBusiness_be.purchases.dao.PurchaseRepository;
 import de.ait.smallBusiness_be.purchases.dto.NewPurchaseDto;
 import de.ait.smallBusiness_be.purchases.dto.PurchaseDto;
-import de.ait.smallBusiness_be.purchases.model.PaymentStatus;
-import de.ait.smallBusiness_be.purchases.model.Purchase;
-import de.ait.smallBusiness_be.purchases.model.TypeOfDocument;
-import de.ait.smallBusiness_be.purchases.model.TypeOfOperation;
+import de.ait.smallBusiness_be.purchases.model.*;
 import jakarta.persistence.EntityNotFoundException;
 
 import lombok.RequiredArgsConstructor;
@@ -36,16 +33,27 @@ public class PurchaseServiceImpl implements PurchaseService{
 
     private final PurchaseRepository purchaseRepository;
     private final CustomerRepository customerRepository;
+    private final PurchaseItemService purchaseItemService;
     private final ModelMapper modelMapper;
 
     @Override
     @Transactional
     public PurchaseDto createPurchase(NewPurchaseDto newPurchaseDto) {
         Customer customer = customerRepository.findById(newPurchaseDto.getVendorId())
-                .orElseThrow(() -> new EntityNotFoundException("Customer not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Vendor not found"));
         Purchase purchase = modelMapper.map(newPurchaseDto, Purchase.class);
         purchase.setVendor(customer);
         Purchase savedPurchase = purchaseRepository.save(purchase);
+
+        // После сохранения закупки, сохраняем элементы закупки (PurchaseItems)
+        if (newPurchaseDto.getPurchaseItems() != null) {
+            newPurchaseDto.getPurchaseItems().forEach(newPurchaseItemDto -> {
+                // Присваиваем правильный ID для каждого элемента и сохраняем его
+                //newPurchaseItemDto.setPurchaseId(savedPurchase.getId());
+                purchaseItemService.createPurchaseItem(newPurchaseItemDto);
+            });
+        }
+
         return modelMapper.map(savedPurchase, PurchaseDto.class);
     }
 

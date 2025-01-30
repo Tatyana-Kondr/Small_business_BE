@@ -1,5 +1,7 @@
 package de.ait.smallBusiness_be.purchases.services;
 
+import de.ait.smallBusiness_be.products.dao.ProductRepository;
+import de.ait.smallBusiness_be.products.model.Product;
 import de.ait.smallBusiness_be.purchases.dao.PurchaseItemRepository;
 import de.ait.smallBusiness_be.purchases.dao.PurchaseRepository;
 import de.ait.smallBusiness_be.purchases.dto.NewPurchaseItemDto;
@@ -25,15 +27,19 @@ public class PurchaseItemServiceImpl implements PurchaseItemService {
 
     private final PurchaseItemRepository purchaseItemRepository;
     private final PurchaseRepository purchaseRepository;
+    private final ProductRepository productRepository;
     private final ModelMapper modelMapper;
 
     @Override
     public PurchaseItemDto createPurchaseItem(NewPurchaseItemDto newPurchaseItemDto) {
 
-        Purchase purchase = purchaseRepository.findById(newPurchaseItemDto.getPurchaseId())
-                .orElseThrow(() -> new IllegalArgumentException("Purchase not found with ID: " + newPurchaseItemDto.getPurchaseId()));
+        //Purchase purchase = newPurchaseItemDto.getPurchase().;
+        Product product = productRepository.findById(newPurchaseItemDto.getProductId().getId())
+                .orElseThrow(() -> new IllegalArgumentException("Product not found with ID: " + newPurchaseItemDto.getProductId()));
+
         PurchaseItem purchaseItem = modelMapper.map(newPurchaseItemDto, PurchaseItem.class);
-        purchaseItem.setPurchase(purchase);
+        //purchaseItem.setPurchase(purchase);
+        purchaseItem.setProduct(product);
         PurchaseItem savedPurchaseItem = purchaseItemRepository.save(purchaseItem);
         return modelMapper.map(savedPurchaseItem, PurchaseItemDto.class);
     }
@@ -59,7 +65,7 @@ public class PurchaseItemServiceImpl implements PurchaseItemService {
     public PurchaseItemDto updatePurchaseItem(Long id, NewPurchaseItemDto newPurchaseItemDto) {
         PurchaseItem purchaseItem =  purchaseItemRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Purchase item not found with ID: " + id));
-        Purchase purchase = purchaseRepository.findById(newPurchaseItemDto.getPurchaseId())
+        Purchase purchase = purchaseRepository.findById(newPurchaseItemDto.getPurchaseId().getId())
                 .orElseThrow(() -> new IllegalArgumentException("Purchase not found with ID: " + newPurchaseItemDto.getPurchaseId()));
 
         modelMapper.map(newPurchaseItemDto, purchaseItem);
