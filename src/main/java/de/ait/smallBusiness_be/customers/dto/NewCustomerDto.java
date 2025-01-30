@@ -28,7 +28,7 @@ public class NewCustomerDto {
     @Schema(description = "Customer's name", example = "Amazon")
     String name;
 
-    @Size(min = 3, max = 6, message = "{validation.name.size}")
+    @Size( max = 6, message = "{validation.name.size}")
     @Schema(description = "Customer's number", example = "12345")
     String customerNumber;
 
