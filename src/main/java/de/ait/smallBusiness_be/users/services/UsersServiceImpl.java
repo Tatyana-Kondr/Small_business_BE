@@ -42,26 +42,26 @@ public class UsersServiceImpl implements UsersService {
 
         User user = saveNewUser(newUser);
 
-        // Аутентифицируем пользователя после регистрации
-        authenticateUser(user);
+        // Аутентифицируем пользователя сразу после регистрации
+        //authenticateUser(user);
 
         return modelMapper.map(user, UserDto.class);
     }
 
-    private void authenticateUser(User user) {
-        // Создаем объект Authentication
-        UsernamePasswordAuthenticationToken authenticationToken =
-                new UsernamePasswordAuthenticationToken(
-                        new AuthenticatedUser(user), // principal
-                        null, // credentials
-                        Collections.singleton(new SimpleGrantedAuthority(user.getRole().toString())) // роли
-                );
-
-        // Устанавливаем Authentication в SecurityContext
-        SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-
-        System.out.println("User authenticated: " + user.getEmail());
-    }
+//    private void authenticateUser(User user) {
+//        // Создаем объект Authentication
+//        UsernamePasswordAuthenticationToken authenticationToken =
+//                new UsernamePasswordAuthenticationToken(
+//                        new AuthenticatedUser(user), // principal
+//                        null, // credentials
+//                        Collections.singleton(new SimpleGrantedAuthority(user.getRole().toString())) // роли
+//                );
+//
+//        // Устанавливаем Authentication в SecurityContext
+//        SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+//
+//        System.out.println("User authenticated: " + user.getEmail());
+//    }
 
     private void checkIfExistsByEmail(NewUserDto newUser) {
         if (usersRepository.existsByEmail(newUser.getEmail())) {
@@ -84,17 +84,12 @@ public class UsersServiceImpl implements UsersService {
         return savedUser;
     }
 
-//    @Override
-//    public void run(String... args) throws Exception {
-//        if (!usersRepository.existsByEmail("admin@gmail.com")) {
-//            User admin = User.builder()
-//                    .email("admin@gmail.com")
-//                    .password(passwordEncoder.encode("admin"))
-//                    .role(User.Role.ADMIN)
-//                    .state(User.State.CONFIRMED)
-//                    .build();
-//
-//            usersRepository.save(admin);
-//        }
-//    }
+    public UserDto getUserById(Long currentUserId) {
+        User user = usersRepository.findById(currentUserId).orElseThrow(()->
+                new RestApiException(ErrorDescription.USER_NOT_FOUND, HttpStatus.NOT_FOUND));
+        return modelMapper.map(user, UserDto.class);
+    }
+
+
+
 }
