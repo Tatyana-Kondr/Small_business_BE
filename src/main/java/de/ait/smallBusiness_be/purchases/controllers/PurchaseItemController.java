@@ -23,8 +23,8 @@ public class PurchaseItemController implements PurchaseItemsApi {
     private final PurchaseItemService purchaseItemService;
 
     @Override
-    public PurchaseItemDto createPurchaseItem(NewPurchaseItemDto newPurchaseItemDto) {
-        return purchaseItemService.createPurchaseItem(newPurchaseItemDto);
+    public PurchaseItemDto addPurchaseItem(NewPurchaseItemDto newPurchaseItemDto, Long purchaseId) {
+        return purchaseItemService.createPurchaseItem(newPurchaseItemDto, purchaseId);
     }
 
     @Override
