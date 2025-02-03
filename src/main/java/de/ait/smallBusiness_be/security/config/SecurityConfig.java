@@ -2,22 +2,22 @@ package de.ait.smallBusiness_be.security.config;
 
 
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.ProviderManager;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
 
 /**
  * SmallBusiness_BE
@@ -47,41 +47,46 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(AUTH_WHITELIST).permitAll() // Swagger доступен всем
                         .requestMatchers(HttpMethod.POST, "/api/users/register","/api/auth/login", "/api/auth/logout").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/products/**", "api/product-categories/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/products", "api/product-categories", "api/customers").permitAll()
-                        .requestMatchers(HttpMethod.PUT, "/api/products/{id}", "api/product-categories/{id}").permitAll()
-                        .requestMatchers(HttpMethod.DELETE, "/api/products/{id}", "api/product-categories/{id}").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/product-categories").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/product-categories").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/product-categories").hasRole("ADMIN")
+//                        .requestMatchers(HttpMethod.GET, "/api/products/**", "/api/product-categories/**").permitAll()
+//                        .requestMatchers(HttpMethod.POST, "/api/products", "/api/product-categories", "/api/customers").permitAll()
+//                        .requestMatchers(HttpMethod.PUT, "/api/products/{id}", "/api/product-categories/{id}").permitAll()
+//                        .requestMatchers(HttpMethod.DELETE, "/api/products/{id}", "/api/product-categories/{id}").permitAll()
                         .anyRequest().authenticated()
                 )
 
                 .formLogin(AbstractHttpConfigurer::disable) // Отключаем стандартный formLogin
 
-                .logout(logout -> logout.logoutUrl("/api/auth/logout").logoutSuccessHandler((request, response, authentication) -> {
-                    response.setStatus(HttpServletResponse.SC_OK);
-                }))
+                .logout(logout -> logout
+                        .logoutUrl("/api/auth/logout")
+                        .addLogoutHandler((request, response, auth) -> SecurityContextHolder.clearContext())
+                        .logoutSuccessHandler((request, response, authentication) -> response.setStatus(HttpServletResponse.SC_OK))
+                )
 
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // Используем сессии
+                )
+                .securityContext(securityContext -> securityContext
+                        .securityContextRepository(securityContextRepository())
                 );
-
 
         return http.build();
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(UserDetailsService userDetailsService, PasswordEncoder passwordEncoder) throws Exception {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder);
-
-        return new ProviderManager(authProvider);
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
+        return authConfig.getAuthenticationManager();
     }
 
-    @Autowired
-    public void bindUserDetailsServiceAndPasswordEncoder(UserDetailsService userDetailsServiceImpl,
-                                                         PasswordEncoder passwordEncoder,
-                                                         AuthenticationManagerBuilder builder) throws Exception {
-        builder.userDetailsService(userDetailsServiceImpl)
-                .passwordEncoder(passwordEncoder);
+    @Bean
+    public SecurityContextRepository securityContextRepository() {
+        return new HttpSessionSecurityContextRepository();
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 }
