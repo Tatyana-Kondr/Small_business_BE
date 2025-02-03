@@ -25,11 +25,11 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/products")
 public interface ProductsApi {
 
-    //@PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated()")
     @PostMapping
     @Operation(
             summary = "Add a new product",
-            description = "Create a new product. Admin is allowed.")
+            description = "Create a new product. Only authorized users are allowed.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201",
                     description = "Product created successfully.",
@@ -60,7 +60,7 @@ public interface ProductsApi {
     @GetMapping("/{id}")
     @Operation(
             summary = "Get product by ID",
-            description = "Retrieve a product by its ID. Allowed to all users.")
+            description = "Retrieve a product by its ID. Only authorized users are allowed.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
                     description = "Product retrieved successfully.",
@@ -79,11 +79,11 @@ public interface ProductsApi {
     ProductDto getProductById(@PathVariable Long id);
 
 
-    //@PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated()")
     @PutMapping("/{id}")
     @Operation(
             summary = "Update product by ID",
-            description = "Update an existing product. Admin is allowed.")
+            description = "Update an existing product. Only authorized users are allowed.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
                     description = "Product updated successfully.",
@@ -115,11 +115,11 @@ public interface ProductsApi {
                                  @RequestBody @Valid UpdateProductDto updateProductDto);
 
 
-    //@PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated()")
     @DeleteMapping("/{id}")
     @Operation(
             summary = "Delete product by ID",
-            description = "Delete an existing product. Admin is allowed.")
+            description = "Delete an existing product. Only authorized users are allowed.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204",
                     description = "Product deleted successfully."),
@@ -140,10 +140,11 @@ public interface ProductsApi {
     void removeProductById(@PathVariable Long id);
 
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping
     @Operation(
             summary = "Get all products",
-            description = "Retrieve a list of all products. Allowed to all users.")
+            description = "Retrieve a list of all products. Only authorized users are allowed.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
                     description = "List of products retrieved successfully.",
@@ -158,10 +159,11 @@ public interface ProductsApi {
     Page<ProductDto> getAllProducts(@PageableDefault(size = 10, sort = "name") Pageable pageable);
 
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/category/{category-id}")
     @Operation(
             summary = "Get all products by category",
-            description = "Retrieve a list of all products by category. Allowed to all users.")
+            description = "Retrieve a list of all products by category. Only authorized users are allowed.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
                     description = "List of products retrieved successfully.",
@@ -175,5 +177,4 @@ public interface ProductsApi {
     @ResponseStatus(HttpStatus.OK)
     Page<ProductDto> getProductsByCategory(@PathVariable("category-id") int categoryId,
                                            @PageableDefault(size = 10, sort = "name") Pageable pageable);
-
 }

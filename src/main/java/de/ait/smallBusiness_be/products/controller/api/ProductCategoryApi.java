@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,7 +22,7 @@ import java.util.List;
 @RequestMapping("api/product-categories")
 public interface ProductCategoryApi {
 
-    //@PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     @PostMapping
     @Operation(
             summary = "Add a new Product category",
@@ -48,10 +49,11 @@ public interface ProductCategoryApi {
     ProductCategoryDto createProductCategory(@RequestBody @Valid NewProductCategoryDto newCategory);
 
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping
     @Operation(
             summary = "Get all categories",
-            description = "Retrieve a list of all Product categories. Allowed to all users.")
+            description = "Retrieve a list of all Product categories. Allowed to authenticated users.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
                     description = "List of Product categories retrieved successfully.",
@@ -66,7 +68,7 @@ public interface ProductCategoryApi {
     List<ProductCategoryDto> getAllProductCategories();
 
 
-    //@PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     @Operation(
             summary = "Get Product category by ID",
@@ -89,7 +91,7 @@ public interface ProductCategoryApi {
     ProductCategoryDto getProductCategoryById(@PathVariable int id);
 
 
-    //@PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     @PutMapping("/{id}")
     @Operation(
             summary = "Update Product category",
@@ -121,7 +123,7 @@ public interface ProductCategoryApi {
                                                  @RequestBody @Valid NewProductCategoryDto updatedCategory);
 
 
-    //@PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     @DeleteMapping("/{id}")
     @Operation(
             summary = "Delete Product category",
