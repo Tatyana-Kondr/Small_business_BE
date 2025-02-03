@@ -16,6 +16,7 @@ import io.swagger.v3.oas.annotations.tags.Tags;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -46,6 +47,8 @@ public interface AuthApi {
     @ResponseStatus(HttpStatus.OK)
     String logout(HttpServletRequest request);
 
+
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Get User Profile", description = "Retrieve information about the authenticated user")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
