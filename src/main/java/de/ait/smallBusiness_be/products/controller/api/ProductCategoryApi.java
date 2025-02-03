@@ -11,7 +11,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -48,6 +47,7 @@ public interface ProductCategoryApi {
     @ResponseStatus(HttpStatus.CREATED)
     ProductCategoryDto createProductCategory(@RequestBody @Valid NewProductCategoryDto newCategory);
 
+
     @GetMapping
     @Operation(
             summary = "Get all categories",
@@ -64,6 +64,7 @@ public interface ProductCategoryApi {
     })
     @ResponseStatus(HttpStatus.OK)
     List<ProductCategoryDto> getAllProductCategories();
+
 
     //@PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
@@ -86,6 +87,7 @@ public interface ProductCategoryApi {
     })
     @ResponseStatus(HttpStatus.OK)
     ProductCategoryDto getProductCategoryById(@PathVariable int id);
+
 
     //@PreAuthorize("hasAuthority('ADMIN')")
     @PutMapping("/{id}")
@@ -115,7 +117,9 @@ public interface ProductCategoryApi {
                             schema = @Schema(type = "string")))
     })
     @ResponseStatus(HttpStatus.OK)
-    ProductCategoryDto updateProductCategoryById(@PathVariable int id, @RequestBody @Valid NewProductCategoryDto updatedCategory);
+    ProductCategoryDto updateProductCategoryById(@PathVariable int id,
+                                                 @RequestBody @Valid NewProductCategoryDto updatedCategory);
+
 
     //@PreAuthorize("hasAuthority('ADMIN')")
     @DeleteMapping("/{id}")

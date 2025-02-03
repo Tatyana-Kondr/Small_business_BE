@@ -16,6 +16,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @Tags(
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 )
 @RequestMapping("/api/products")
 public interface ProductsApi {
+
     //@PreAuthorize("isAuthenticated()")
     @PostMapping
     @Operation(
@@ -51,12 +53,10 @@ public interface ProductsApi {
                             schema = @Schema(type = "string")))
     })
     @ResponseStatus(HttpStatus.CREATED)
-    ProductDto createProduct(
-            @RequestBody @Valid NewProductDto newProductDto
-            //@Parameter(hidden = true)
-            //@AuthenticationPrincipal AuthenticatedUser currentUser
-    );
+    ProductDto createProduct (@RequestBody @Valid NewProductDto newProductDto);
 
+
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     @Operation(
             summary = "Get product by ID",
@@ -69,10 +69,15 @@ public interface ProductsApi {
             @ApiResponse(responseCode = "404",
                     description = "Product not found.",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponseDto.class)))
+                            schema = @Schema(implementation = ErrorResponseDto.class))),
+            @ApiResponse(responseCode = "401",
+                    description = "User unauthorized.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(type = "string")))
     })
     @ResponseStatus(HttpStatus.OK)
     ProductDto getProductById(@PathVariable Long id);
+
 
     //@PreAuthorize("isAuthenticated()")
     @PutMapping("/{id}")
@@ -106,12 +111,8 @@ public interface ProductsApi {
                             schema = @Schema(type = "string")))
     })
     @ResponseStatus(HttpStatus.OK)
-    ProductDto updateProductById(
-            @PathVariable Long id,
-            @RequestBody @Valid UpdateProductDto updateProductDto
-//            , @Parameter(hidden = true)
-//            @AuthenticationPrincipal AuthenticatedUser currentUser
-    );
+    ProductDto updateProductById(@PathVariable Long id,
+                                 @RequestBody @Valid UpdateProductDto updateProductDto);
 
 
     //@PreAuthorize("isAuthenticated()")
@@ -136,11 +137,8 @@ public interface ProductsApi {
                             schema = @Schema(implementation = ErrorResponseDto.class)))
     })
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    void removeProductById(
-            @PathVariable Long id
-//           , @Parameter(hidden = true)
-//            @AuthenticationPrincipal AuthenticatedUser currentUser
-    );
+    void removeProductById(@PathVariable Long id);
+
 
     @GetMapping
     @Operation(
@@ -157,8 +155,8 @@ public interface ProductsApi {
                             schema = @Schema(implementation = ErrorResponseDto.class)))
     })
     @ResponseStatus(HttpStatus.OK)
-    Page<ProductDto> getAllProducts(
-            @PageableDefault(size = 10, sort = "name") Pageable pageable);
+    Page<ProductDto> getAllProducts(@PageableDefault(size = 10, sort = "name") Pageable pageable);
+
 
     @GetMapping("/category/{category-id}")
     @Operation(
@@ -175,9 +173,7 @@ public interface ProductsApi {
                             schema = @Schema(implementation = ErrorResponseDto.class)))
     })
     @ResponseStatus(HttpStatus.OK)
-    Page<ProductDto> getProductsByCategory(
-            @PathVariable("category-id") int categoryId,
-            @PageableDefault(size = 10, sort = "name") Pageable pageable
-            );
+    Page<ProductDto> getProductsByCategory(@PathVariable("category-id") int categoryId,
+                                           @PageableDefault(size = 10, sort = "name") Pageable pageable);
 
 }
