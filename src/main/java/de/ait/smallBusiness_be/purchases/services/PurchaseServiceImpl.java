@@ -15,7 +15,9 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -80,15 +82,31 @@ public class PurchaseServiceImpl implements PurchaseService{
     }
 
     @Override
+    @Transactional
     public Page<PurchaseDto> getAllPurchases(Pageable pageable) {
+        // Проверяем, корректно ли передана сортировка
+        List<String> allowedSortFields = List.of("purchasingDate", "docNr", "amount"); // допустимые поля
+        Sort sort = pageable.getSort();
+
+        for (Sort.Order order : sort) {
+            if (!allowedSortFields.contains(order.getProperty())) {
+                // Если поле неверное, заменяем сортировку по умолчанию
+                pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(Sort.Direction.DESC, "purchasingDate"));
+                break;
+            }
+        }
+
         Page<Purchase> purchases = purchaseRepository.findAll(pageable);
+
         if (purchases.isEmpty()) {
             throw new RestApiException(ErrorDescription.LIST_IS_EMPTY, HttpStatus.NOT_FOUND);
         }
+
         return purchases.map(purchase -> modelMapper.map(purchase, PurchaseDto.class));
     }
 
     @Override
+    @Transactional
     public PurchaseDto getPurchaseById(Long id) {
         Purchase purchase = purchaseRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Purchase not found"));
