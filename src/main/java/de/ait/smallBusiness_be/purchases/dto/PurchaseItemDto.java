@@ -32,6 +32,8 @@ public class PurchaseItemDto {
 
     Integer quantity;
 
+    BigDecimal unitPrice;
+
     BigDecimal totalPrice;
 
     BigDecimal taxPercentage;
