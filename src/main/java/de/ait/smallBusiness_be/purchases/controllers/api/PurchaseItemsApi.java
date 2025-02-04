@@ -29,7 +29,7 @@ import java.math.BigDecimal;
 public interface PurchaseItemsApi {
 
     //@PreAuthorize("isAuthenticated()")
-    @PostMapping
+    @PostMapping("/{purchaseId}")
     @Operation(
             summary = "Add a new purchase item",
             description = "Create a new purchase item. Admin is allowed.")
@@ -53,11 +53,12 @@ public interface PurchaseItemsApi {
                             schema = @Schema(type = "string")))
     })
     @ResponseStatus(HttpStatus.CREATED)
-    PurchaseItemDto createPurchaseItem(
-            @RequestBody @Valid NewPurchaseItemDto newPurchaseItemDto);
+    PurchaseItemDto addPurchaseItem(
+            @RequestBody @Valid NewPurchaseItemDto newPurchaseItemDto,
+            @PathVariable Long purchaseId);
 
     //@PreAuthorize("isAuthenticated()")
-    @GetMapping("/{purchaseId}")
+    @GetMapping("/purchase/{purchaseId}")
     @Operation(
             summary = "Get all items of purchase by purchase_ID ",
             description = "Retrieve a list of all items of purchase.")

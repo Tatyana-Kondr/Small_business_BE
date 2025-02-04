@@ -1,5 +1,7 @@
 package de.ait.smallBusiness_be.purchases.dto;
 
+import de.ait.smallBusiness_be.products.model.Product;
+import de.ait.smallBusiness_be.purchases.model.Purchase;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
@@ -26,16 +28,14 @@ import java.math.BigDecimal;
 @Schema(name = "New PurchaseItem", description = "Data for registration of new purchaseItem")
 public class NewPurchaseItemDto {
 
-    @NotBlank(message = "{validation.notBlank}")
-    @Schema(description = "Product's id", example = "1548")
-    Long productId;
+    @NotNull(message = "{validation.notNull}")
+   // @Schema(description = "Product's id", example = "1548")
+    Product product;
 
-    @NotBlank(message = "{validation.notBlank}")
-    @Schema(description = "Purchase's id", example = "1")
-    Long purchaseId;
+    String productName;
 
     @NotNull(message = "{validation.notNull}")
-    @Schema(description = "Amount without percentage", example = "123.00")
+    @Schema(description = "Quantity", example = "5")
     Integer quantity;
 
     @NotNull(message = "{validation.notNull}")

@@ -1,5 +1,7 @@
 package de.ait.smallBusiness_be.purchases.services;
 
+import de.ait.smallBusiness_be.products.dao.ProductRepository;
+import de.ait.smallBusiness_be.products.model.Product;
 import de.ait.smallBusiness_be.purchases.dao.PurchaseItemRepository;
 import de.ait.smallBusiness_be.purchases.dao.PurchaseRepository;
 import de.ait.smallBusiness_be.purchases.dto.NewPurchaseItemDto;
@@ -25,16 +27,35 @@ public class PurchaseItemServiceImpl implements PurchaseItemService {
 
     private final PurchaseItemRepository purchaseItemRepository;
     private final PurchaseRepository purchaseRepository;
+    private final ProductRepository productRepository;
     private final ModelMapper modelMapper;
 
     @Override
-    public PurchaseItemDto createPurchaseItem(NewPurchaseItemDto newPurchaseItemDto) {
+    public PurchaseItemDto createPurchaseItem(NewPurchaseItemDto newPurchaseItemDto, Long purchaseId) {//если нужно добавлять PurchaseItem в уже существующую закупку (Purchase)
 
-        Purchase purchase = purchaseRepository.findById(newPurchaseItemDto.getPurchaseId())
-                .orElseThrow(() -> new IllegalArgumentException("Purchase not found with ID: " + newPurchaseItemDto.getPurchaseId()));
+        if (purchaseId == null) {
+            throw new IllegalArgumentException("Purchase ID must not be null");
+        }
+
+        Purchase purchase = purchaseRepository.findById(purchaseId)
+                .orElseThrow(() -> new IllegalArgumentException("Purchase not found with ID: " + purchaseId));
+
+        Product product = productRepository.findById(newPurchaseItemDto.getProduct().getId())
+                .orElseThrow(() -> new IllegalArgumentException("Product not found with ID: " + newPurchaseItemDto.getProduct().getId()));
+
         PurchaseItem purchaseItem = modelMapper.map(newPurchaseItemDto, PurchaseItem.class);
+        purchaseItem.setProduct(product);
         purchaseItem.setPurchase(purchase);
+
+        // Если productName в NewPurchaseItemDto не заполнено, берется значение из Product.name
+        if (newPurchaseItemDto.getProductName() == null || newPurchaseItemDto.getProductName().isBlank()) {
+            purchaseItem.setProductName(product.getName());
+        } else {
+            purchaseItem.setProductName(newPurchaseItemDto.getProductName());
+        }
+
         PurchaseItem savedPurchaseItem = purchaseItemRepository.save(purchaseItem);
+
         return modelMapper.map(savedPurchaseItem, PurchaseItemDto.class);
     }
 
@@ -59,11 +80,7 @@ public class PurchaseItemServiceImpl implements PurchaseItemService {
     public PurchaseItemDto updatePurchaseItem(Long id, NewPurchaseItemDto newPurchaseItemDto) {
         PurchaseItem purchaseItem =  purchaseItemRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Purchase item not found with ID: " + id));
-        Purchase purchase = purchaseRepository.findById(newPurchaseItemDto.getPurchaseId())
-                .orElseThrow(() -> new IllegalArgumentException("Purchase not found with ID: " + newPurchaseItemDto.getPurchaseId()));
-
         modelMapper.map(newPurchaseItemDto, purchaseItem);
-        purchaseItem.setPurchase(purchase);
         PurchaseItem updatedPurchaseItem = purchaseItemRepository.save(purchaseItem);
 
         return modelMapper.map(updatedPurchaseItem, PurchaseItemDto.class);

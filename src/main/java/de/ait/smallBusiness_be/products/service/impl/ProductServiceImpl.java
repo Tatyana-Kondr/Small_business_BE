@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -134,6 +135,35 @@ public class ProductServiceImpl implements ProductService {
         }
 
         return productsPage.map(product -> modelMapper.map(product, ProductDto.class));
+    }
+
+    @Override
+    public ProductDto findProductByArticle(String article) {
+        Product product = productRepository.findProductByArticle(article)
+                .orElseThrow(() -> new RestApiException(ErrorDescription.PRODUCT_NOT_FOUND, HttpStatus.NOT_FOUND));
+        return modelMapper.map(product, ProductDto.class);
+    }
+
+    @Override
+    public List<ProductDto> findProductsByVendorArticle(String vendorArticle) {
+        List<Product> products = productRepository.findProductsByVendorArticle(vendorArticle);
+        if (products.isEmpty()){
+            throw new RestApiException(ErrorDescription.LIST_PRODUCTS_IS_EMPTY, HttpStatus.NOT_FOUND);
+        }
+        return products.stream()
+                .map(product -> modelMapper.map(product, ProductDto.class))
+                .toList();
+    }
+
+    @Override
+    public List<ProductDto> findProductsByName(String name) {
+        List<Product> products = productRepository.findProductsByName(name);
+        if (products.isEmpty()){
+            throw new RestApiException(ErrorDescription.LIST_PRODUCTS_IS_EMPTY, HttpStatus.NOT_FOUND);
+        }
+        return products.stream()
+                .map(product -> modelMapper.map(product, ProductDto.class))
+                .toList();
     }
 
     private Product getProductOrThrow(Long id) {
