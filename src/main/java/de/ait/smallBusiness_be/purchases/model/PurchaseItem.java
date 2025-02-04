@@ -40,6 +40,9 @@ public class PurchaseItem {
     Purchase purchase;
 
     @Column(nullable = false)
+    String productName;
+
+    @Column(nullable = false)
     Integer quantity;
 
     @Column(precision = 8, scale = 2)
