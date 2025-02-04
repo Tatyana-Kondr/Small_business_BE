@@ -1,7 +1,5 @@
 package de.ait.smallBusiness_be.products.controller;
 
-
-import de.ait.smallBusiness_be.exceptions.RestApiException;
 import de.ait.smallBusiness_be.products.controller.api.ProductsApi;
 import de.ait.smallBusiness_be.products.dto.NewProductDto;
 import de.ait.smallBusiness_be.products.dto.UpdateProductDto;
@@ -24,48 +22,25 @@ import org.springframework.web.bind.annotation.*;
 public class ProductController implements ProductsApi {
 
     final ProductService productService;
-    // final AuthService authService;
 
     @Override
-    public ProductDto createProduct(
-            NewProductDto newProductDto
-            //, AuthenticatedUser currentUser
-            ) {
-
-        // User authenticatedUser = currentUser.getUser();
-        return productService.addProduct(newProductDto
-                //, authenticatedUser
-        );
+    public ProductDto createProduct(NewProductDto newProductDto) {
+        return productService.addProduct(newProductDto);
     }
 
     @Override
-    public ProductDto getProductById(Long id) throws RestApiException {
+    public ProductDto getProductById(Long id) {
             return productService.getProductById(id);
-
     }
 
     @Override
-    public ProductDto updateProductById(
-            Long id,
-            UpdateProductDto updateProductDto
-            //, AuthenticatedUser currentUser
-    ) {
-        // User authenticatedUser = currentUser.getUser();
-            return productService.updateProduct(
-                    id,
-                    updateProductDto
-                    //, authenticatedUser
-            );
+    public ProductDto updateProductById(Long id, UpdateProductDto updateProductDto) {
+            return productService.updateProduct(id, updateProductDto);
     }
 
     @Override
-    public void removeProductById(Long id
-            //, AuthenticatedUser currentUser
-    ) {
-            // User authenticatedUser = currentUser.getUser();
-               productService.deleteProductById(id
-                //, authenticatedUser
-        );
+    public void removeProductById(Long id) {
+        productService.deleteProductById(id);
     }
 
     @Override
