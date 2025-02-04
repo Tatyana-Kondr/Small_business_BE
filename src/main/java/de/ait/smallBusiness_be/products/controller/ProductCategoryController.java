@@ -1,15 +1,10 @@
 package de.ait.smallBusiness_be.products.controller;
 
-
-import de.ait.smallBusiness_be.exceptions.RestApiException;
 import de.ait.smallBusiness_be.products.controller.api.ProductCategoryApi;
 import de.ait.smallBusiness_be.products.dto.NewProductCategoryDto;
 import de.ait.smallBusiness_be.products.dto.ProductCategoryDto;
 import de.ait.smallBusiness_be.products.service.ProductCategoryService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,7 +21,6 @@ import java.util.List;
 public class ProductCategoryController implements ProductCategoryApi {
 
     final ProductCategoryService productCategoryService;
-    //final AuthService authService;
 
     @Override
     public ProductCategoryDto createProductCategory(NewProductCategoryDto newCategory) {
@@ -50,7 +44,6 @@ public class ProductCategoryController implements ProductCategoryApi {
 
     @Override
     public void removeProductCategoryById(int id) {
-
         productCategoryService.deleteProductCategoryById(id);
     }
 }

@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.*;
  */
 
 @Tags(
-        @Tag(name = "Customers")
+        @Tag(name = "Customer controller")
 )
 @RequestMapping("/api/customers")
 public interface CustomersApi {

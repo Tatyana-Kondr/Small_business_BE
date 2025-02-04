@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 
 @Tags(
-        @Tag(name = "PurchaseItems")
+        @Tag(name = "Purchase Item controller")
 )
 @RequestMapping("/api/purchaseItems")
 public interface PurchaseItemsApi {

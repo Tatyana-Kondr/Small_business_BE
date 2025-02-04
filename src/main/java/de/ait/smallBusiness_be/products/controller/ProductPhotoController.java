@@ -5,6 +5,8 @@ import de.ait.smallBusiness_be.products.model.ProductPhoto;
 import de.ait.smallBusiness_be.products.service.ProductPhotoService;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.tags.Tags;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +18,9 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/products")
 @RequiredArgsConstructor
+@Tags(
+        @Tag(name = "Product Photos controller")
+)
 public class ProductPhotoController {
 
     private final ProductPhotoService productPhotoService;

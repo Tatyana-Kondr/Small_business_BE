@@ -1,7 +1,5 @@
 package de.ait.smallBusiness_be.products.controller.api;
 
-import de.ait.smallBusiness_be.customers.dto.CustomerDto;
-import de.ait.smallBusiness_be.customers.dto.NewCustomerDto;
 import de.ait.smallBusiness_be.exceptions.ErrorResponseDto;
 import de.ait.smallBusiness_be.products.dto.NewProductDto;
 import de.ait.smallBusiness_be.products.dto.ProductDto;
@@ -22,15 +20,16 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @Tags(
-        @Tag(name = "Products")
+        @Tag(name = "Product controller")
 )
 @RequestMapping("/api/products")
 public interface ProductsApi {
-    //@PreAuthorize("isAuthenticated()")
+
+    @PreAuthorize("isAuthenticated()")
     @PostMapping
     @Operation(
             summary = "Add a new product",
-            description = "Create a new product. Admin is allowed.")
+            description = "Create a new product. Only authorized users are allowed.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201",
                     description = "Product created successfully.",
@@ -54,16 +53,14 @@ public interface ProductsApi {
                             schema = @Schema(type = "string")))
     })
     @ResponseStatus(HttpStatus.CREATED)
-    ProductDto createProduct(
-            @RequestBody @Valid NewProductDto newProductDto
-            //@Parameter(hidden = true)
-            //@AuthenticationPrincipal AuthenticatedUser currentUser
-    );
+    ProductDto createProduct (@RequestBody @Valid NewProductDto newProductDto);
 
+
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     @Operation(
             summary = "Get product by ID",
-            description = "Retrieve a product by its ID. Allowed to all users.")
+            description = "Retrieve a product by its ID. Only authorized users are allowed.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
                     description = "Product retrieved successfully.",
@@ -72,16 +69,21 @@ public interface ProductsApi {
             @ApiResponse(responseCode = "404",
                     description = "Product not found.",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponseDto.class)))
+                            schema = @Schema(implementation = ErrorResponseDto.class))),
+            @ApiResponse(responseCode = "401",
+                    description = "User unauthorized.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(type = "string")))
     })
     @ResponseStatus(HttpStatus.OK)
     ProductDto getProductById(@PathVariable Long id);
 
-    //@PreAuthorize("isAuthenticated()")
+
+    @PreAuthorize("isAuthenticated()")
     @PutMapping("/{id}")
     @Operation(
             summary = "Update product by ID",
-            description = "Update an existing product. Admin is allowed.")
+            description = "Update an existing product. Only authorized users are allowed.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
                     description = "Product updated successfully.",
@@ -109,19 +111,15 @@ public interface ProductsApi {
                             schema = @Schema(type = "string")))
     })
     @ResponseStatus(HttpStatus.OK)
-    ProductDto updateProductById(
-            @PathVariable Long id,
-            @RequestBody @Valid UpdateProductDto updateProductDto
-//            , @Parameter(hidden = true)
-//            @AuthenticationPrincipal AuthenticatedUser currentUser
-    );
+    ProductDto updateProductById(@PathVariable Long id,
+                                 @RequestBody @Valid UpdateProductDto updateProductDto);
 
 
-    //@PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated()")
     @DeleteMapping("/{id}")
     @Operation(
             summary = "Delete product by ID",
-            description = "Delete an existing product. Admin is allowed.")
+            description = "Delete an existing product. Only authorized users are allowed.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204",
                     description = "Product deleted successfully."),
@@ -139,16 +137,14 @@ public interface ProductsApi {
                             schema = @Schema(implementation = ErrorResponseDto.class)))
     })
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    void removeProductById(
-            @PathVariable Long id
-//           , @Parameter(hidden = true)
-//            @AuthenticationPrincipal AuthenticatedUser currentUser
-    );
+    void removeProductById(@PathVariable Long id);
 
+
+    @PreAuthorize("isAuthenticated()")
     @GetMapping
     @Operation(
             summary = "Get all products",
-            description = "Retrieve a list of all products. Allowed to all users.")
+            description = "Retrieve a list of all products. Only authorized users are allowed.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
                     description = "List of products retrieved successfully.",
@@ -160,13 +156,14 @@ public interface ProductsApi {
                             schema = @Schema(implementation = ErrorResponseDto.class)))
     })
     @ResponseStatus(HttpStatus.OK)
-    Page<ProductDto> getAllProducts(
-            @PageableDefault(size = 10, sort = "name") Pageable pageable);
+    Page<ProductDto> getAllProducts(@PageableDefault(size = 10, sort = "name") Pageable pageable);
 
+
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/category/{category-id}")
     @Operation(
             summary = "Get all products by category",
-            description = "Retrieve a list of all products by category. Allowed to all users.")
+            description = "Retrieve a list of all products by category. Only authorized users are allowed.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
                     description = "List of products retrieved successfully.",
@@ -178,9 +175,6 @@ public interface ProductsApi {
                             schema = @Schema(implementation = ErrorResponseDto.class)))
     })
     @ResponseStatus(HttpStatus.OK)
-    Page<ProductDto> getProductsByCategory(
-            @PathVariable("category-id") int categoryId,
-            @PageableDefault(size = 10, sort = "name") Pageable pageable
-            );
-
+    Page<ProductDto> getProductsByCategory(@PathVariable("category-id") int categoryId,
+                                           @PageableDefault(size = 10, sort = "name") Pageable pageable);
 }

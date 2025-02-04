@@ -22,7 +22,7 @@ import java.util.List;
 @RequestMapping("api/product-categories")
 public interface ProductCategoryApi {
 
-    //@PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     @PostMapping
     @Operation(
             summary = "Add a new Product category",
@@ -48,10 +48,12 @@ public interface ProductCategoryApi {
     @ResponseStatus(HttpStatus.CREATED)
     ProductCategoryDto createProductCategory(@RequestBody @Valid NewProductCategoryDto newCategory);
 
+
+    @PreAuthorize("isAuthenticated()")
     @GetMapping
     @Operation(
             summary = "Get all categories",
-            description = "Retrieve a list of all Product categories. Allowed to all users.")
+            description = "Retrieve a list of all Product categories. Allowed to authenticated users.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
                     description = "List of Product categories retrieved successfully.",
@@ -65,7 +67,8 @@ public interface ProductCategoryApi {
     @ResponseStatus(HttpStatus.OK)
     List<ProductCategoryDto> getAllProductCategories();
 
-    //@PreAuthorize("isAuthenticated()")
+
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     @Operation(
             summary = "Get Product category by ID",
@@ -87,7 +90,8 @@ public interface ProductCategoryApi {
     @ResponseStatus(HttpStatus.OK)
     ProductCategoryDto getProductCategoryById(@PathVariable int id);
 
-    //@PreAuthorize("hasAuthority('ADMIN')")
+
+    @PreAuthorize("hasAuthority('ADMIN')")
     @PutMapping("/{id}")
     @Operation(
             summary = "Update Product category",
@@ -115,9 +119,11 @@ public interface ProductCategoryApi {
                             schema = @Schema(type = "string")))
     })
     @ResponseStatus(HttpStatus.OK)
-    ProductCategoryDto updateProductCategoryById(@PathVariable int id, @RequestBody @Valid NewProductCategoryDto updatedCategory);
+    ProductCategoryDto updateProductCategoryById(@PathVariable int id,
+                                                 @RequestBody @Valid NewProductCategoryDto updatedCategory);
 
-    //@PreAuthorize("hasAuthority('ADMIN')")
+
+    @PreAuthorize("hasAuthority('ADMIN')")
     @DeleteMapping("/{id}")
     @Operation(
             summary = "Delete Product category",
