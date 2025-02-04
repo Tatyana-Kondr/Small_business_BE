@@ -45,11 +45,6 @@ public class NewPurchaseDto {
     @Schema(description = "Document's number", example = "12345-Aa")
     String documentNumber;
 
-    @DecimalMin(value = "0", message = "{validation.tax.min}")
-    @NotNull(message = "{validation.notNull}")
-    @Schema(description = "Tax percentage", example = "19")
-    BigDecimal tax; // НДС в процентах
-
     @DecimalMin(value = "0.0", message = "{validation.price.min}")
     @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
     @Schema(description = "Amount without percentage", example = "123.00")

@@ -37,8 +37,6 @@ public class PurchaseDto {
 
     String documentNumber;
 
-    BigDecimal tax; // НДС в процентах
-
     BigDecimal subtotal; // Подитог
 
     BigDecimal taxSum; // Сумма налога
