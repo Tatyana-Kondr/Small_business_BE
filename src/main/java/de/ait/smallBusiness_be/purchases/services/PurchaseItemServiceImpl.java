@@ -47,6 +47,13 @@ public class PurchaseItemServiceImpl implements PurchaseItemService {
         purchaseItem.setProduct(product);
         purchaseItem.setPurchase(purchase);
 
+        // Если productName в NewPurchaseItemDto не заполнено, берется значение из Product.name
+        if (newPurchaseItemDto.getProductName() == null || newPurchaseItemDto.getProductName().isBlank()) {
+            purchaseItem.setProductName(product.getName());
+        } else {
+            purchaseItem.setProductName(newPurchaseItemDto.getProductName());
+        }
+
         PurchaseItem savedPurchaseItem = purchaseItemRepository.save(purchaseItem);
 
         return modelMapper.map(savedPurchaseItem, PurchaseItemDto.class);
