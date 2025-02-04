@@ -1,13 +1,14 @@
-package de.ait.smallBusiness_be.customers.controllers.api;
+package de.ait.smallBusiness_be.purchases.controllers.api;
 
 import de.ait.smallBusiness_be.customers.dto.CustomerDto;
-import de.ait.smallBusiness_be.customers.dto.NewCustomerDto;
 import de.ait.smallBusiness_be.exceptions.ErrorResponseDto;
+import de.ait.smallBusiness_be.purchases.dto.NewPurchaseDto;
+import de.ait.smallBusiness_be.purchases.dto.NewPurchaseItemDto;
+import de.ait.smallBusiness_be.purchases.dto.PurchaseDto;
+import de.ait.smallBusiness_be.purchases.dto.PurchaseItemDto;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
-
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -17,39 +18,31 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * @author admin
- * @date 28.11.2024
- */
+import java.math.BigDecimal;
 
 @Tags(
-        @Tag(name = "Customer controller")
+        @Tag(name = "Purchase Item controller")
 )
-@RequestMapping("/api/customers")
-public interface CustomersApi {
+@RequestMapping("/api/purchaseItems")
+public interface PurchaseItemsApi {
 
     //@PreAuthorize("isAuthenticated()")
     @PostMapping
     @Operation(
-            summary = "Add a new customer",
-            description = "Create a new customer. Admin is allowed.")
+            summary = "Add a new purchase item",
+            description = "Create a new purchase item. Admin is allowed.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201",
-                    description = "Customer created successfully.",
+                    description = "Purchase item created successfully.",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = CustomerDto.class))),
+                            schema = @Schema(implementation = PurchaseDto.class))),
             @ApiResponse(responseCode = "400",
-                    description = "Invalid customer data.",
+                    description = "Invalid purchase item data.",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponseDto.class))),
-            @ApiResponse(responseCode = "409",
-                    description = "Customer with the same name and address already exists.",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponseDto.class))),
+
             @ApiResponse(responseCode = "401",
                     description = "User unauthorized.",
                     content = @Content(mediaType = "application/json",
@@ -60,21 +53,21 @@ public interface CustomersApi {
                             schema = @Schema(type = "string")))
     })
     @ResponseStatus(HttpStatus.CREATED)
-    CustomerDto createCustomer(
-            @RequestBody @Valid NewCustomerDto newCustomerDto);
+    PurchaseItemDto createPurchaseItem(
+            @RequestBody @Valid NewPurchaseItemDto newPurchaseItemDto);
 
     //@PreAuthorize("isAuthenticated()")
-    @GetMapping
+    @GetMapping("/{purchaseId}")
     @Operation(
-            summary = "Get all customers",
-            description = "Retrieve a list of all customers.")
+            summary = "Get all items of purchase by purchase_ID ",
+            description = "Retrieve a list of all items of purchase.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
-                    description = "List of Customers retrieved successfully.",
+                    description = "List of Purchase's items retrieved successfully.",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = CustomerDto[].class))),
+                            schema = @Schema(implementation = PurchaseItemDto[].class))),
             @ApiResponse(responseCode = "404",
-                    description = "No customers found.",
+                    description = "No items found for purchase with this id.",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponseDto.class))),
             @ApiResponse(responseCode = "401",
@@ -83,67 +76,42 @@ public interface CustomersApi {
                             schema = @Schema(type = "string")))
     })
     @ResponseStatus(HttpStatus.OK)
-    Page<CustomerDto> getAllCustomers(
+    Page<PurchaseItemDto> getAllPurchaseItemsByPurchaseId(
             @PageableDefault(size = 10) Pageable pageable,
-            @RequestParam(defaultValue = "name") String sort);
-
-    //@PreAuthorize("isAuthenticated()")
-    @GetMapping("/customer-number")
-    @Operation(
-            summary = "Get all customers with customer number",
-            description = "Retrieve a list of all customers.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200",
-                    description = "List of Customers retrieved successfully.",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = CustomerDto[].class))),
-            @ApiResponse(responseCode = "404",
-                    description = "No customers found.",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponseDto.class))),
-            @ApiResponse(responseCode = "401",
-                    description = "User unauthorized.",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(type = "string")))
-    })
-    @ResponseStatus(HttpStatus.OK)
-    Page<CustomerDto> getAllCustomersWithCustomerNumber(
-            @PageableDefault(size = 10) Pageable pageable,
-            @RequestParam(defaultValue = "name") String sort);
+            @RequestParam(defaultValue = "name") String sort,
+            @PathVariable Long purchaseId);
 
     @GetMapping("/{id}")
     @Operation(
-            summary = "Get customer by ID",
-            description = "Retrieve a customer by its ID. Allowed to all users.")
+            summary = "Get purchase item by ID",
+            description = "Retrieve a purchase item by its ID. Allowed to all users.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
-                    description = "Customer retrieved successfully.",
+                    description = "Purchase item retrieved successfully.",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = CustomerDto.class))),
+                            schema = @Schema(implementation = PurchaseDto.class))),
             @ApiResponse(responseCode = "404",
-                    description = "Customer not found.",
+                    description = "purchase item not found.",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponseDto.class)))
     })
     @ResponseStatus(HttpStatus.OK)
-    CustomerDto getCustomerById(@PathVariable Long id);
+    PurchaseItemDto getPurchaseItemById(@PathVariable Long id);
+
+
 
     //@PreAuthorize("isAuthenticated()")
     @PutMapping("/{id}")
     @Operation(
-            summary = "Update the customer",
-            description = "Update the customer. Admin is allowed.")
+            summary = "Update the purchase item",
+            description = "Update the purchase item. Admin is allowed.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
-                    description = "Customer updated successfully.",
+                    description = "Purchase item updated successfully.",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = CustomerDto.class))),
+                            schema = @Schema(implementation = PurchaseDto.class))),
             @ApiResponse(responseCode = "400",
-                    description = "Invalid customer data.",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponseDto.class))),
-            @ApiResponse(responseCode = "409",
-                    description = "Customer with the same name and address already exists.",
+                    description = "Invalid purchase item data.",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponseDto.class))),
             @ApiResponse(responseCode = "401",
@@ -156,18 +124,18 @@ public interface CustomersApi {
                             schema = @Schema(type = "string")))
     })
     @ResponseStatus(HttpStatus.OK)
-    CustomerDto updateCustomer(
+    PurchaseItemDto updatePurchaseItem(
             @PathVariable Long id,
-            @RequestBody @Valid NewCustomerDto newCustomerDto);
+            @RequestBody @Valid NewPurchaseItemDto newPurchaseItemDto);
 
     //@PreAuthorize("isAuthenticated()")
     @DeleteMapping("/{id}")
     @Operation(
-            summary = "Delete customer by ID",
-            description = "Delete an existing customer. Admin is allowed.")
+            summary = "Delete purchase item by ID",
+            description = "Delete an existing purchase item. Admin is allowed.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204",
-                    description = "Customer deleted successfully."),
+                    description = "Purchase item deleted successfully."),
             @ApiResponse(responseCode = "401",
                     description = "User unauthorized.",
                     content = @Content(mediaType = "application/json",
@@ -177,12 +145,12 @@ public interface CustomersApi {
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponseDto.class))),
             @ApiResponse(responseCode = "404",
-                    description = "Customer not found.",
+                    description = "Purchase item not found.",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponseDto.class)))
     })
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    void deleteCustomer(
+    void deletePurchaseItem(
             @PathVariable Long id);
 
 }
