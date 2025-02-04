@@ -32,8 +32,10 @@ public class NewPurchaseItemDto {
    // @Schema(description = "Product's id", example = "1548")
     Product product;
 
+    String productName;
+
     @NotNull(message = "{validation.notNull}")
-    @Schema(description = "Amount without percentage", example = "123.00")
+    @Schema(description = "Quantity", example = "5")
     Integer quantity;
 
     @NotNull(message = "{validation.notNull}")
