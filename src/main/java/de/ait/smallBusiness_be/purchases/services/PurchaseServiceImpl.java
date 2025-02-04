@@ -6,7 +6,6 @@ import de.ait.smallBusiness_be.exceptions.ErrorDescription;
 import de.ait.smallBusiness_be.exceptions.RestApiException;
 import de.ait.smallBusiness_be.products.dao.ProductRepository;
 import de.ait.smallBusiness_be.products.model.Product;
-import de.ait.smallBusiness_be.purchases.dao.PurchaseItemRepository;
 import de.ait.smallBusiness_be.purchases.dao.PurchaseRepository;
 import de.ait.smallBusiness_be.purchases.dto.NewPurchaseDto;
 import de.ait.smallBusiness_be.purchases.dto.PurchaseDto;
@@ -39,7 +38,6 @@ public class PurchaseServiceImpl implements PurchaseService{
     private final PurchaseRepository purchaseRepository;
     private final CustomerRepository customerRepository;
     private final ProductRepository productRepository;
-    private final PurchaseItemRepository purchaseItemRepository;
     private final ModelMapper modelMapper;
 
     @Override
@@ -126,7 +124,7 @@ public class PurchaseServiceImpl implements PurchaseService{
             TypeOfDocument document = TypeOfDocument.valueOf(newPurchaseDto.getDocument().toUpperCase());
             purchase.setDocument(document);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid type ofdocument: " + newPurchaseDto.getDocument());
+            throw new IllegalArgumentException("Invalid type of document: " + newPurchaseDto.getDocument());
         }
         purchase.setDocumentNumber(newPurchaseDto.getDocumentNumber());
         // Преобразуем строку Type
@@ -136,7 +134,6 @@ public class PurchaseServiceImpl implements PurchaseService{
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Invalid type of operation: " + newPurchaseDto.getType());
         }
-        purchase.setTax(newPurchaseDto.getTax());
         purchase.setSubtotal(newPurchaseDto.getSubtotal());
         purchase.setTaxSum(newPurchaseDto.getTaxSum());
         purchase.setTotal(newPurchaseDto.getTotal());
