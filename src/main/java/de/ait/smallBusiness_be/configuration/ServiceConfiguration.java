@@ -4,6 +4,8 @@ package de.ait.smallBusiness_be.configuration;
 import de.ait.smallBusiness_be.customers.dto.CustomerDto;
 import de.ait.smallBusiness_be.customers.dto.NewCustomerDto;
 import de.ait.smallBusiness_be.customers.model.Customer;
+import de.ait.smallBusiness_be.purchases.dto.PurchaseItemDto;
+import de.ait.smallBusiness_be.purchases.model.PurchaseItem;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.context.annotation.Bean;
@@ -40,6 +42,11 @@ public class ServiceConfiguration {
         // Настройка маппинга NewCustomerDto -> Customer
         modelMapper.createTypeMap(NewCustomerDto.class, Customer.class)
                 .addMapping(NewCustomerDto::getAddressDto, Customer::setAddress);
+
+        // 🔹 Добавляем маппинг для PurchaseItem -> PurchaseItemDto
+        modelMapper.createTypeMap(PurchaseItem.class, PurchaseItemDto.class)
+                .addMapping(src -> src.getPurchase().getId(), PurchaseItemDto::setPurchaseId);
+
         return modelMapper;
     }
 
