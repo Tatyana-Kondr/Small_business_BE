@@ -9,6 +9,7 @@ import de.ait.smallBusiness_be.purchases.dto.PurchaseItemDto;
 import de.ait.smallBusiness_be.purchases.model.Purchase;
 import de.ait.smallBusiness_be.purchases.model.PurchaseItem;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.Hibernate;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,7 +18,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 /**
  * 16.01.2025
@@ -57,20 +61,10 @@ public class PurchaseItemServiceImpl implements PurchaseItemService {
         purchaseItem.setPurchase(purchase);
         purchaseItem.setPosition(newPosition);
 
-        // Рассчитываем totalPrice, taxAmount и totalAmount
-        BigDecimal totalPrice = purchaseItem.getUnitPrice().multiply(BigDecimal.valueOf(purchaseItem.getQuantity()));
-        BigDecimal taxAmount = totalPrice
-                .multiply(purchaseItem.getTaxPercentage().movePointLeft(2)) // Это эквивалентно делению на 100.
-                .setScale(2, RoundingMode.HALF_UP);
-        BigDecimal totalAmount = totalPrice.add(taxAmount);
-
-        purchaseItem.setTotalPrice(totalPrice);
-        purchaseItem.setTaxAmount(taxAmount);
-        purchaseItem.setTotalAmount(totalAmount);
+        recalculatePurchaseItemTotals(purchaseItem);
 
         PurchaseItem savedPurchaseItem = purchaseItemRepository.save(purchaseItem);
 
-        // Пересчитываем итоговые суммы
         recalculatePurchaseTotals(purchase);
 
         return modelMapper.map(savedPurchaseItem, PurchaseItemDto.class);
@@ -94,22 +88,58 @@ public class PurchaseItemServiceImpl implements PurchaseItemService {
     }
 
     @Override
+    @Transactional
     public PurchaseItemDto updatePurchaseItem(Long id, NewPurchaseItemDto newPurchaseItemDto) {
-        PurchaseItem purchaseItem =  purchaseItemRepository.findById(id)
+
+        PurchaseItem purchaseItem = purchaseItemRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Purchase item not found with ID: " + id));
+
         modelMapper.map(newPurchaseItemDto, purchaseItem);
+
+        recalculatePurchaseItemTotals(purchaseItem);
         PurchaseItem updatedPurchaseItem = purchaseItemRepository.save(purchaseItem);
+        recalculatePurchaseTotals(purchaseItem.getPurchase());
 
         return modelMapper.map(updatedPurchaseItem, PurchaseItemDto.class);
     }
 
     @Override
+    @Transactional
     public void deletePurchaseItem(Long id) {
 
-        if (!purchaseItemRepository.existsById(id)) {
-            throw new IllegalArgumentException("Purchase item not found with ID: " + id);
-        }
-        purchaseItemRepository.deleteById(id);
+        // Получаем PurchaseItem
+        PurchaseItem purchaseItem = purchaseItemRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Purchase item not found with ID: " + id));
+
+        Purchase purchase = purchaseItem.getPurchase();
+        Hibernate.initialize(purchase.getPurchaseItems()); // Загружаем коллекцию перед удалением
+
+        // Удаляем PurchaseItem из коллекции Purchase
+        purchase.getPurchaseItems().remove(purchaseItem);
+
+        // Удаляем PurchaseItem из базы
+        purchaseItemRepository.delete(purchaseItem);
+
+        // Обновляем позиции оставшихся элементов
+        updatePositions(purchase);
+
+        // Пересчитываем суммы в Purchase
+        recalculatePurchaseTotals(purchase);
+
+        // Сохраняем Purchase после изменений
+        purchaseRepository.save(purchase);
+    }
+
+    private void recalculatePurchaseItemTotals(PurchaseItem purchaseItem) {
+        BigDecimal totalPrice = purchaseItem.getUnitPrice().multiply(BigDecimal.valueOf(purchaseItem.getQuantity()));
+        BigDecimal taxAmount = totalPrice
+                .multiply(purchaseItem.getTaxPercentage().movePointLeft(2)) // Это эквивалентно делению на 100.
+                .setScale(2, RoundingMode.HALF_UP);
+        BigDecimal totalAmount = totalPrice.add(taxAmount);
+
+        purchaseItem.setTotalPrice(totalPrice);
+        purchaseItem.setTaxAmount(taxAmount);
+        purchaseItem.setTotalAmount(totalAmount);
     }
 
     private void recalculatePurchaseTotals(Purchase purchase) {
@@ -139,6 +169,18 @@ public class PurchaseItemServiceImpl implements PurchaseItemService {
 
         // Сохраняем обновленную закупку
         purchaseRepository.save(purchase);
+    }
+
+    private void updatePositions(Purchase purchase) {
+        List<PurchaseItem> items = purchase.getPurchaseItems()
+                .stream()
+                .sorted(Comparator.comparing(PurchaseItem::getPosition)) // Сортируем по позиции
+                .collect(Collectors.toList());
+
+        // Пронумеровываем заново
+        for (int i = 0; i < items.size(); i++) {
+            items.get(i).setPosition(i + 1); // Начинаем с 1
+        }
     }
 }
 
