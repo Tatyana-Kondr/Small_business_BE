@@ -6,7 +6,6 @@ import de.ait.smallBusiness_be.exceptions.ErrorDescription;
 import de.ait.smallBusiness_be.exceptions.RestApiException;
 import de.ait.smallBusiness_be.products.dao.ProductRepository;
 import de.ait.smallBusiness_be.products.model.Product;
-import de.ait.smallBusiness_be.purchases.dao.PurchaseItemRepository;
 import de.ait.smallBusiness_be.purchases.dao.PurchaseRepository;
 import de.ait.smallBusiness_be.purchases.dto.NewPurchaseDto;
 import de.ait.smallBusiness_be.purchases.dto.PurchaseDto;
@@ -16,7 +15,9 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,7 +40,6 @@ public class PurchaseServiceImpl implements PurchaseService{
     private final PurchaseRepository purchaseRepository;
     private final CustomerRepository customerRepository;
     private final ProductRepository productRepository;
-    private final PurchaseItemRepository purchaseItemRepository;
     private final ModelMapper modelMapper;
 
     @Override
@@ -82,15 +82,31 @@ public class PurchaseServiceImpl implements PurchaseService{
     }
 
     @Override
+    @Transactional
     public Page<PurchaseDto> getAllPurchases(Pageable pageable) {
+        // Проверяем, корректно ли передана сортировка
+        List<String> allowedSortFields = List.of("purchasingDate", "docNr", "amount"); // допустимые поля
+        Sort sort = pageable.getSort();
+
+        for (Sort.Order order : sort) {
+            if (!allowedSortFields.contains(order.getProperty())) {
+                // Если поле неверное, заменяем сортировку по умолчанию
+                pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(Sort.Direction.DESC, "purchasingDate"));
+                break;
+            }
+        }
+
         Page<Purchase> purchases = purchaseRepository.findAll(pageable);
+
         if (purchases.isEmpty()) {
             throw new RestApiException(ErrorDescription.LIST_IS_EMPTY, HttpStatus.NOT_FOUND);
         }
+
         return purchases.map(purchase -> modelMapper.map(purchase, PurchaseDto.class));
     }
 
     @Override
+    @Transactional
     public PurchaseDto getPurchaseById(Long id) {
         Purchase purchase = purchaseRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Purchase not found"));
@@ -126,7 +142,7 @@ public class PurchaseServiceImpl implements PurchaseService{
             TypeOfDocument document = TypeOfDocument.valueOf(newPurchaseDto.getDocument().toUpperCase());
             purchase.setDocument(document);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid type ofdocument: " + newPurchaseDto.getDocument());
+            throw new IllegalArgumentException("Invalid type of document: " + newPurchaseDto.getDocument());
         }
         purchase.setDocumentNumber(newPurchaseDto.getDocumentNumber());
         // Преобразуем строку Type
@@ -136,7 +152,6 @@ public class PurchaseServiceImpl implements PurchaseService{
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Invalid type of operation: " + newPurchaseDto.getType());
         }
-        purchase.setTax(newPurchaseDto.getTax());
         purchase.setSubtotal(newPurchaseDto.getSubtotal());
         purchase.setTaxSum(newPurchaseDto.getTaxSum());
         purchase.setTotal(newPurchaseDto.getTotal());

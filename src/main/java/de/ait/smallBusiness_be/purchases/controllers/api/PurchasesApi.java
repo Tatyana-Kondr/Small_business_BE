@@ -15,8 +15,10 @@ import io.swagger.v3.oas.annotations.tags.Tags;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -54,7 +56,7 @@ public interface PurchasesApi {
     PurchaseDto createPurchase(
             @RequestBody @Valid NewPurchaseDto newPurchaseDto);
 
-    //@PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated()")
     @GetMapping
     @Operation(
             summary = "Get all purchases",
@@ -75,8 +77,7 @@ public interface PurchasesApi {
     })
     @ResponseStatus(HttpStatus.OK)
     Page<PurchaseDto> getAllPurchases(
-            @PageableDefault(size = 10) Pageable pageable,
-            @RequestParam(defaultValue = "name") String sort); // сделать сортировку по дате
+            @PageableDefault(size = 10, sort = "purchasingDate", direction = Sort.Direction.DESC) Pageable pageable);
 
     @GetMapping("/{id}")
     @Operation(

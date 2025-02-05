@@ -35,8 +35,13 @@ public class NewPurchaseItemDto {
     String productName;
 
     @NotNull(message = "{validation.notNull}")
-    @Schema(description = "Quantity", example = "5")
+    @Schema(description = "Quantity", example = "1")
     Integer quantity;
+
+    @DecimalMin(value = "0.0", message = "{validation.price.min}")
+    @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
+    @Schema(description = "Unit price", example = "10.00")
+    BigDecimal unitPrice;
 
     @NotNull(message = "{validation.notNull}")
     @DecimalMin(value = "0.0", message = "{validation.price.min}")

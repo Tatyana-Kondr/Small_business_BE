@@ -48,6 +48,11 @@ public class PurchaseItem {
     @Column(precision = 8, scale = 2)
     @DecimalMin(value = "0.0", message = "{validation.price.min}")
     @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
+    BigDecimal unitPrice;
+
+    @Column(precision = 8, scale = 2)
+    @DecimalMin(value = "0.0", message = "{validation.price.min}")
+    @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
     BigDecimal totalPrice;// Общая стоимость.
 
     @Column(precision = 2)
