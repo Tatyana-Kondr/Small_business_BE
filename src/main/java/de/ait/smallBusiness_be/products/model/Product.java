@@ -68,11 +68,6 @@ public class Product {
     //@NotNull(message = "{validation.notNull}")
     private UnitOfMeasurement unitOfMeasurement; // единица измерения
 
-    @Column(precision = 8, scale = 3)
-    @DecimalMin(value = "0.0", message = "{validation.weight.min}")
-    @Digits(integer = 5, fraction = 3, message = "{validation.weight.digits}")
-    private BigDecimal weight; // вес будет измерятся только в кг
-
     @Embedded
     private Dimensions dimensions; //размеры деталей
 
@@ -149,7 +144,6 @@ public class Product {
                 .add("purchasingPrice=" + (purchasingPrice != null ? purchasingPrice.setScale(2,RoundingMode.HALF_UP) : "0.00"))
                 .add("sellingPrice=" + (sellingPrice != null ? sellingPrice.setScale(2,RoundingMode.HALF_UP) : "0.00"))
                 .add("unitOfMeasurement='" + unitOfMeasurement + "'")
-                .add("weight=" + (weight != null ? weight : 0.0f))
                 .add("size='" + (dimensions != null ? dimensions : "N/A") + "'")
                 .add("productCategory=" + (productCategory != null ? productCategory.getName() : "N/A"))
                 .add("description='" + (description != null ? description : "N/A") + "'")

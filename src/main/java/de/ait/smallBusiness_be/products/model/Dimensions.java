@@ -2,6 +2,8 @@ package de.ait.smallBusiness_be.products.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -27,4 +29,9 @@ public class Dimensions {
 
     @Column(precision = 8, scale = 3)
     private BigDecimal length;
+
+    @Column(precision = 8, scale = 3)
+    @DecimalMin(value = "0.0", message = "{validation.weight.min}")
+    @Digits(integer = 5, fraction = 3, message = "{validation.weight.digits}")
+    private BigDecimal weight; // вес будет измерятся только в кг
 }

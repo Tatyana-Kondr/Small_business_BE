@@ -1,6 +1,6 @@
 package de.ait.smallBusiness_be.products.dto;
 
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Digits;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,13 +13,16 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @NoArgsConstructor
 public class NewDimensionsDto {
-    @Size(max = 20, message = "{validation.max.size}")
+
+    @Digits(integer = 10, fraction = 2, message = "{validation.max.size}")
     BigDecimal width;
 
-    @Size(max = 20, message = "{validation.max.size}")
+    @Digits(integer = 10, fraction = 2, message = "{validation.max.size}")
     BigDecimal height;
 
-    @Size(max = 20, message = "{validation.max.size}")
+    @Digits(integer = 10, fraction = 2, message = "{validation.max.size}")
     BigDecimal length;
 
+    @Digits(integer = 10, fraction = 2, message = "{validation.max.size}")
+    private BigDecimal weight;
 }
