@@ -41,4 +41,6 @@ public class PurchaseItemDto {
     BigDecimal taxAmount;
 
     BigDecimal totalAmount;
+
+    Integer position;
 }

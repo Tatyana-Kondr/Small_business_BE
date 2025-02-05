@@ -68,4 +68,7 @@ public class PurchaseItem {
     @DecimalMin(value = "0.0", message = "{validation.price.min}")
     @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
     BigDecimal totalAmount;
+
+    @Column(nullable = false)
+    Integer position;
 }

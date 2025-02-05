@@ -65,4 +65,8 @@ public class NewPurchaseItemDto {
     @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
     @Schema(description = "Total amount", example = "11.90")
     BigDecimal totalAmount;
+
+    @NotNull(message = "{validation.notNull}")
+    @Schema(description = "Position", example = "1")
+    Integer position;
 }
