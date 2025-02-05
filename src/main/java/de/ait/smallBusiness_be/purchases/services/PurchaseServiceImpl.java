@@ -6,6 +6,7 @@ import de.ait.smallBusiness_be.exceptions.ErrorDescription;
 import de.ait.smallBusiness_be.exceptions.RestApiException;
 import de.ait.smallBusiness_be.products.dao.ProductRepository;
 import de.ait.smallBusiness_be.products.model.Product;
+import de.ait.smallBusiness_be.purchases.dao.PurchaseItemRepository;
 import de.ait.smallBusiness_be.purchases.dao.PurchaseRepository;
 import de.ait.smallBusiness_be.purchases.dto.NewPurchaseDto;
 import de.ait.smallBusiness_be.purchases.dto.PurchaseDto;
@@ -23,7 +24,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
@@ -40,6 +43,7 @@ public class PurchaseServiceImpl implements PurchaseService{
     private final PurchaseRepository purchaseRepository;
     private final CustomerRepository customerRepository;
     private final ProductRepository productRepository;
+    private final PurchaseItemRepository purchaseItemRepository;
     private final ModelMapper modelMapper;
 
     @Override
@@ -51,6 +55,10 @@ public class PurchaseServiceImpl implements PurchaseService{
         Purchase purchase = modelMapper.map(newPurchaseDto, Purchase.class);
         purchase.setVendor(customer);
 
+        AtomicReference<BigDecimal> subtotal = new AtomicReference<>(BigDecimal.ZERO);
+        AtomicReference<BigDecimal> taxSum = new AtomicReference<>(BigDecimal.ZERO);
+        AtomicReference<BigDecimal> total = new AtomicReference<>(BigDecimal.ZERO);
+
         // Проверяем и добавляем PurchaseItem к Purchase
         if (newPurchaseDto.getPurchaseItems() != null && !newPurchaseDto.getPurchaseItems().isEmpty()) {
             List<PurchaseItem> purchaseItems = newPurchaseDto.getPurchaseItems().stream()
@@ -61,12 +69,35 @@ public class PurchaseServiceImpl implements PurchaseService{
                                         "Product not found with ID: " + newPurchaseItemDto.getProduct().getId()
                                 ));
 
+                        //Найти максимальное значение position среди уже существующих PurchaseItem для данного purchase_id.
+                        //Назначить position = maxPosition + 1 (если maxPosition отсутствует, то position = 1).
+                        Integer maxPosition = purchaseItemRepository.findMaxPositionByPurchaseId(purchase.getId());
+                        int newPosition = (maxPosition != null) ? maxPosition + 1 : 1;
+
                         // Создаем PurchaseItem и устанавливаем продукт
                         PurchaseItem purchaseItem = modelMapper.map(newPurchaseItemDto, PurchaseItem.class);
                         purchaseItem.setProduct(product);
-
                         // Устанавливаем связь с Purchase
                         purchaseItem.setPurchase(purchase);
+                        //Устанавливаем позицию
+                        purchaseItem.setPosition(newPosition);
+
+                        // Рассчитываем totalPrice, taxAmount и totalAmount
+                        BigDecimal totalPrice = purchaseItem
+                                .getUnitPrice().multiply(BigDecimal.valueOf(purchaseItem.getQuantity()));
+                        BigDecimal taxAmount = totalPrice
+                                .multiply(purchaseItem.getTaxPercentage().movePointLeft(2)) // Это эквивалентно делению на 100.
+                                .setScale(2, RoundingMode.HALF_UP);
+                        BigDecimal totalAmount = totalPrice.add(taxAmount);
+
+                        purchaseItem.setTotalPrice(totalPrice);
+                        purchaseItem.setTaxAmount(taxAmount);
+                        purchaseItem.setTotalAmount(totalAmount);
+
+                        // Обновляем суммы через AtomicReference
+                        subtotal.updateAndGet(value -> value.add(totalPrice));
+                        taxSum.updateAndGet(value -> value.add(taxAmount));
+                        total.updateAndGet(value -> value.add(totalAmount));
 
                         return purchaseItem;
                     })
@@ -75,6 +106,11 @@ public class PurchaseServiceImpl implements PurchaseService{
             // Устанавливаем PurchaseItems в Purchase
             purchase.setPurchaseItems(purchaseItems);
         }
+
+        // Устанавливаем пересчитанные суммы в Purchase
+        purchase.setSubtotal(subtotal.get());
+        purchase.setTaxSum(taxSum.get());
+        purchase.setTotal(total.get());
 
         Purchase savedPurchase = purchaseRepository.save(purchase);
 
