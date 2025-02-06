@@ -4,7 +4,9 @@ package de.ait.smallBusiness_be.configuration;
 import de.ait.smallBusiness_be.customers.dto.CustomerDto;
 import de.ait.smallBusiness_be.customers.dto.NewCustomerDto;
 import de.ait.smallBusiness_be.customers.model.Customer;
+import de.ait.smallBusiness_be.purchases.dto.PurchaseDto;
 import de.ait.smallBusiness_be.purchases.dto.PurchaseItemDto;
+import de.ait.smallBusiness_be.purchases.model.Purchase;
 import de.ait.smallBusiness_be.purchases.model.PurchaseItem;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
@@ -43,9 +45,13 @@ public class ServiceConfiguration {
         modelMapper.createTypeMap(NewCustomerDto.class, Customer.class)
                 .addMapping(NewCustomerDto::getAddressDto, Customer::setAddress);
 
-        // 🔹 Добавляем маппинг для PurchaseItem -> PurchaseItemDto
+        //  Добавляем маппинг для PurchaseItem -> PurchaseItemDto
         modelMapper.createTypeMap(PurchaseItem.class, PurchaseItemDto.class)
                 .addMapping(src -> src.getPurchase().getId(), PurchaseItemDto::setPurchaseId);
+
+        //  Добавляем маппинг для Purchase -> PurchaseDto
+        modelMapper.createTypeMap(Purchase.class, PurchaseDto.class)
+                .addMapping(src -> src.getVendor().getId(), PurchaseDto::setVendorId);
 
         return modelMapper;
     }
