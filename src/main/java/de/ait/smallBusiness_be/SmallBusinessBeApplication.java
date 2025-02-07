@@ -16,7 +16,5 @@ public class SmallBusinessBeApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(SmallBusinessBeApplication.class, args);
-        Product product = new Product(1L, "product", "EL-6", "qwer", BigDecimal.valueOf(10.10), BigDecimal.valueOf(15.10), UnitOfMeasurement.KG, BigDecimal.valueOf(5.0), new Dimensions(BigDecimal.valueOf(5.000), BigDecimal.valueOf(5.0), BigDecimal.valueOf(5.0)),new ProductCategory(1, "COMPUTER & ZUBEHÖR","COM"),"drtfhdsfhd","345", LocalDateTime.now(), LocalDateTime.now(), LocalDateTime.now());
-        System.out.println(product);
     }
 }
