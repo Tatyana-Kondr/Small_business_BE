@@ -20,8 +20,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * 11/15/2024
@@ -95,7 +93,7 @@ public class ProductServiceImpl implements ProductService {
             }
         }
 
-        product.setWeight(updateProductDto.getWeight());
+        //product.setWeight(updateProductDto.getWeight());
 
         if (updateProductDto.getNewDimensions() != null) {
             Dimensions dimensions = modelMapper.map(updateProductDto.getNewDimensions(), Dimensions.class);
@@ -136,7 +134,7 @@ public class ProductServiceImpl implements ProductService {
         return productsPage.map(product -> modelMapper.map(product, ProductDto.class));
     }
 
-    private Product getProductOrThrow(Long id) {
+    public Product getProductOrThrow(Long id) {
         return productRepository.findById(id)
                 .orElseThrow(() -> new RestApiException(ErrorDescription.PRODUCT_NOT_FOUND, HttpStatus.NOT_FOUND));
     }
