@@ -1,9 +1,11 @@
 package de.ait.smallBusiness_be.sales.models;
 
+import de.ait.smallBusiness_be.customers.model.Customer;
 import de.ait.smallBusiness_be.products.model.Dimensions;
 import de.ait.smallBusiness_be.purchases.model.PaymentStatus;
 import de.ait.smallBusiness_be.purchases.model.TypeOfOperation;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 import lombok.*;
 
@@ -31,8 +33,10 @@ public class Sale {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column
-    private Long customerId;
+    @ManyToOne
+    @JoinColumn(name = "customer_id", referencedColumnName = "id", nullable = false)
+    @NotNull(message = "{validation.notNull}")
+    private Customer customer;
 
     @Column(nullable = false)
     private String invoiceNumber;
@@ -65,7 +69,7 @@ public class Sale {
     @Enumerated(EnumType.STRING)
     private PaymentStatus paymentStatus;
 
-    @OneToMany(mappedBy = "Sale", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "sale", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<SaleItem> salesItems = new ArrayList<>();
 }
