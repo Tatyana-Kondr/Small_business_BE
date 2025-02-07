@@ -9,7 +9,7 @@ public interface SaleItemService {
 
     SaleItemDto createSaleItem(Long saleId, NewSaleItemDto newSaleItem);
 
-    List<SaleItemDto> getAllSales(Long saleId);
+    List<SaleItemDto> getAllSaleItemsBySaleId(Long saleId);
 
     SaleItemDto getSaleItemById(Long saleId, Long saleItemId);
 
