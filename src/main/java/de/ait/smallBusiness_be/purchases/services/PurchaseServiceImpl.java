@@ -154,6 +154,7 @@ public class PurchaseServiceImpl implements PurchaseService{
     }
 
     @Override
+    @Transactional
     public Page<PurchaseDto> searchPurchases(Pageable pageable, String query) {
         return purchaseRepository.searchPurchases(pageable, query)
                 .map(purchase -> modelMapper.map(purchase, PurchaseDto.class));
