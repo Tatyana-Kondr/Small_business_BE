@@ -4,7 +4,6 @@ import de.ait.smallBusiness_be.customers.model.Customer;
 import de.ait.smallBusiness_be.customers.services.CustomerService;
 import de.ait.smallBusiness_be.exceptions.ErrorDescription;
 import de.ait.smallBusiness_be.exceptions.RestApiException;
-import de.ait.smallBusiness_be.products.model.Dimensions;
 import de.ait.smallBusiness_be.products.model.Product;
 import de.ait.smallBusiness_be.products.service.ProductService;
 import de.ait.smallBusiness_be.sales.dao.SaleRepository;
@@ -12,6 +11,7 @@ import de.ait.smallBusiness_be.sales.dto.NewSaleDto;
 import de.ait.smallBusiness_be.sales.dto.SaleDto;
 import de.ait.smallBusiness_be.sales.models.Sale;
 import de.ait.smallBusiness_be.sales.models.SaleItem;
+import de.ait.smallBusiness_be.sales.models.ShippingDimensions;
 import de.ait.smallBusiness_be.sales.services.SaleService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -48,7 +48,7 @@ public class SaleServiceImpl implements SaleService {
         Sale sale = modelMapper.map(newSale, Sale.class);
         sale.setCustomer(customer);
         sale.setShippingDimensions(newSale.shippingDimensions() != null ?
-                modelMapper.map(newSale.shippingDimensions(), Dimensions.class) :
+                modelMapper.map(newSale.shippingDimensions(), ShippingDimensions.class) :
                 null);
 
         if (newSale.salesItems()!=null && !newSale.salesItems().isEmpty()) {
