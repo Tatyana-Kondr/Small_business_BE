@@ -77,7 +77,7 @@ public interface PurchaseItemsApi {
     @ResponseStatus(HttpStatus.OK)
     Page<PurchaseItemDto> getAllPurchaseItemsByPurchaseId(
             @PageableDefault(size = 10) Pageable pageable,
-            @RequestParam(defaultValue = "name") String sort,
+            @RequestParam(defaultValue = "position") String sort,
             @PathVariable Long purchaseId);
 
     @GetMapping("/{id}")

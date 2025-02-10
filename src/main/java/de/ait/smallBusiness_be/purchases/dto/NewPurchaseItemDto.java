@@ -32,6 +32,7 @@ public class NewPurchaseItemDto {
    // @Schema(description = "Product's id", example = "1548")
     Product product;
 
+    @Schema(description = "Name of product", example = "Lampe")
     String productName;
 
     @NotNull(message = "{validation.notNull}")
@@ -46,7 +47,7 @@ public class NewPurchaseItemDto {
     @NotNull(message = "{validation.notNull}")
     @DecimalMin(value = "0.0", message = "{validation.price.min}")
     @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
-    @Schema(description = "Amount without percentage", example = "10.00")
+    @Schema(description = "Amount without percentage", example = "0")
     BigDecimal totalPrice;
 
     @NotNull(message = "{validation.notNull}")
@@ -57,13 +58,13 @@ public class NewPurchaseItemDto {
     @NotNull(message = "{validation.notNull}")
     @DecimalMin(value = "0.0", message = "{validation.price.min}")
     @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
-    @Schema(description = "Amount tax", example = "1.90")
+    @Schema(description = "Amount tax", example = "0")
     BigDecimal taxAmount;
 
     @NotNull(message = "{validation.notNull}")
     @DecimalMin(value = "0.0", message = "{validation.price.min}")
     @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
-    @Schema(description = "Total amount", example = "11.90")
+    @Schema(description = "Total amount", example = "0")
     BigDecimal totalAmount;
 
     @NotNull(message = "{validation.notNull}")

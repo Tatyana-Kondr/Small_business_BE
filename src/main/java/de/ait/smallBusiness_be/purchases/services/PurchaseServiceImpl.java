@@ -9,6 +9,7 @@ import de.ait.smallBusiness_be.products.model.Product;
 import de.ait.smallBusiness_be.purchases.dao.PurchaseItemRepository;
 import de.ait.smallBusiness_be.purchases.dao.PurchaseRepository;
 import de.ait.smallBusiness_be.purchases.dto.NewPurchaseDto;
+import de.ait.smallBusiness_be.purchases.dto.NewPurchaseItemDto;
 import de.ait.smallBusiness_be.purchases.dto.PurchaseDto;
 import de.ait.smallBusiness_be.purchases.model.*;
 import jakarta.persistence.EntityNotFoundException;
@@ -25,7 +26,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -150,6 +154,7 @@ public class PurchaseServiceImpl implements PurchaseService{
     }
 
     @Override
+    @Transactional
     public Page<PurchaseDto> searchPurchases(Pageable pageable, String query) {
         return purchaseRepository.searchPurchases(pageable, query)
                 .map(purchase -> modelMapper.map(purchase, PurchaseDto.class));
@@ -173,35 +178,92 @@ public class PurchaseServiceImpl implements PurchaseService{
 
         purchase.setVendor(customer);
         purchase.setPurchasingDate(newPurchaseDto.getPurchasingDate());
-        // Преобразуем строку Document
+
         try {
-            TypeOfDocument document = TypeOfDocument.valueOf(newPurchaseDto.getDocument().toUpperCase());
-            purchase.setDocument(document);
+            purchase.setDocument(TypeOfDocument.valueOf(newPurchaseDto.getDocument().toUpperCase()));
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Invalid type of document: " + newPurchaseDto.getDocument());
         }
+
         purchase.setDocumentNumber(newPurchaseDto.getDocumentNumber());
-        // Преобразуем строку Type
-        try{
-            TypeOfOperation type = TypeOfOperation.valueOf(newPurchaseDto.getType().toUpperCase());
-            purchase.setType(type);
+
+        try {
+            purchase.setType(TypeOfOperation.valueOf(newPurchaseDto.getType().toUpperCase()));
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Invalid type of operation: " + newPurchaseDto.getType());
         }
-        purchase.setSubtotal(newPurchaseDto.getSubtotal());
-        purchase.setTaxSum(newPurchaseDto.getTaxSum());
-        purchase.setTotal(newPurchaseDto.getTotal());
-        // Преобразуем строку PaymentStatus
+
         try {
-            PaymentStatus status = PaymentStatus.valueOf(newPurchaseDto.getPaymentStatus().toUpperCase());
-            purchase.setPaymentStatus(status);
+            purchase.setPaymentStatus(PaymentStatus.valueOf(newPurchaseDto.getPaymentStatus().toUpperCase()));
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Invalid payment status: " + newPurchaseDto.getPaymentStatus());
         }
 
+        // Загружаем текущие элементы
+        Map<Long, PurchaseItem> existingItems = purchase.getPurchaseItems().stream()
+                .collect(Collectors.toMap(item -> item.getProduct().getId(), item -> item));
+
+        List<Long> newProductIds = newPurchaseDto.getPurchaseItems().stream()
+                .map(item -> item.getProduct().getId())
+                .collect(Collectors.toList());
+
+        // Пересчет итоговых сумм
+        AtomicReference<BigDecimal> subtotal = new AtomicReference<>(BigDecimal.ZERO);
+        AtomicReference<BigDecimal> taxSum = new AtomicReference<>(BigDecimal.ZERO);
+        AtomicReference<BigDecimal> total = new AtomicReference<>(BigDecimal.ZERO);
+
+        List<PurchaseItem> updatedItems = new ArrayList<>();
+
+        for (NewPurchaseItemDto itemDto : newPurchaseDto.getPurchaseItems()) {
+            Long productId = itemDto.getProduct().getId();
+            PurchaseItem purchaseItem = existingItems.get(productId);
+
+            if (purchaseItem == null) {
+                purchaseItem = new PurchaseItem();
+                purchaseItem.setPurchase(purchase);
+                purchaseItem.setProduct(productRepository.findById(productId)
+                        .orElseThrow(() -> new EntityNotFoundException("Product not found: " + productId)));
+                purchaseItem.setPosition(updatedItems.size() + 1);
+            }
+
+            purchaseItem.setQuantity(itemDto.getQuantity());
+            purchaseItem.setUnitPrice(itemDto.getUnitPrice());
+
+            BigDecimal totalPrice = purchaseItem.getUnitPrice().multiply(BigDecimal.valueOf(purchaseItem.getQuantity()));
+            BigDecimal taxAmount = totalPrice.multiply(purchaseItem.getTaxPercentage().movePointLeft(2))
+                    .setScale(2, RoundingMode.HALF_UP);
+            BigDecimal totalAmount = totalPrice.add(taxAmount);
+
+            purchaseItem.setTotalPrice(totalPrice);
+            purchaseItem.setTaxAmount(taxAmount);
+            purchaseItem.setTotalAmount(totalAmount);
+
+            subtotal.updateAndGet(value -> value.add(totalPrice));
+            taxSum.updateAndGet(value -> value.add(taxAmount));
+            total.updateAndGet(value -> value.add(totalAmount));
+
+            updatedItems.add(purchaseItem);
+        }
+
+        // Удаляем старые элементы, которых нет в новом списке (НЕ заменяем коллекцию)
+        purchase.getPurchaseItems().removeIf(item -> !newProductIds.contains(item.getProduct().getId()));
+
+        // Добавляем/обновляем существующие элементы
+        for (PurchaseItem updatedItem : updatedItems) {
+            if (!purchase.getPurchaseItems().contains(updatedItem)) {
+                purchase.getPurchaseItems().add(updatedItem);
+            }
+        }
+
+        purchase.setSubtotal(subtotal.get());
+        purchase.setTaxSum(taxSum.get());
+        purchase.setTotal(total.get());
+
+        // Сохраняем
         Purchase updatedPurchase = purchaseRepository.save(purchase);
         return modelMapper.map(updatedPurchase, PurchaseDto.class);
     }
+
 
     @Override
     public void deletePurchase(Long id) {
@@ -209,4 +271,5 @@ public class PurchaseServiceImpl implements PurchaseService{
                 .orElseThrow(() -> new EntityNotFoundException("Purchase not found"));
         purchaseRepository.delete(purchase);
     }
+
 }
