@@ -13,6 +13,7 @@ public record SaleItemDto(
         Integer quantity,
         BigDecimal unitPrice,
         BigDecimal discount,
+        BigDecimal discountAmount,
         BigDecimal totalPrice,
         BigDecimal tax,
         BigDecimal taxAmount,

@@ -34,26 +34,30 @@ public record NewSaleItemDto(
         BigDecimal unitPrice,
 
         @DecimalMin(value = "0", message = "{validation.tax.min}")
-        @Schema(description = "Discount percentage", example = "10.5")
+        @Schema(description = "Discount percentage", example = "10")
         BigDecimal discount,
+
+        @DecimalMin(value = "0", message = "{validation.tax.min}")
+        @Schema(description = "Discount amount", example = "00.00")
+        BigDecimal discountAmount,
 
         @DecimalMin(value = "0.0", message = "{validation.price.min}")
         @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
-        @Schema(description = "Total price before tax", example = "2160.90")
+        @Schema(description = "Total price before tax", example = "00.00")
         BigDecimal totalPrice,
 
         @DecimalMin(value = "0", message = "{validation.tax.min}")
-        @Schema(description = "Tax percentage", example = "19.0")
+        @Schema(description = "Tax percentage", example = "19")
         BigDecimal tax,
 
         @DecimalMin(value = "0.0", message = "{validation.price.min}")
         @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
-        @Schema(description = "Tax amount", example = "410.57")
+        @Schema(description = "Tax amount", example = "00.00")
         BigDecimal taxAmount,
 
         @DecimalMin(value = "0.0", message = "{validation.price.min}")
         @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
-        @Schema(description = "Total amount after tax", example = "2571.47")
+        @Schema(description = "Total amount after tax", example = "00.00")
         BigDecimal totalAmount) implements Serializable {
 
     @Serial
