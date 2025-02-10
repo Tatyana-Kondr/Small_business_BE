@@ -24,7 +24,7 @@ public class UpdateProductDto{
         @Schema(description = "Product's name", example = "Lampe")
         String name;
 
-        //@NotBlank(message = "{validation.notBlank}")
+        @NotBlank(message = "{validation.notBlank}")
         @Size(min = 3, max = 50, message = "{validation.name.size}")
         @Schema(description = "Product's article", example = "BL-1")
         String article;
@@ -50,9 +50,9 @@ public class UpdateProductDto{
                 allowableValues = {"KG, PIECE, LITER, METER, ST"})
         String unitOfMeasurement;
 
-//        @DecimalMin(value = "0.0", message = "{validation.weight.min}")
-//        @Digits(integer = 5, fraction = 3, message = "{validation.weight.digits}")
-//        BigDecimal weight;
+        @DecimalMin(value = "0.0", message = "{validation.weight.min}")
+        @Digits(integer = 5, fraction = 3, message = "{validation.weight.digits}")
+        BigDecimal weight;
 
         @Schema(description = "Product's dimensions")
         NewDimensionsDto newDimensions;

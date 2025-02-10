@@ -93,7 +93,7 @@ public class ProductServiceImpl implements ProductService {
             }
         }
 
-        //product.setWeight(updateProductDto.getWeight());
+        product.setWeight(updateProductDto.getWeight());
 
         if (updateProductDto.getNewDimensions() != null) {
             Dimensions dimensions = modelMapper.map(updateProductDto.getNewDimensions(), Dimensions.class);
