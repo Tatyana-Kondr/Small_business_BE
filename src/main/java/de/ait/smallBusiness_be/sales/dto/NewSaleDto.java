@@ -1,11 +1,11 @@
 package de.ait.smallBusiness_be.sales.dto;
 
-import de.ait.smallBusiness_be.products.dto.NewDimensionsDto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -32,7 +32,7 @@ public record NewSaleDto(
         String shipping,
 
         @Schema(description = "Shipping dimensions (weight, width, height, length)")
-        NewDimensionsDto shippingDimensions,
+        NewShippingDimensionsDto shippingDimensions,
 
         @Schema(description = "Terms of payment", example = "Net 30")
         String termsOfPayment,
@@ -49,6 +49,25 @@ public record NewSaleDto(
         @Pattern(regexp = "NICHT_BEZAHLT|TEILWEISEBEZAHLT|BEZAHLT|PENDING|CANCELLED")
         @Schema(description = "Payment status", example = "NICHT_BEZAHLT", allowableValues = {"NICHT_BEZAHLT, TEILWEISEBEZAHLT, BEZAHLT,  PENDING, CANCELLED"})
         String paymentStatus,
+
+        @DecimalMin(value = "0", message = "{validation.tax.min}")
+        @Schema(description = "Discount amount", example = "00.00")
+        BigDecimal discountAmount,
+
+        @DecimalMin(value = "0.0", message = "{validation.price.min}")
+        @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
+        @Schema(description = "Total price before tax", example = "00.00")
+        BigDecimal totalPrice,
+
+        @DecimalMin(value = "0.0", message = "{validation.price.min}")
+        @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
+        @Schema(description = "Tax amount", example = "00.00")
+        BigDecimal taxAmount,
+
+        @DecimalMin(value = "0.0", message = "{validation.price.min}")
+        @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
+        @Schema(description = "Total amount after tax", example = "00.00")
+        BigDecimal totalAmount,
 
         List<NewSaleItemDto> salesItems) implements Serializable {
 

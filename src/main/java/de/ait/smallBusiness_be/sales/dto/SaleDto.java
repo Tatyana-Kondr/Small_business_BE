@@ -4,6 +4,7 @@ import de.ait.smallBusiness_be.products.dto.NewDimensionsDto;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -20,6 +21,10 @@ public record SaleDto(
         LocalDate salesDate,
         LocalDate paymentDate,
         String paymentStatus,
+        BigDecimal discountAmount,
+        BigDecimal totalPrice,
+        BigDecimal taxAmount,
+        BigDecimal totalAmount,
         List<SaleItemDto> salesItems) implements Serializable {
 
     @Serial
