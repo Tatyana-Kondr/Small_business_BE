@@ -56,7 +56,7 @@ public interface ProductsApi {
     ProductDto createProduct (@RequestBody @Valid NewProductDto newProductDto);
 
 
-    @PreAuthorize("isAuthenticated()")
+    //@PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     @Operation(
             summary = "Get product by ID",
@@ -140,7 +140,7 @@ public interface ProductsApi {
     void removeProductById(@PathVariable Long id);
 
 
-    @PreAuthorize("isAuthenticated()")
+    //@PreAuthorize("isAuthenticated()")
     @GetMapping
     @Operation(
             summary = "Get all products",
@@ -159,7 +159,7 @@ public interface ProductsApi {
     Page<ProductDto> getAllProducts(@PageableDefault(size = 10, sort = "name") Pageable pageable);
 
 
-    @PreAuthorize("isAuthenticated()")
+    //@PreAuthorize("isAuthenticated()")
     @GetMapping("/category/{category-id}")
     @Operation(
             summary = "Get all products by category",
