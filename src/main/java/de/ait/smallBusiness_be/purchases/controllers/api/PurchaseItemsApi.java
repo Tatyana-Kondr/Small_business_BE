@@ -12,12 +12,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.tags.Tags;
 import jakarta.validation.Valid;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 
 @Tags(
@@ -75,9 +74,7 @@ public interface PurchaseItemsApi {
                             schema = @Schema(type = "string")))
     })
     @ResponseStatus(HttpStatus.OK)
-    Page<PurchaseItemDto> getAllPurchaseItemsByPurchaseId(
-            @PageableDefault(size = 10) Pageable pageable,
-            @RequestParam(defaultValue = "position") String sort,
+    List<PurchaseItemDto> getAllPurchaseItemsByPurchaseId(
             @PathVariable Long purchaseId);
 
     @GetMapping("/{id}")

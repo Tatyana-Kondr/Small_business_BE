@@ -5,9 +5,9 @@ import de.ait.smallBusiness_be.purchases.dto.NewPurchaseItemDto;
 import de.ait.smallBusiness_be.purchases.dto.PurchaseItemDto;
 import de.ait.smallBusiness_be.purchases.services.PurchaseItemService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 /**
  * 17.01.2025
@@ -28,8 +28,8 @@ public class PurchaseItemController implements PurchaseItemsApi {
     }
 
     @Override
-    public Page<PurchaseItemDto> getAllPurchaseItemsByPurchaseId(Pageable pageable, String sort, Long purchaseId) {
-        return purchaseItemService.getAllPurchaseItemsByPurchaseId(pageable, purchaseId);
+    public List<PurchaseItemDto> getAllPurchaseItemsByPurchaseId(Long purchaseId) {
+        return purchaseItemService.getAllPurchaseItemsByPurchaseId(purchaseId);
     }
 
     @Override
