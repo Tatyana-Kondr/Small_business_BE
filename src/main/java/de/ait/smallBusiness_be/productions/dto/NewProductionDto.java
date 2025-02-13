@@ -34,7 +34,7 @@ public class NewProductionDto {
     @Schema(description = "Type of operation", example = "PRODUKTION")
     String type;
 
-    @NotBlank(message = "{validation.notBlank}")
+    @NotNull(message = "{validation.notNull}")
     @Schema(description = "Product's id", example = "3")
     Long productId;
 
@@ -53,5 +53,5 @@ public class NewProductionDto {
     @Schema(description = "Amount", example = "0")
     BigDecimal amount;
 
-    List<ProductionItem> purchaseItems = new ArrayList<>();
+    List<NewProductionItemDto> productionItems = new ArrayList<>();
 }
