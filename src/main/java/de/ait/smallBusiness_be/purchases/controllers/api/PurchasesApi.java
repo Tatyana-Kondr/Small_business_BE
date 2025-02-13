@@ -15,8 +15,10 @@ import io.swagger.v3.oas.annotations.tags.Tags;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -26,7 +28,7 @@ import java.math.BigDecimal;
 )
 @RequestMapping("/api/purchases")
 public interface PurchasesApi {
-    //@PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated()")
     @PostMapping
     @Operation(
             summary = "Add a new purchase",
@@ -54,7 +56,7 @@ public interface PurchasesApi {
     PurchaseDto createPurchase(
             @RequestBody @Valid NewPurchaseDto newPurchaseDto);
 
-    //@PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated()")
     @GetMapping
     @Operation(
             summary = "Get all purchases",
@@ -75,8 +77,7 @@ public interface PurchasesApi {
     })
     @ResponseStatus(HttpStatus.OK)
     Page<PurchaseDto> getAllPurchases(
-            @PageableDefault(size = 10) Pageable pageable,
-            @RequestParam(defaultValue = "name") String sort); // сделать сортировку по дате
+            @PageableDefault(size = 10, sort = "purchasingDate", direction = Sort.Direction.DESC) Pageable pageable);
 
     @GetMapping("/{id}")
     @Operation(
@@ -95,7 +96,7 @@ public interface PurchasesApi {
     @ResponseStatus(HttpStatus.OK)
     PurchaseDto getPurchaseById(@PathVariable Long id);
 
-    //@PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/search/{query}")
     @Operation(
             summary = "Get all purchases according to search parameters",
@@ -117,10 +118,10 @@ public interface PurchasesApi {
     @ResponseStatus(HttpStatus.OK)
     Page<PurchaseDto> searchPurchases(
             @PageableDefault(size = 10) Pageable pageable,
-            @RequestParam(defaultValue = "name") String sort,
+            @RequestParam(defaultValue = "purchasingDate") String sort,
             @PathVariable String query);
 
-    //@PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/filter")
     @Operation(
             summary = "Get all purchases according to the filters",
@@ -142,7 +143,7 @@ public interface PurchasesApi {
     @ResponseStatus(HttpStatus.OK)
     Page<PurchaseDto> getAllPurchasesByFilter(
             @PageableDefault(size = 10) Pageable pageable,
-            @RequestParam(defaultValue = "name") String sort,
+            @RequestParam(defaultValue = "purchasingDate") String sort,
             @RequestParam(required = false) Long id,
             @RequestParam(required = false) Long vendorId,
             @RequestParam(required = false) String document,
@@ -150,7 +151,7 @@ public interface PurchasesApi {
             @RequestParam(required = false) BigDecimal total,
             @RequestParam(required = false) String paymentStatus);
 
-    //@PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated()")
     @PutMapping("/{id}")
     @Operation(
             summary = "Update the purchase",
@@ -178,7 +179,7 @@ public interface PurchasesApi {
             @PathVariable Long id,
             @RequestBody @Valid NewPurchaseDto newPurchaseDto);
 
-    //@PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated()")
     @DeleteMapping("/{id}")
     @Operation(
             summary = "Delete purchase by ID",

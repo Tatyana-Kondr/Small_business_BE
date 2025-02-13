@@ -10,6 +10,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 /**
  * SmallBusiness_BE
  * 24.10.2024
@@ -51,6 +53,11 @@ public class ProductController implements ProductsApi {
     @Override
     public Page<ProductDto> getProductsByCategory(int categoryId, Pageable pageable) {
         return productService.findProductsByCategoryId(categoryId, pageable);
+    }
+
+    @Override
+    public List<ProductDto> searchProducts(String searchTerm) {
+        return productService.searchProducts(searchTerm);
     }
 
 }

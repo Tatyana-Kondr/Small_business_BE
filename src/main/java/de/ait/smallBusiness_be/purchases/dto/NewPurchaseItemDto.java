@@ -1,5 +1,7 @@
 package de.ait.smallBusiness_be.purchases.dto;
 
+import de.ait.smallBusiness_be.products.model.Product;
+import de.ait.smallBusiness_be.purchases.model.Purchase;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
@@ -26,22 +28,26 @@ import java.math.BigDecimal;
 @Schema(name = "New PurchaseItem", description = "Data for registration of new purchaseItem")
 public class NewPurchaseItemDto {
 
-    @NotBlank(message = "{validation.notBlank}")
-    @Schema(description = "Product's id", example = "1548")
-    Long productId;
+    @NotNull(message = "{validation.notNull}")
+   // @Schema(description = "Product's id", example = "1548")
+    Product product;
 
-    @NotBlank(message = "{validation.notBlank}")
-    @Schema(description = "Purchase's id", example = "1")
-    Long purchaseId;
+    @Schema(description = "Name of product", example = "Lampe")
+    String productName;
 
     @NotNull(message = "{validation.notNull}")
-    @Schema(description = "Amount without percentage", example = "123.00")
+    @Schema(description = "Quantity", example = "1")
     Integer quantity;
+
+    @DecimalMin(value = "0.0", message = "{validation.price.min}")
+    @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
+    @Schema(description = "Unit price", example = "10.00")
+    BigDecimal unitPrice;
 
     @NotNull(message = "{validation.notNull}")
     @DecimalMin(value = "0.0", message = "{validation.price.min}")
     @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
-    @Schema(description = "Amount without percentage", example = "10.00")
+    @Schema(description = "Amount without percentage", example = "0")
     BigDecimal totalPrice;
 
     @NotNull(message = "{validation.notNull}")
@@ -52,12 +58,16 @@ public class NewPurchaseItemDto {
     @NotNull(message = "{validation.notNull}")
     @DecimalMin(value = "0.0", message = "{validation.price.min}")
     @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
-    @Schema(description = "Amount tax", example = "1.90")
+    @Schema(description = "Amount tax", example = "0")
     BigDecimal taxAmount;
 
     @NotNull(message = "{validation.notNull}")
     @DecimalMin(value = "0.0", message = "{validation.price.min}")
     @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
-    @Schema(description = "Total amount", example = "11.90")
+    @Schema(description = "Total amount", example = "0")
     BigDecimal totalAmount;
+
+    @NotNull(message = "{validation.notNull}")
+    @Schema(description = "Position", example = "1")
+    Integer position;
 }

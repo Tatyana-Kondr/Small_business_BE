@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -66,7 +67,13 @@ public class ProductServiceImpl implements ProductService {
     public ProductDto getProductById(Long id) {
 
         Product product = getProductOrThrow(id);
-        return modelMapper.map(product, ProductDto.class);
+        ProductDto productDto = modelMapper.map(product, ProductDto.class);
+
+        if (product.getDimensions() != null) {
+            NewDimensionsDto dimensionsDto = modelMapper.map(product.getDimensions(), NewDimensionsDto.class);
+            productDto.setNewDimensions(dimensionsDto);
+        }
+        return productDto;
     }
 
     @Override
@@ -116,28 +123,90 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public Page<ProductDto> findAllProducts(Pageable pageable) {
-
         Page<Product> productsPage = productRepository.findAll(pageable);
         if (productsPage.isEmpty()) {
             throw new RestApiException(ErrorDescription.LIST_PRODUCTS_IS_EMPTY, HttpStatus.NOT_FOUND);
         }
-
-        return productsPage.map(product -> modelMapper.map(product, ProductDto.class));
+        return mapToProductDtoPage(productsPage);
     }
 
     @Override
     public Page<ProductDto> findProductsByCategoryId(int categoryId, Pageable pageable) {
-
         Page<Product> productsPage = productRepository.findByProductCategory_Id(categoryId, pageable);
         if (productsPage.isEmpty()) {
             throw new RestApiException(ErrorDescription.LIST_PRODUCTS_IS_EMPTY, HttpStatus.NOT_FOUND);
         }
+        return mapToProductDtoPage(productsPage);
+    }
 
-        return productsPage.map(product -> modelMapper.map(product, ProductDto.class));
+    @Override
+    public ProductDto findProductByArticle(String article) {
+        Product product = productRepository.findProductByArticle(article)
+                .orElseThrow(() -> new RestApiException(ErrorDescription.PRODUCT_NOT_FOUND, HttpStatus.NOT_FOUND));
+
+        return mapToProductDto(product);
+    }
+
+    @Override
+    public List<ProductDto> findProductsByVendorArticle(String vendorArticle) {
+        List<Product> products = productRepository.findProductsByVendorArticle(vendorArticle);
+        if (products.isEmpty()) {
+            throw new RestApiException(ErrorDescription.LIST_PRODUCTS_IS_EMPTY, HttpStatus.NOT_FOUND);
+        }
+        return mapToProductDtoList(products);
+    }
+
+    @Override
+    public List<ProductDto> findProductsByName(String name) {
+        List<Product> products = productRepository.findProductsByName(name);
+        if (products.isEmpty()) {
+            throw new RestApiException(ErrorDescription.LIST_PRODUCTS_IS_EMPTY, HttpStatus.NOT_FOUND);
+        }
+        return mapToProductDtoList(products);
+    }
+
+    @Override
+    public List<ProductDto> searchProducts(String searchTerm) {
+        List<Product> products = productRepository.searchProducts(searchTerm);
+        if (products.isEmpty()) {
+            throw new RestApiException(ErrorDescription.LIST_PRODUCTS_IS_EMPTY, HttpStatus.NOT_FOUND);
+        }
+        return mapToProductDtoList(products);
     }
 
     private Product getProductOrThrow(Long id) {
         return productRepository.findById(id)
                 .orElseThrow(() -> new RestApiException(ErrorDescription.PRODUCT_NOT_FOUND, HttpStatus.NOT_FOUND));
+    }
+
+    private Page<ProductDto> mapToProductDtoPage(Page<Product> productsPage) {
+
+        return productsPage.map(product -> {
+            ProductDto productDto = modelMapper.map(product, ProductDto.class);
+
+            if (product.getDimensions() != null) {
+                NewDimensionsDto dimensionsDto = modelMapper.map(product.getDimensions(), NewDimensionsDto.class);
+                productDto.setNewDimensions(dimensionsDto);
+            }
+
+            return productDto;
+        });
+    }
+
+    private ProductDto mapToProductDto(Product product) {
+        ProductDto productDto = modelMapper.map(product, ProductDto.class);
+
+        if (product.getDimensions() != null) {
+            NewDimensionsDto dimensionsDto = modelMapper.map(product.getDimensions(), NewDimensionsDto.class);
+            productDto.setNewDimensions(dimensionsDto);
+        }
+
+        return productDto;
+    }
+
+    private List<ProductDto> mapToProductDtoList(List<Product> products) {
+        return products.stream()
+                .map(this::mapToProductDto)
+                .toList();
     }
 }

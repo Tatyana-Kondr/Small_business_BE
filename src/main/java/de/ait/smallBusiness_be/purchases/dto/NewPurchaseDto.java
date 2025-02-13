@@ -28,12 +28,12 @@ import java.util.List;
 @Schema(name = "New Purchase", description = "Data for registration of new purchases")
 public class NewPurchaseDto {
 
-    @NotBlank(message = "{validation.notBlank}")
+    @NotNull(message = "{validation.notNull}")
     @Schema(description = "Customer's id", example = "1")
     Long vendorId;
 
     @PastOrPresent(message = "{validation.dateOfLastPurchase.pastOrPresent}")
-    @Schema(description = "Date of purchase", example = "01-01-2025")
+    @Schema(description = "Date of purchase", example = "2025-01-01")
     LocalDate purchasingDate;
 
     @Schema(description = "Type of operation", example = "EINKAUF, LIEFERANT_RABATT, VERKAUF, KUNDENERSTATTUNG")
@@ -45,26 +45,21 @@ public class NewPurchaseDto {
     @Schema(description = "Document's number", example = "12345-Aa")
     String documentNumber;
 
-    @DecimalMin(value = "0", message = "{validation.tax.min}")
-    @NotNull(message = "{validation.notNull}")
-    @Schema(description = "Tax percentage", example = "19")
-    BigDecimal tax; // НДС в процентах
-
     @DecimalMin(value = "0.0", message = "{validation.price.min}")
     @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
-    @Schema(description = "Amount without percentage", example = "123.00")
+    @Schema(description = "Amount without percentage", example = "0")
     BigDecimal subtotal; // Подитог
 
     @DecimalMin(value = "0.0", message = "{validation.price.min}")
     @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
     @NotNull(message = "{validation.notNull}")
-    @Schema(description = "Amount tax", example = "23.37")
+    @Schema(description = "Amount tax", example = "0")
     BigDecimal taxSum; // Сумма налога
 
     @DecimalMin(value = "0.0", message = "{validation.price.min}")
     @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
     @NotNull(message = "{validation.notNull}")
-    @Schema(description = "Total amount", example = "146.37")
+    @Schema(description = "Total amount", example = "0")
     BigDecimal total; // Общая сумма
 
     @Schema(description = "Status of payment", example = "NICHT_BEZAHLT")
