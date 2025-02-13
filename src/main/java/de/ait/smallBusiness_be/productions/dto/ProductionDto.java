@@ -37,5 +37,5 @@ public class ProductionDto {
     Integer quantity;
     BigDecimal unitPrice;
     BigDecimal amount;
-    List<ProductionItem> purchaseItems = new ArrayList<>();
+    List<ProductionItem> productionItems = new ArrayList<>();
 }
