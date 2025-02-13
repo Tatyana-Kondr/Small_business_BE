@@ -1,4 +1,5 @@
 package de.ait.smallBusiness_be.productions.model;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import de.ait.smallBusiness_be.products.model.Product;
 import de.ait.smallBusiness_be.purchases.model.TypeOfOperation;
 import jakarta.persistence.*;
@@ -59,7 +60,8 @@ public class Production {
     @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
     BigDecimal amount;
 
-    @OneToMany(mappedBy = "purchase", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "production", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
-    List<ProductionItem> purchaseItems = new ArrayList<>();
+    @JsonManagedReference
+    List<ProductionItem> productionItems = new ArrayList<>();
 }
