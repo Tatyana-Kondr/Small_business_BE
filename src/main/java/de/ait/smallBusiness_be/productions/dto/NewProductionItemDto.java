@@ -27,6 +27,10 @@ import java.math.BigDecimal;
 public class NewProductionItemDto {
 
     @NotNull(message = "{validation.notNull}")
+    @Schema(description = "Production's id", example = "1")
+    Long productionId;
+
+    @NotNull(message = "{validation.notNull}")
     @Schema(description = "Product's id", example = "1")
     Long productId;
 
