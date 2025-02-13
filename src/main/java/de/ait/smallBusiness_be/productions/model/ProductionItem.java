@@ -1,6 +1,8 @@
 package de.ait.smallBusiness_be.productions.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import de.ait.smallBusiness_be.products.model.Product;
+import de.ait.smallBusiness_be.purchases.model.TypeOfOperation;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
@@ -36,7 +38,12 @@ public class ProductionItem {
     @ManyToOne
     @JoinColumn(name = "production_id", referencedColumnName = "id", nullable = false)
     @NotNull(message = "{validation.notNull}")
+    @JsonBackReference
     Production production;
+
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    TypeOfOperation type;
 
     @Column(nullable = false)
     Integer quantity;
