@@ -25,6 +25,8 @@ import java.math.BigDecimal;
 @Schema(name = "ProductionItem", description = "Data of productionItem")
 public class ProductionItemDto {
 
+    Long id;
+    Long productionId;
     Long productId;
     String type;
     Integer quantity;
