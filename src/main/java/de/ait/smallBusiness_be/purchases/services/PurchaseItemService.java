@@ -2,13 +2,14 @@ package de.ait.smallBusiness_be.purchases.services;
 
 import de.ait.smallBusiness_be.purchases.dto.NewPurchaseItemDto;
 import de.ait.smallBusiness_be.purchases.dto.PurchaseItemDto;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+
+
+import java.util.List;
 
 
 public interface PurchaseItemService {
-    PurchaseItemDto createPurchaseItem(NewPurchaseItemDto newPurchaseItemDto);
-    Page<PurchaseItemDto> getAllPurchaseItemsByPurchaseId(Pageable pageable, Long purchaseId);
+    PurchaseItemDto createPurchaseItem(NewPurchaseItemDto newPurchaseItemDto, Long purchaseId);
+    List<PurchaseItemDto> getAllPurchaseItemsByPurchaseId(Long purchaseId);
     PurchaseItemDto getPurchaseItemById(Long id);
     PurchaseItemDto updatePurchaseItem(Long id, NewPurchaseItemDto newPurchaseItemDto);
     void deletePurchaseItem(Long id);

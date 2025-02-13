@@ -40,7 +40,15 @@ public class PurchaseItem {
     Purchase purchase;
 
     @Column(nullable = false)
+    String productName;
+
+    @Column(nullable = false)
     Integer quantity;
+
+    @Column(precision = 8, scale = 2)
+    @DecimalMin(value = "0.0", message = "{validation.price.min}")
+    @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
+    BigDecimal unitPrice;
 
     @Column(precision = 8, scale = 2)
     @DecimalMin(value = "0.0", message = "{validation.price.min}")
@@ -60,4 +68,7 @@ public class PurchaseItem {
     @DecimalMin(value = "0.0", message = "{validation.price.min}")
     @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
     BigDecimal totalAmount;
+
+    @Column(nullable = false)
+    Integer position;
 }

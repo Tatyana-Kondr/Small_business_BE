@@ -32,7 +32,7 @@ public class Customer {
     private String name;
 
     @Column(unique = true)
-    @Size(min = 3, max = 6, message = "{validation.name.size}")
+    @Size( max = 6, message = "{validation.name.size}")
     private String customerNumber;
 
     @Embedded

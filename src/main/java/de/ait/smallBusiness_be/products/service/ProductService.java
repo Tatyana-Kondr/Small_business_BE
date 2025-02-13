@@ -8,6 +8,8 @@ import de.ait.smallBusiness_be.products.model.Product;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
+
 /**
  * SmallBusiness_BE
  * 24.10.2024
@@ -25,4 +27,8 @@ public interface ProductService {
     Page<ProductDto> findProductsByCategoryId(int categoryId, Pageable pageable);
 
     Product getProductOrThrow(Long id);
+    ProductDto findProductByArticle(String article);
+    List<ProductDto> findProductsByVendorArticle(String vendorArticle);
+    List<ProductDto> findProductsByName(String name);
+    List<ProductDto> searchProducts(String searchTerm);
 }
