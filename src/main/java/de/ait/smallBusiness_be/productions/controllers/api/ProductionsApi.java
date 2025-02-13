@@ -1,6 +1,5 @@
 package de.ait.smallBusiness_be.productions.controllers.api;
 
-
 import de.ait.smallBusiness_be.exceptions.ErrorResponseDto;
 import de.ait.smallBusiness_be.productions.dto.NewProductionDto;
 import de.ait.smallBusiness_be.productions.dto.ProductionDto;
@@ -144,6 +143,6 @@ public interface ProductionsApi {
                             schema = @Schema(implementation = ErrorResponseDto.class)))
     })
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    void removePurchase(
+    void removeProduction(
             @PathVariable Long id);
 }
