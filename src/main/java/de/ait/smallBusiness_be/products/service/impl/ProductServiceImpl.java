@@ -165,6 +165,15 @@ public class ProductServiceImpl implements ProductService {
         return mapToProductDtoList(products);
     }
 
+    @Override
+    public List<ProductDto> searchProducts(String searchTerm) {
+        List<Product> products = productRepository.searchProducts(searchTerm);
+        if (products.isEmpty()) {
+            throw new RestApiException(ErrorDescription.LIST_PRODUCTS_IS_EMPTY, HttpStatus.NOT_FOUND);
+        }
+        return mapToProductDtoList(products);
+    }
+
     private Product getProductOrThrow(Long id) {
         return productRepository.findById(id)
                 .orElseThrow(() -> new RestApiException(ErrorDescription.PRODUCT_NOT_FOUND, HttpStatus.NOT_FOUND));

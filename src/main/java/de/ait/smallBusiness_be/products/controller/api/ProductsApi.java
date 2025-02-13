@@ -19,6 +19,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Tags(
         @Tag(name = "Product controller")
 )
@@ -177,4 +179,24 @@ public interface ProductsApi {
     @ResponseStatus(HttpStatus.OK)
     Page<ProductDto> getProductsByCategory(@PathVariable("category-id") int categoryId,
                                            @PageableDefault(size = 10, sort = "name") Pageable pageable);
+
+
+
+@GetMapping("/search")
+@Operation(
+        summary = "Search products",
+        description = "Find products by a search term."
+)
+@ApiResponses(value = {
+        @ApiResponse(responseCode = "200",
+                description = "List of found products.",
+                content = @Content(mediaType = "application/json",
+                        schema = @Schema(implementation = ProductDto[].class))),
+        @ApiResponse(responseCode = "404",
+                description = "No products found.",
+                content = @Content(mediaType = "application/json",
+                        schema = @Schema(implementation = ErrorResponseDto.class)))
+})
+@ResponseStatus(HttpStatus.OK)
+List<ProductDto> searchProducts(@RequestParam String searchTerm);
 }

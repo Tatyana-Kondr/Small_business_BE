@@ -1,12 +1,12 @@
 package de.ait.smallBusiness_be.products.dao;
 
-
-import de.ait.smallBusiness_be.products.dto.ProductDto;
 import de.ait.smallBusiness_be.products.model.Product;
 import de.ait.smallBusiness_be.products.model.ProductCategory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
@@ -30,4 +30,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     Optional<Product> findProductByArticle(String article);
     List<Product> findProductsByVendorArticle(String vendorArticle);
     List<Product> findProductsByName(String name);
+
+    @Query("SELECT p FROM Product p WHERE LOWER(p.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
+            "OR LOWER(p.article) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
+            "OR LOWER(p.vendorArticle) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+    List<Product> searchProducts(@Param("searchTerm") String searchTerm);
 }

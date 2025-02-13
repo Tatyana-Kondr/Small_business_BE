@@ -27,4 +27,5 @@ public interface ProductService {
     ProductDto findProductByArticle(String article);
     List<ProductDto> findProductsByVendorArticle(String vendorArticle);
     List<ProductDto> findProductsByName(String name);
+    List<ProductDto> searchProducts(String searchTerm);
 }
