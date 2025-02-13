@@ -30,7 +30,7 @@ public class PurchaseController implements PurchasesApi{
     }
 
     @Override
-    public Page<PurchaseDto> getAllPurchases(Pageable pageable, String sort) {
+    public Page<PurchaseDto> getAllPurchases(Pageable pageable) {
         return purchaseService.getAllPurchases(pageable);
     }
 

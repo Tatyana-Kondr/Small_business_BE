@@ -53,10 +53,6 @@ public class Purchase {
     @Column(nullable = false)
     String documentNumber;
 
-    @Column(precision = 2)
-    @DecimalMin(value = "0", message = "{validation.tax.min}")
-    BigDecimal tax; // НДС в процентах
-
     @Column(precision = 8, scale = 2)
     @DecimalMin(value = "0.0", message = "{validation.price.min}")
     @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
@@ -76,7 +72,7 @@ public class Purchase {
     @Enumerated(EnumType.STRING)
     PaymentStatus paymentStatus;
 
-    @OneToMany(mappedBy = "purchase", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "purchase", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     List<PurchaseItem> purchaseItems = new ArrayList<>(); // Список позиций
 

@@ -1,13 +1,11 @@
 package de.ait.smallBusiness_be.purchases.dao;
 
+import de.ait.smallBusiness_be.customers.model.Customer;
 import de.ait.smallBusiness_be.purchases.model.Purchase;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.*;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Repository;
 
@@ -37,24 +35,23 @@ public class PurchaseRepositoryCustomImpl implements PurchaseRepositoryCustom {
         Root<Purchase> root = query.from(Purchase.class);
 
         List<Predicate> predicates = buildSearchPredicates(cb, root, searchQuery);
-
         query.where(cb.or(predicates.toArray(new Predicate[0])));
         query.orderBy(cb.asc(root.get("id")));
 
         TypedQuery<Purchase> typedQuery = entityManager.createQuery(query);
-
-        // Пагинация
         typedQuery.setFirstResult((int) pageable.getOffset());
         typedQuery.setMaxResults(pageable.getPageSize());
 
-        // Подсчет общего количества записей
+        // Подсчет количества записей
         CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
         Root<Purchase> countRoot = countQuery.from(Purchase.class);
-        countQuery.select(cb.count(countRoot)).where(cb.or(predicates.toArray(new Predicate[0])));
+        countQuery.select(cb.count(countRoot)).where(cb.or(buildSearchPredicates(cb, countRoot, searchQuery).toArray(new Predicate[0])));
+
         Long totalCount = entityManager.createQuery(countQuery).getSingleResult();
 
         return new PageImpl<>(typedQuery.getResultList(), pageable, totalCount);
     }
+
 
     // Метод для фильтрации по полям
     @Override
@@ -77,7 +74,8 @@ public class PurchaseRepositoryCustomImpl implements PurchaseRepositoryCustom {
         // Подсчет общего количества записей
         CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
         Root<Purchase> countRoot = countQuery.from(Purchase.class);
-        countQuery.select(cb.count(countRoot)).where(cb.and(predicates.toArray(new Predicate[0])));
+        List<Predicate> countPredicates = buildFilterPredicates(cb, countRoot, id, vendorId, document, documentNumber, total, paymentStatus);
+        countQuery.select(cb.count(countRoot)).where(cb.and(countPredicates.toArray(new Predicate[0])));
         Long totalCount = entityManager.createQuery(countQuery).getSingleResult();
 
         return new PageImpl<>(typedQuery.getResultList(), pageable, totalCount);
@@ -94,9 +92,7 @@ public class PurchaseRepositoryCustomImpl implements PurchaseRepositoryCustom {
             try {
                 Long id = Long.parseLong(searchQuery);
                 predicates.add(cb.equal(root.get("id"), id));
-            } catch (NumberFormatException ignored) {
-                // Если не число, пропускаем
-            }
+            } catch (NumberFormatException ignored) {}
 
             // Поиск по имени поставщика
             predicates.add(cb.like(cb.lower(root.get("vendor").get("name")), likePattern));
@@ -108,13 +104,12 @@ public class PurchaseRepositoryCustomImpl implements PurchaseRepositoryCustom {
             try {
                 BigDecimal total = new BigDecimal(searchQuery);
                 predicates.add(cb.equal(root.get("total"), total));
-            } catch (NumberFormatException ignored) {
-                // Если не число, пропускаем
-            }
+            } catch (NumberFormatException ignored) {}
         }
 
         return predicates;
     }
+
 
     // Вспомогательный метод для создания предикатов для фильтрации
     private List<Predicate> buildFilterPredicates(CriteriaBuilder cb, Root<Purchase> root, Long id, Long vendorId, String document, String documentNumber, BigDecimal total, String paymentStatus) {
@@ -124,12 +119,13 @@ public class PurchaseRepositoryCustomImpl implements PurchaseRepositoryCustom {
             predicates.add(cb.equal(root.get("id"), id));
         }
         if (vendorId != null) {
-            predicates.add(cb.equal(root.get("vendor").get("id"), vendorId));
+            Join<Purchase, Customer> vendorJoin = root.join("vendor", JoinType.INNER);
+            predicates.add(cb.equal(vendorJoin.get("id"), vendorId));
         }
-        if (document != null && !document.isEmpty()) {
+        if (document != null && !document.trim().isEmpty()) {
             predicates.add(cb.like(cb.lower(root.get("document")), "%" + document.toLowerCase() + "%"));
         }
-        if (documentNumber != null && !documentNumber.isEmpty()) {
+        if (documentNumber != null && !documentNumber.trim().isEmpty()) {
             predicates.add(cb.like(cb.lower(root.get("documentNumber")), "%" + documentNumber.toLowerCase() + "%"));
         }
         if (total != null) {

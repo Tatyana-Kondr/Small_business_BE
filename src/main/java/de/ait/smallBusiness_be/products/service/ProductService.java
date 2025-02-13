@@ -24,4 +24,8 @@ public interface ProductService {
     ProductDto updateProduct(Long id, UpdateProductDto updateProductDto);
     Page<ProductDto> findAllProducts(Pageable pageable);
     Page<ProductDto> findProductsByCategoryId(int categoryId, Pageable pageable);
+    ProductDto findProductByArticle(String article);
+    List<ProductDto> findProductsByVendorArticle(String vendorArticle);
+    List<ProductDto> findProductsByName(String name);
+    List<ProductDto> searchProducts(String searchTerm);
 }

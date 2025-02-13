@@ -1,8 +1,6 @@
 package de.ait.smallBusiness_be.purchases.controllers.api;
 
-import de.ait.smallBusiness_be.customers.dto.CustomerDto;
 import de.ait.smallBusiness_be.exceptions.ErrorResponseDto;
-import de.ait.smallBusiness_be.purchases.dto.NewPurchaseDto;
 import de.ait.smallBusiness_be.purchases.dto.NewPurchaseItemDto;
 import de.ait.smallBusiness_be.purchases.dto.PurchaseDto;
 import de.ait.smallBusiness_be.purchases.dto.PurchaseItemDto;
@@ -14,13 +12,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.tags.Tags;
 import jakarta.validation.Valid;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
+import java.util.List;
+
 
 @Tags(
         @Tag(name = "Purchase Item controller")
@@ -28,8 +25,8 @@ import java.math.BigDecimal;
 @RequestMapping("/api/purchaseItems")
 public interface PurchaseItemsApi {
 
-    //@PreAuthorize("isAuthenticated()")
-    @PostMapping
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping("/{purchaseId}")
     @Operation(
             summary = "Add a new purchase item",
             description = "Create a new purchase item. Admin is allowed.")
@@ -53,11 +50,12 @@ public interface PurchaseItemsApi {
                             schema = @Schema(type = "string")))
     })
     @ResponseStatus(HttpStatus.CREATED)
-    PurchaseItemDto createPurchaseItem(
-            @RequestBody @Valid NewPurchaseItemDto newPurchaseItemDto);
+    PurchaseItemDto addPurchaseItem(
+            @RequestBody @Valid NewPurchaseItemDto newPurchaseItemDto,
+            @PathVariable Long purchaseId);
 
-    //@PreAuthorize("isAuthenticated()")
-    @GetMapping("/{purchaseId}")
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/purchase/{purchaseId}")
     @Operation(
             summary = "Get all items of purchase by purchase_ID ",
             description = "Retrieve a list of all items of purchase.")
@@ -76,9 +74,7 @@ public interface PurchaseItemsApi {
                             schema = @Schema(type = "string")))
     })
     @ResponseStatus(HttpStatus.OK)
-    Page<PurchaseItemDto> getAllPurchaseItemsByPurchaseId(
-            @PageableDefault(size = 10) Pageable pageable,
-            @RequestParam(defaultValue = "name") String sort,
+    List<PurchaseItemDto> getAllPurchaseItemsByPurchaseId(
             @PathVariable Long purchaseId);
 
     @GetMapping("/{id}")
@@ -100,7 +96,7 @@ public interface PurchaseItemsApi {
 
 
 
-    //@PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated()")
     @PutMapping("/{id}")
     @Operation(
             summary = "Update the purchase item",
@@ -128,7 +124,7 @@ public interface PurchaseItemsApi {
             @PathVariable Long id,
             @RequestBody @Valid NewPurchaseItemDto newPurchaseItemDto);
 
-    //@PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated()")
     @DeleteMapping("/{id}")
     @Operation(
             summary = "Delete purchase item by ID",
