@@ -1,17 +1,22 @@
-package de.ait.smallBusiness_be.purchases.model;
-
+package de.ait.smallBusiness_be.productions.model;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import de.ait.smallBusiness_be.products.model.Product;
+import de.ait.smallBusiness_be.purchases.model.TypeOfOperation;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PastOrPresent;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * 15.01.2025
- * SmB
+ * 12.02.2025
+ * SmB_be
  *
  * @author Kondratyeva (AIT TR)
  */
@@ -22,25 +27,25 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @Builder(toBuilder = true)
 @Entity
-@Table(name = "purchase_items")
-public class PurchaseItem {
+@Table(name = "production")
+public class Production {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
+    @Column
+    @PastOrPresent(message = "{validation.dateOfLastPurchase.pastOrPresent}")
+    LocalDate dateOfProduction;
+
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    TypeOfOperation type;
+
     @ManyToOne
     @JoinColumn(name = "product_id", referencedColumnName = "id", nullable = false)
     @NotNull(message = "{validation.notNull}")
     Product product;
-
-    @ManyToOne
-    @JoinColumn(name = "purchase_id", referencedColumnName = "id", nullable = false)
-    @NotNull(message = "{validation.notNull}")
-    Purchase purchase;
-
-    @Column(nullable = false)
-    String productName;
 
     @Column(nullable = false)
     @DecimalMin(value = "0.0", message = "{validation.price.min}")
@@ -55,22 +60,10 @@ public class PurchaseItem {
     @Column(precision = 8, scale = 2)
     @DecimalMin(value = "0.0", message = "{validation.price.min}")
     @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
-    BigDecimal totalPrice;// Общая стоимость.
+    BigDecimal amount;
 
-    @Column(precision = 2)
-    @DecimalMin(value = "0", message = "{validation.tax.min}")
-    BigDecimal taxPercentage;
-
-    @Column(precision = 8, scale = 2)
-    @DecimalMin(value = "0.0", message = "{validation.price.min}")
-    @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
-    BigDecimal taxAmount; // Сумма налога
-
-    @Column(precision = 8, scale = 2)
-    @DecimalMin(value = "0.0", message = "{validation.price.min}")
-    @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
-    BigDecimal totalAmount;
-
-    @Column(nullable = false)
-    Integer position;
+    @OneToMany(mappedBy = "production", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    @JsonManagedReference
+    List<ProductionItem> productionItems = new ArrayList<>();
 }
