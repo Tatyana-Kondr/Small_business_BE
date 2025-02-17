@@ -24,9 +24,10 @@ public record NewSaleItemDto(
         String productName,
 
         @NotNull(message = "{validation.notNull}")
-        @Min(value = 1, message = "{validation.constraints.Min.message}")
+        @DecimalMin(value = "0.0", message = "{validation.price.min}")
+        @Digits(integer = 6, fraction = 3, message = "{validation.price.digits}")
         @Schema(description = "Quantity of the product", example = "2")
-        Integer quantity,
+        BigDecimal quantity,
 
         @DecimalMin(value = "0.0", message = "{validation.price.min}")
         @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")

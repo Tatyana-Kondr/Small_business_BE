@@ -10,7 +10,7 @@ public record SaleItemDto(
         Long saleId,
         Long productId,
         String productName,
-        Integer quantity,
+        BigDecimal quantity,
         BigDecimal unitPrice,
         BigDecimal discount,
         BigDecimal discountAmount,
