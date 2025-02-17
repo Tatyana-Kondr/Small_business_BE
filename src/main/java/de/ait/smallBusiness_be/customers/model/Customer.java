@@ -31,7 +31,7 @@ public class Customer {
     @Size(min = 3, max = 100, message = "{validation.name.size}")
     private String name;
 
-    @Column(unique = true)
+    @Column
     @Size( max = 6, message = "{validation.name.size}")
     private String customerNumber;
 
