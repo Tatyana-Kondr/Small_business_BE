@@ -29,7 +29,7 @@ public class ProductionItemDto {
     Long productionId;
     Long productId;
     String type;
-    Integer quantity;
+    BigDecimal quantity;
     BigDecimal unitPrice;
     BigDecimal totalPrice;
 }

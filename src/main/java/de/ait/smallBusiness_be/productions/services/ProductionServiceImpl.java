@@ -52,7 +52,7 @@ public class ProductionServiceImpl implements ProductionService{
                 .orElseThrow(() -> new IllegalArgumentException("Product not found with ID: " + newProductionDto.getProductId()));
         Production production = modelMapper.map(newProductionDto, Production.class);
         production.setProduct(product);
-        production.setAmount(newProductionDto.getUnitPrice().multiply(BigDecimal.valueOf(newProductionDto.getQuantity())));
+        production.setAmount(newProductionDto.getUnitPrice().multiply(newProductionDto.getQuantity()));
 
         if(newProductionDto.getProductionItems() != null && !newProductionDto.getProductionItems().isEmpty()) {
             List<ProductionItem> productionItems = newProductionDto.getProductionItems().stream()
@@ -64,7 +64,7 @@ public class ProductionServiceImpl implements ProductionService{
                         ProductionItem productionItem = modelMapper.map(newProductionItemDto, ProductionItem.class);
                         productionItem.setProduct(productForItem);
                         productionItem.setProduction(production);
-                        BigDecimal totalPrice = productionItem.getUnitPrice().multiply(BigDecimal.valueOf(productionItem.getQuantity()));
+                        BigDecimal totalPrice = productionItem.getUnitPrice().multiply(productionItem.getQuantity());
                         productionItem.setTotalPrice(totalPrice);
 
                         return productionItem;
@@ -124,7 +124,7 @@ public class ProductionServiceImpl implements ProductionService{
         production.setDateOfProduction(newProductionDto.getDateOfProduction());
         production.setQuantity(newProductionDto.getQuantity());
         production.setUnitPrice(newProductionDto.getUnitPrice());
-        production.setAmount(newProductionDto.getUnitPrice().multiply(BigDecimal.valueOf(newProductionDto.getQuantity())));
+        production.setAmount(newProductionDto.getUnitPrice().multiply(newProductionDto.getQuantity()));
 
         Map<Long, ProductionItem> existingItems = production.getProductionItems().stream()
                 .collect(Collectors.toMap(item -> item.getProduct().getId(), item -> item));
@@ -148,7 +148,7 @@ public class ProductionServiceImpl implements ProductionService{
 
             productionItem.setQuantity(itemDto.getQuantity());
             productionItem.setUnitPrice(itemDto.getUnitPrice());
-            productionItem.setTotalPrice(itemDto.getUnitPrice().multiply(BigDecimal.valueOf(itemDto.getQuantity())));
+            productionItem.setTotalPrice(itemDto.getUnitPrice().multiply(itemDto.getQuantity()));
 
             updatedItems.add(productionItem);
         }

@@ -47,7 +47,7 @@ public class ProductionItemServiceImpl implements ProductionItemService {
         ProductionItem productionItem = modelMapper.map(newProductionItemDto, ProductionItem.class);
         productionItem.setProduction(production);
         productionItem.setProduct(product);
-        BigDecimal totalPrice = productionItem.getUnitPrice().multiply(BigDecimal.valueOf(productionItem.getQuantity()));
+        BigDecimal totalPrice = productionItem.getUnitPrice().multiply(productionItem.getQuantity());
         productionItem.setTotalPrice(totalPrice);
 
         ProductionItem savedProductionItem = productionItemRepository.save(productionItem);
@@ -67,7 +67,7 @@ public class ProductionItemServiceImpl implements ProductionItemService {
         ProductionItem productionItem = productionItemRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("ProductionItem not found with ID: " + id));
         modelMapper.map(newProductionItemDto, productionItem);
-        BigDecimal totalPrice = productionItem.getUnitPrice().multiply(BigDecimal.valueOf(productionItem.getQuantity()));
+        BigDecimal totalPrice = productionItem.getUnitPrice().multiply(productionItem.getQuantity());
         productionItem.setTotalPrice(totalPrice);
         ProductionItem updatedProductionItem = productionItemRepository.save(productionItem);
         return modelMapper.map(updatedProductionItem, ProductionItemDto.class);

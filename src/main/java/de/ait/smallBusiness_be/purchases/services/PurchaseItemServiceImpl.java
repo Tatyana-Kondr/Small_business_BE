@@ -129,7 +129,7 @@ public class PurchaseItemServiceImpl implements PurchaseItemService {
     }
 
     private void recalculatePurchaseItemTotals(PurchaseItem purchaseItem) {
-        BigDecimal totalPrice = purchaseItem.getUnitPrice().multiply(BigDecimal.valueOf(purchaseItem.getQuantity()));
+        BigDecimal totalPrice = purchaseItem.getUnitPrice().multiply(purchaseItem.getQuantity());
         BigDecimal taxAmount = totalPrice
                 .multiply(purchaseItem.getTaxPercentage().movePointLeft(2)) // Это эквивалентно делению на 100.
                 .setScale(2, RoundingMode.HALF_UP);
@@ -148,7 +148,7 @@ public class PurchaseItemServiceImpl implements PurchaseItemService {
 
         // Перебираем все элементы закупки
         purchase.getPurchaseItems().forEach(purchaseItem -> {
-            BigDecimal totalPrice = purchaseItem.getUnitPrice().multiply(BigDecimal.valueOf(purchaseItem.getQuantity()));
+            BigDecimal totalPrice = purchaseItem.getUnitPrice().multiply(purchaseItem.getQuantity());
             BigDecimal taxAmount = totalPrice
                     .multiply(purchaseItem.getTaxPercentage().movePointLeft(2)) // Это эквивалентно делению на 100.
                     .setScale(2, RoundingMode.HALF_UP);

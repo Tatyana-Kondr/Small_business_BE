@@ -88,7 +88,7 @@ public class PurchaseServiceImpl implements PurchaseService{
 
                         // Рассчитываем totalPrice, taxAmount и totalAmount
                         BigDecimal totalPrice = purchaseItem
-                                .getUnitPrice().multiply(BigDecimal.valueOf(purchaseItem.getQuantity()));
+                                .getUnitPrice().multiply(purchaseItem.getQuantity());
                         BigDecimal taxAmount = totalPrice
                                 .multiply(purchaseItem.getTaxPercentage().movePointLeft(2)) // Это эквивалентно делению на 100.
                                 .setScale(2, RoundingMode.HALF_UP);
@@ -229,7 +229,7 @@ public class PurchaseServiceImpl implements PurchaseService{
             purchaseItem.setQuantity(itemDto.getQuantity());
             purchaseItem.setUnitPrice(itemDto.getUnitPrice());
 
-            BigDecimal totalPrice = purchaseItem.getUnitPrice().multiply(BigDecimal.valueOf(purchaseItem.getQuantity()));
+            BigDecimal totalPrice = purchaseItem.getUnitPrice().multiply(purchaseItem.getQuantity());
             BigDecimal taxAmount = totalPrice.multiply(purchaseItem.getTaxPercentage().movePointLeft(2))
                     .setScale(2, RoundingMode.HALF_UP);
             BigDecimal totalAmount = totalPrice.add(taxAmount);

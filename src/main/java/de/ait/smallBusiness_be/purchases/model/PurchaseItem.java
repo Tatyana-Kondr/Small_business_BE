@@ -43,7 +43,9 @@ public class PurchaseItem {
     String productName;
 
     @Column(nullable = false)
-    Integer quantity;
+    @DecimalMin(value = "0.0", message = "{validation.price.min}")
+    @Digits(integer = 6, fraction = 3, message = "{validation.price.digits}")
+    BigDecimal quantity;
 
     @Column(precision = 8, scale = 2)
     @DecimalMin(value = "0.0", message = "{validation.price.min}")

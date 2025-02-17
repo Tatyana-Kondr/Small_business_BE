@@ -34,7 +34,7 @@ public class ProductionDto {
     LocalDate dateOfProduction;
     String type;
     Long productId;
-    Integer quantity;
+    BigDecimal quantity;
     BigDecimal unitPrice;
     BigDecimal amount;
     List<ProductionItem> productionItems = new ArrayList<>();
