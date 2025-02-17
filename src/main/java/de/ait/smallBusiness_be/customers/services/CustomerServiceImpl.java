@@ -114,10 +114,16 @@ public class CustomerServiceImpl implements  CustomerService{
     }
 
     private void checkCustomer(NewCustomerDto newCustomerDto) {
-        if (customerRepository.findByNameAndAddress(
+        boolean existsByNameAndAddress = customerRepository.existsByNameAndAddress(
                 newCustomerDto.getName(),
-                modelMapper.map(newCustomerDto.getAddressDto(), Address.class)).isPresent()
-                || customerRepository.findByCustomerNumber(newCustomerDto.getCustomerNumber()).isPresent() ) {
+                modelMapper.map(newCustomerDto.getAddressDto(), Address.class)
+        );
+
+        boolean existsByCustomerNumber = newCustomerDto.getCustomerNumber() != null
+                && !newCustomerDto.getCustomerNumber().isBlank()
+                && customerRepository.existsByCustomerNumber(newCustomerDto.getCustomerNumber());
+
+        if (existsByNameAndAddress || existsByCustomerNumber) {
             throw new RestApiException(CUSTOMER_ALREADY_EXISTS, HttpStatus.CONFLICT);
         }
     }
