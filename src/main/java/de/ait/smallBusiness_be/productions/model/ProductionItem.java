@@ -1,6 +1,8 @@
-package de.ait.smallBusiness_be.purchases.model;
+package de.ait.smallBusiness_be.productions.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import de.ait.smallBusiness_be.products.model.Product;
+import de.ait.smallBusiness_be.purchases.model.TypeOfOperation;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
@@ -10,8 +12,8 @@ import lombok.*;
 import java.math.BigDecimal;
 
 /**
- * 15.01.2025
- * SmB
+ * 12.02.2025
+ * SmB_be
  *
  * @author Kondratyeva (AIT TR)
  */
@@ -22,9 +24,8 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @Builder(toBuilder = true)
 @Entity
-@Table(name = "purchase_items")
-public class PurchaseItem {
-
+@Table(name = "production_items")
+public class ProductionItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
@@ -35,12 +36,14 @@ public class PurchaseItem {
     Product product;
 
     @ManyToOne
-    @JoinColumn(name = "purchase_id", referencedColumnName = "id", nullable = false)
+    @JoinColumn(name = "production_id", referencedColumnName = "id", nullable = false)
     @NotNull(message = "{validation.notNull}")
-    Purchase purchase;
+    @JsonBackReference
+    Production production;
 
     @Column(nullable = false)
-    String productName;
+    @Enumerated(EnumType.STRING)
+    TypeOfOperation type;
 
     @Column(nullable = false)
     @DecimalMin(value = "0.0", message = "{validation.price.min}")
@@ -56,21 +59,4 @@ public class PurchaseItem {
     @DecimalMin(value = "0.0", message = "{validation.price.min}")
     @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
     BigDecimal totalPrice;// Общая стоимость.
-
-    @Column(precision = 2)
-    @DecimalMin(value = "0", message = "{validation.tax.min}")
-    BigDecimal taxPercentage;
-
-    @Column(precision = 8, scale = 2)
-    @DecimalMin(value = "0.0", message = "{validation.price.min}")
-    @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
-    BigDecimal taxAmount; // Сумма налога
-
-    @Column(precision = 8, scale = 2)
-    @DecimalMin(value = "0.0", message = "{validation.price.min}")
-    @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
-    BigDecimal totalAmount;
-
-    @Column(nullable = false)
-    Integer position;
 }

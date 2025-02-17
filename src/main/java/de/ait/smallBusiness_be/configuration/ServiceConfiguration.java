@@ -4,6 +4,10 @@ package de.ait.smallBusiness_be.configuration;
 import de.ait.smallBusiness_be.customers.dto.CustomerDto;
 import de.ait.smallBusiness_be.customers.dto.NewCustomerDto;
 import de.ait.smallBusiness_be.customers.model.Customer;
+import de.ait.smallBusiness_be.productions.dto.ProductionDto;
+import de.ait.smallBusiness_be.productions.dto.ProductionItemDto;
+import de.ait.smallBusiness_be.productions.model.Production;
+import de.ait.smallBusiness_be.productions.model.ProductionItem;
 import de.ait.smallBusiness_be.purchases.dto.PurchaseDto;
 import de.ait.smallBusiness_be.purchases.dto.PurchaseItemDto;
 import de.ait.smallBusiness_be.purchases.model.Purchase;
@@ -53,6 +57,15 @@ public class ServiceConfiguration {
         modelMapper.createTypeMap(Purchase.class, PurchaseDto.class)
                 .addMapping(src -> src.getVendor().getId(), PurchaseDto::setVendorId);
 
+        //  Добавляем маппинг для ProductionItem -> ProductionItemDto
+        modelMapper.createTypeMap(ProductionItem.class, ProductionItemDto.class)
+                .addMapping(src -> src.getProduction().getId(), ProductionItemDto::setProductionId);
+
+        modelMapper.typeMap(Production.class, ProductionDto.class)
+                .addMappings(mapper -> mapper.map(src -> src.getProduct().getId(), ProductionDto::setProductId));
+
+        modelMapper.typeMap(ProductionItem.class, ProductionItemDto.class)
+                .addMappings(mapper -> mapper.map(src -> src.getProduct().getId(), ProductionItemDto::setProductId));
         return modelMapper;
     }
 

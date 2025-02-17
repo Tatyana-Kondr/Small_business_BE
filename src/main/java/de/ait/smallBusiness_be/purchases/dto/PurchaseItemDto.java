@@ -30,7 +30,7 @@ public class PurchaseItemDto {
 
     Long purchaseId;
 
-    Integer quantity;
+    BigDecimal quantity;
 
     BigDecimal unitPrice;
 
