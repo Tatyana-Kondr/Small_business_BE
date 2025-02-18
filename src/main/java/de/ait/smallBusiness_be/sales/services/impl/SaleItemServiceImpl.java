@@ -42,7 +42,7 @@ public class SaleItemServiceImpl implements SaleItemService {
 
         Sale sale = saleService.getSaleOrThrow(saleId);
 
-        Product product = productService.getProductOrThrow(newSaleItem.productId());
+        Product product = productService.getProductOrThrow(newSaleItem.getProductId());
 
         Integer maxPosition = saleItemRepository.findMaxPositionBySaleId(saleId);
         int newPosition = (maxPosition != null) ? maxPosition + 1 : 1;

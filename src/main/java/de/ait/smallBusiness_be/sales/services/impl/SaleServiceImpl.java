@@ -46,12 +46,12 @@ public class SaleServiceImpl implements SaleService {
     @Transactional
     public SaleDto createSale(NewSaleDto newSale) {
 
-        Customer customer = customerService.getCustomerOrThrow(newSale.customerId());
+        Customer customer = customerService.getCustomerOrThrow(newSale.getCustomerId());
 
         Sale sale = modelMapper.map(newSale, Sale.class);
         sale.setCustomer(customer);
-        sale.setShippingDimensions(newSale.shippingDimensions() != null ?
-                modelMapper.map(newSale.shippingDimensions(), ShippingDimensions.class) :
+        sale.setShippingDimensions(newSale.getShippingDimensions() != null ?
+                modelMapper.map(newSale.getShippingDimensions(), ShippingDimensions.class) :
                 null);
 
         AtomicReference<BigDecimal> discountSum = new AtomicReference<>(BigDecimal.ZERO);
@@ -59,11 +59,11 @@ public class SaleServiceImpl implements SaleService {
         AtomicReference<BigDecimal> taxSum = new AtomicReference<>(BigDecimal.ZERO);
         AtomicReference<BigDecimal> total = new AtomicReference<>(BigDecimal.ZERO);
 
-        if (newSale.salesItems()!=null && !newSale.salesItems().isEmpty()) {
+        if (newSale.getSalesItems()!=null && !newSale.getSalesItems().isEmpty()) {
 
-            List<SaleItem> saleItems = newSale.salesItems().stream()
+            List<SaleItem> saleItems = newSale.getSalesItems().stream()
                     .map(newSaleItemDto -> {
-                        Product product = productService.getProductOrThrow(newSaleItemDto.productId());
+                        Product product = productService.getProductOrThrow(newSaleItemDto.getProductId());
                         SaleItem saleItem = modelMapper.map(newSaleItemDto, SaleItem.class);
                         saleItem.setProduct(product);
                         saleItem.setSale(sale);
