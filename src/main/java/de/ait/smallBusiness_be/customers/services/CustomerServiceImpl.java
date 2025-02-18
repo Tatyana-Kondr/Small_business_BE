@@ -145,11 +145,13 @@ public class CustomerServiceImpl implements  CustomerService{
                     }
                 });
         // Проверка на совпадение клиентского номера
-        customerRepository.findByCustomerNumber(newCustomerDto.getCustomerNumber())
-                .ifPresent(existingCustomer -> {
-                    if (!existingCustomer.getId().equals(id)) {
-                        throw new RestApiException(CUSTOMER_ALREADY_EXISTS, HttpStatus.CONFLICT);
-                    }
-                });
+        if (newCustomerDto.getCustomerNumber() != null && !newCustomerDto.getCustomerNumber().isBlank()) {
+            customerRepository.findByCustomerNumber(newCustomerDto.getCustomerNumber())
+                    .ifPresent(existingCustomer -> {
+                        if (!existingCustomer.getId().equals(id)) {
+                            throw new RestApiException(CUSTOMER_ALREADY_EXISTS, HttpStatus.CONFLICT);
+                        }
+                    });
+        }
     }
 }
