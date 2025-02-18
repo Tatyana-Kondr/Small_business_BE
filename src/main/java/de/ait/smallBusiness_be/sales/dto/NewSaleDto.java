@@ -17,7 +17,7 @@ public record NewSaleDto(
 
         @NotBlank(message = "{validation.notBlank}")
         @Size(min = 5, max = 50, message = "{javax.validation.constraints.Size.message}")
-        @Schema(description = "Invoice number", example = "INV-2024-001")
+        @Schema(description = "Invoice number", example = "RE-2024-001")
         String invoiceNumber,
 
         @Schema(description = "Account object (optional)", example = "Project Alpha")
@@ -28,13 +28,16 @@ public record NewSaleDto(
         @Schema(description = "Type of operation", example = "VERKAUF",allowableValues = {"EINKAUF, LIEFERANT_RABATT, VERKAUF, KUNDENERSTATTUNG, EXCHANGE"})
         String typeOfOperation,
 
-        @Schema(description = "Shipping method", example = "Courier")
+        @Schema(description = "Shipping method", example = "DHL_PAKET",allowableValues = {"DHL_PAKET, POST_MAXI_BRIEF, HERMES, ASH_LOGISTIK_LUFTFRACHT_TRANSPORTE_ZOLLSERVICE, ABHOLUNG"})
+        @Pattern(regexp = "DHL_PAKET|POST_MAXI_BRIEF|HERMES|ASH_LOGISTIK_LUFTFRACHT_TRANSPORTE_ZOLLSERVICE|ABHOLUNG")
         String shipping,
 
         @Schema(description = "Shipping dimensions (weight, width, height, length)")
         NewShippingDimensionsDto shippingDimensions,
 
-        @Schema(description = "Terms of payment", example = "Net 30")
+        @Schema(description = "Terms of payment", example = "BETRAG_IM_BAR", allowableValues = {"BETRAG_IM_BAR, ÜBERWEISUNG_7_TAGE_2_PROZENT_14_TAGE_NETTO,\n" +
+                "    ÜBERWEISUNG_7_TAGE, ÜBERWEISUNG_14_TAGE, BETRAG_ERHALTEN_AM"})
+        @Pattern(regexp = "BETRAG_IM_BAR|ÜBERWEISUNG_7_TAGE_2_PROZENT_14_TAGE_NETTO|ÜBERWEISUNG_7_TAGE|ÜBERWEISUNG_14_TAGE|BETRAG_ERHALTEN_AM")
         String termsOfPayment,
 
         @PastOrPresent
