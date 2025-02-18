@@ -2,7 +2,6 @@ package de.ait.smallBusiness_be.productions.services;
 
 import de.ait.smallBusiness_be.exceptions.ErrorDescription;
 import de.ait.smallBusiness_be.exceptions.RestApiException;
-import de.ait.smallBusiness_be.productions.dao.ProductionItemRepository;
 import de.ait.smallBusiness_be.productions.dao.ProductionRepository;
 import de.ait.smallBusiness_be.productions.dto.NewProductionDto;
 import de.ait.smallBusiness_be.productions.dto.NewProductionItemDto;
@@ -24,9 +23,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
@@ -41,7 +42,6 @@ import java.util.stream.Collectors;
 public class ProductionServiceImpl implements ProductionService{
 
     private final ProductionRepository productionRepository;
-    private final ProductionItemRepository productionItemRepository;
     private final ProductRepository productRepository;
     private final ModelMapper modelMapper;
 
@@ -52,7 +52,14 @@ public class ProductionServiceImpl implements ProductionService{
                 .orElseThrow(() -> new IllegalArgumentException("Product not found with ID: " + newProductionDto.getProductId()));
         Production production = modelMapper.map(newProductionDto, Production.class);
         production.setProduct(product);
-        production.setAmount(newProductionDto.getUnitPrice().multiply(newProductionDto.getQuantity()));
+
+        BigDecimal amount = production.getUnitPrice()
+                .multiply(production.getQuantity())
+                .setScale(2, RoundingMode.HALF_UP);
+
+        production.setAmount(amount);
+
+        AtomicReference<BigDecimal> totalPriceItems = new AtomicReference<>(BigDecimal.ZERO);
 
         if(newProductionDto.getProductionItems() != null && !newProductionDto.getProductionItems().isEmpty()) {
             List<ProductionItem> productionItems = newProductionDto.getProductionItems().stream()
@@ -64,8 +71,12 @@ public class ProductionServiceImpl implements ProductionService{
                         ProductionItem productionItem = modelMapper.map(newProductionItemDto, ProductionItem.class);
                         productionItem.setProduct(productForItem);
                         productionItem.setProduction(production);
-                        BigDecimal totalPrice = productionItem.getUnitPrice().multiply(productionItem.getQuantity());
+                        BigDecimal totalPrice = productionItem.getUnitPrice()
+                                .multiply(productionItem.getQuantity())
+                                .setScale(2, RoundingMode.HALF_UP);
                         productionItem.setTotalPrice(totalPrice);
+
+                        totalPriceItems.updateAndGet(value -> value.add(productionItem.getTotalPrice()));
 
                         return productionItem;
                     })
@@ -73,7 +84,10 @@ public class ProductionServiceImpl implements ProductionService{
 
             production.setProductionItems(productionItems);
         }
-            Production savedProduction = productionRepository.save(production);
+        if (production.getAmount().compareTo(totalPriceItems.get()) <= 0) {
+            throw new RestApiException(ErrorDescription.PRODUCTION_AMOUNT, HttpStatus.CONFLICT);
+        }
+        Production savedProduction = productionRepository.save(production);
 
         return modelMapper.map(savedProduction, ProductionDto.class);
     }
@@ -126,6 +140,7 @@ public class ProductionServiceImpl implements ProductionService{
         production.setUnitPrice(newProductionDto.getUnitPrice());
         production.setAmount(newProductionDto.getUnitPrice().multiply(newProductionDto.getQuantity()));
 
+        AtomicReference<BigDecimal> totalPriceItems = new AtomicReference<>(BigDecimal.ZERO);
         Map<Long, ProductionItem> existingItems = production.getProductionItems().stream()
                 .collect(Collectors.toMap(item -> item.getProduct().getId(), item -> item));
 
@@ -148,7 +163,10 @@ public class ProductionServiceImpl implements ProductionService{
 
             productionItem.setQuantity(itemDto.getQuantity());
             productionItem.setUnitPrice(itemDto.getUnitPrice());
-            productionItem.setTotalPrice(itemDto.getUnitPrice().multiply(itemDto.getQuantity()));
+            BigDecimal totalPrice = productionItem.getUnitPrice()
+                    .multiply(productionItem.getQuantity())
+                    .setScale(2, RoundingMode.HALF_UP);
+            productionItem.setTotalPrice(totalPrice);
 
             updatedItems.add(productionItem);
         }
@@ -161,6 +179,17 @@ public class ProductionServiceImpl implements ProductionService{
             if (!production.getProductionItems().contains(updatedItem)) {
                 production.getProductionItems().add(updatedItem);
             }
+        }
+        // Подсчёт общей суммы после обновления всех ProductionItem
+        totalPriceItems.set(
+                production.getProductionItems().stream()
+                        .map(ProductionItem::getTotalPrice)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add)
+        );
+
+
+        if (production.getAmount().compareTo(totalPriceItems.get()) <= 0) {
+            throw new RestApiException(ErrorDescription.PRODUCTION_AMOUNT, HttpStatus.CONFLICT);
         }
 
         Production updatedProduction = productionRepository.save(production);
