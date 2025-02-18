@@ -14,6 +14,8 @@ import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -42,9 +44,14 @@ public class SaleItemServiceImpl implements SaleItemService {
 
         Product product = productService.getProductOrThrow(newSaleItem.productId());
 
+        Integer maxPosition = saleItemRepository.findMaxPositionBySaleId(saleId);
+        int newPosition = (maxPosition != null) ? maxPosition + 1 : 1;
+
         SaleItem saleItem = modelMapper.map(newSaleItem, SaleItem.class);
         saleItem.setProduct(product);
         saleItem.setSale(sale);
+        saleItem.setPosition(newPosition);
+        recalculateSaleItemTotals(saleItem);
 
         SaleItem savedItem = saleItemRepository.save(saleItem);
 
@@ -75,5 +82,23 @@ public class SaleItemServiceImpl implements SaleItemService {
 
     @Override
     public void deleteSaleItem(Long saleId, Long saleItemId) {
+    }
+
+
+    private void recalculateSaleItemTotals(SaleItem saleItem) {
+        BigDecimal totalPriceWithoutDiscount = saleItem.getUnitPrice().multiply(saleItem.getQuantity()); //стоимость без скидки (цена * количество)
+        BigDecimal discountAmount = totalPriceWithoutDiscount
+                .multiply(saleItem.getDiscount().movePointLeft(2)) // Это эквивалентно делению на 100.
+                .setScale(2, RoundingMode.HALF_UP); // сумма скидки
+        BigDecimal totalPrice = totalPriceWithoutDiscount.subtract(discountAmount); // сумма с учетом скидки (стоимость - скидка)
+        BigDecimal taxAmount = totalPrice
+                .multiply(saleItem.getTax().movePointLeft(2)) // Это эквивалентно делению на 100.
+                .setScale(2, RoundingMode.HALF_UP); // сумма налога
+        BigDecimal totalAmount = totalPrice.add(taxAmount); // итоговая сумма с учетом скидки и налога (сумма с учетом скидки + налог)
+
+        saleItem.setDiscountAmount(discountAmount);
+        saleItem.setTotalPrice(totalPrice);
+        saleItem.setTaxAmount(taxAmount);
+        saleItem.setTotalAmount(totalAmount);
     }
 }

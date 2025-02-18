@@ -21,7 +21,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * 2/5/2025
@@ -51,6 +54,11 @@ public class SaleServiceImpl implements SaleService {
                 modelMapper.map(newSale.shippingDimensions(), ShippingDimensions.class) :
                 null);
 
+        AtomicReference<BigDecimal> discountSum = new AtomicReference<>(BigDecimal.ZERO);
+        AtomicReference<BigDecimal> subtotal = new AtomicReference<>(BigDecimal.ZERO);
+        AtomicReference<BigDecimal> taxSum = new AtomicReference<>(BigDecimal.ZERO);
+        AtomicReference<BigDecimal> total = new AtomicReference<>(BigDecimal.ZERO);
+
         if (newSale.salesItems()!=null && !newSale.salesItems().isEmpty()) {
 
             List<SaleItem> saleItems = newSale.salesItems().stream()
@@ -59,10 +67,35 @@ public class SaleServiceImpl implements SaleService {
                         SaleItem saleItem = modelMapper.map(newSaleItemDto, SaleItem.class);
                         saleItem.setProduct(product);
                         saleItem.setSale(sale);
+
+                        BigDecimal totalPriceWithoutDiscount = saleItem.getUnitPrice().multiply(saleItem.getQuantity()); //стоимость без скидки (цена * количество)
+                        BigDecimal discountAmount = totalPriceWithoutDiscount
+                                .multiply(saleItem.getDiscount().movePointLeft(2)) // Это эквивалентно делению на 100.
+                                .setScale(2, RoundingMode.HALF_UP); // сумма скидки
+                        BigDecimal totalPrice = totalPriceWithoutDiscount.subtract(discountAmount); // сумма с учетом скидки (стоимость - скидка)
+                        BigDecimal taxAmount = totalPrice
+                                .multiply(saleItem.getTax().movePointLeft(2)) // Это эквивалентно делению на 100.
+                                .setScale(2, RoundingMode.HALF_UP); // сумма налога
+                        BigDecimal totalAmount = totalPrice.add(taxAmount); // итоговая сумма с учетом скидки и налога (сумма с учетом скидки + налог)
+
+                        saleItem.setDiscountAmount(discountAmount);
+                        saleItem.setTotalPrice(totalPrice);
+                        saleItem.setTaxAmount(taxAmount);
+                        saleItem.setTotalAmount(totalAmount);
+
+                        discountSum.updateAndGet(value -> value.add(saleItem.getDiscountAmount()));
+                        subtotal.updateAndGet(value -> value.add(saleItem.getTotalPrice()));
+                        taxSum.updateAndGet(value -> value.add(saleItem.getTaxAmount()));
+                        total.updateAndGet(value -> value.add(saleItem.getTotalAmount()));
                         return saleItem;
                     }).toList();
             sale.setSalesItems(saleItems);
         }
+
+        sale.setDiscountAmount(discountSum.get());
+        sale.setTotalPrice(subtotal.get());
+        sale.setTaxAmount(taxSum.get());
+        sale.setTotalAmount(total.get());
 
         Sale savedSale = saleRepository.save(sale);
 
