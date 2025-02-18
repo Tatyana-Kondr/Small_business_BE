@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 /**
  * 13.02.2025
@@ -47,7 +48,9 @@ public class ProductionItemServiceImpl implements ProductionItemService {
         ProductionItem productionItem = modelMapper.map(newProductionItemDto, ProductionItem.class);
         productionItem.setProduction(production);
         productionItem.setProduct(product);
-        BigDecimal totalPrice = productionItem.getUnitPrice().multiply(productionItem.getQuantity());
+        BigDecimal totalPrice = productionItem.getUnitPrice()
+                .multiply(productionItem.getQuantity())
+                .setScale(2, RoundingMode.HALF_UP);
         productionItem.setTotalPrice(totalPrice);
 
         ProductionItem savedProductionItem = productionItemRepository.save(productionItem);
@@ -67,7 +70,9 @@ public class ProductionItemServiceImpl implements ProductionItemService {
         ProductionItem productionItem = productionItemRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("ProductionItem not found with ID: " + id));
         modelMapper.map(newProductionItemDto, productionItem);
-        BigDecimal totalPrice = productionItem.getUnitPrice().multiply(productionItem.getQuantity());
+        BigDecimal totalPrice = productionItem.getUnitPrice()
+                .multiply(productionItem.getQuantity())
+                .setScale(2, RoundingMode.HALF_UP);
         productionItem.setTotalPrice(totalPrice);
         ProductionItem updatedProductionItem = productionItemRepository.save(productionItem);
         return modelMapper.map(updatedProductionItem, ProductionItemDto.class);
