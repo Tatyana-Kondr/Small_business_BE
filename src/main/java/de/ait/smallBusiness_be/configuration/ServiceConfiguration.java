@@ -71,14 +71,6 @@ public class ServiceConfiguration {
         modelMapper.typeMap(ProductionItem.class, ProductionItemDto.class)
                 .addMappings(mapper -> mapper.map(src -> src.getProduct().getId(), ProductionItemDto::setProductId));
         return modelMapper;
-
-        //  Добавляем маппинг для SaleItem -> SaleItemDto
-        //modelMapper.createTypeMap(SaleItem.class, SaleItemDto.class)
-        //        .addMapping(src -> src.getSale().getId(), SaleItemDto::);
-
-        //  Добавляем маппинг для Sale -> SaleDto
-        //modelMapper.createTypeMap(Sale.class, SaleDto.class)
-        //        .addMapping(src -> src.getCustomer().getId(), SaleDto::setCustomerId);
     }
 
     @Bean
