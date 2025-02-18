@@ -1,4 +1,4 @@
-package de.ait.smallBusiness_be.products.dto;
+package de.ait.smallBusiness_be.sales.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Digits;
@@ -14,17 +14,21 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @NoArgsConstructor
 @Schema(description = "Dimensions")
-public class NewDimensionsDto {
+public class NewShippingDimensionsDto {
 
     @Digits(integer = 10, fraction = 2, message = "{validation.max.size}")
-    @Schema(description = "Width of the product", example = "10.00")
+    @Schema(description = "Width of the package in sm", example = "10.00")
     BigDecimal width;
 
     @Digits(integer = 10, fraction = 2, message = "{validation.max.size}")
-    @Schema(description = "Height of the product", example = "10.00")
+    @Schema(description = "Height of the package in sm", example = "10.00")
     BigDecimal height;
 
     @Digits(integer = 10, fraction = 2, message = "{validation.max.size}")
-    @Schema(description = "Length of the product", example = "10.00")
+    @Schema(description = "Length of the package in sm", example = "10.00")
     BigDecimal length;
+
+    @Digits(integer = 10, fraction = 2, message = "{validation.max.size}")
+    @Schema(description = "Weight of the package in kg", example = "10.00")
+    private BigDecimal weight;
 }

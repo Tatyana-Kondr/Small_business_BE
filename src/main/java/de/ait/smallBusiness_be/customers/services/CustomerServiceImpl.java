@@ -1,7 +1,6 @@
 package de.ait.smallBusiness_be.customers.services;
 
 import de.ait.smallBusiness_be.customers.dao.CustomerRepository;
-import de.ait.smallBusiness_be.customers.dto.AddressDto;
 import de.ait.smallBusiness_be.customers.dto.CustomerDto;
 import de.ait.smallBusiness_be.customers.dto.NewCustomerDto;
 import de.ait.smallBusiness_be.customers.model.Address;
@@ -15,8 +14,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 import static de.ait.smallBusiness_be.exceptions.ErrorDescription.CUSTOMER_ALREADY_EXISTS;
 
@@ -117,15 +114,21 @@ public class CustomerServiceImpl implements  CustomerService{
     }
 
     private void checkCustomer(NewCustomerDto newCustomerDto) {
-        if (customerRepository.findByNameAndAddress(
+        boolean existsByNameAndAddress = customerRepository.existsByNameAndAddress(
                 newCustomerDto.getName(),
-                modelMapper.map(newCustomerDto.getAddressDto(), Address.class)).isPresent()
-                || customerRepository.findByCustomerNumber(newCustomerDto.getCustomerNumber()).isPresent() ) {
+                modelMapper.map(newCustomerDto.getAddressDto(), Address.class)
+        );
+
+        boolean existsByCustomerNumber = newCustomerDto.getCustomerNumber() != null
+                && !newCustomerDto.getCustomerNumber().isBlank()
+                && customerRepository.existsByCustomerNumber(newCustomerDto.getCustomerNumber());
+
+        if (existsByNameAndAddress || existsByCustomerNumber) {
             throw new RestApiException(CUSTOMER_ALREADY_EXISTS, HttpStatus.CONFLICT);
         }
     }
 
-    private Customer getCustomerOrThrow(Long id) {
+    public Customer getCustomerOrThrow(Long id) {
         return customerRepository.findById(id)
                 .orElseThrow(() -> new RestApiException(ErrorDescription.CUSTOMER_NOT_FOUND, HttpStatus.NOT_FOUND));
 

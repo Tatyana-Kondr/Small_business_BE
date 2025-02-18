@@ -2,6 +2,7 @@ package de.ait.smallBusiness_be.products.dto;
 
 import de.ait.smallBusiness_be.products.model.ProductCategory;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -19,6 +20,7 @@ import java.math.BigDecimal;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@Schema(name = "New Product", description = "Information for creating a product")
 public class NewProductDto{
 
     @NotBlank(message = "{validation.notBlank}")
@@ -36,5 +38,6 @@ public class NewProductDto{
     BigDecimal purchasingPrice;
 
     @NotNull(message = "{validation.notNull}")
+    @Schema(description = "Product's category", example = "Electronics")
     ProductCategory productCategory;
 }

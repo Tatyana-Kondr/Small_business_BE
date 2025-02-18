@@ -174,7 +174,7 @@ public class ProductServiceImpl implements ProductService {
         return mapToProductDtoList(products);
     }
 
-    private Product getProductOrThrow(Long id) {
+    public Product getProductOrThrow(Long id) {
         return productRepository.findById(id)
                 .orElseThrow(() -> new RestApiException(ErrorDescription.PRODUCT_NOT_FOUND, HttpStatus.NOT_FOUND));
     }

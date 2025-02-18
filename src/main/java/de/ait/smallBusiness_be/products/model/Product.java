@@ -9,11 +9,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.StringJoiner;
-import java.util.UUID;
 
 import static de.ait.smallBusiness_be.constaints.EntityValidationConstants.DESCRIPTION_REGEX;
 import static de.ait.smallBusiness_be.constaints.EntityValidationConstants.NAME_REGEX;
@@ -149,7 +147,7 @@ public class Product {
                 .add("purchasingPrice=" + (purchasingPrice != null ? purchasingPrice.setScale(2,RoundingMode.HALF_UP) : "0.00"))
                 .add("sellingPrice=" + (sellingPrice != null ? sellingPrice.setScale(2,RoundingMode.HALF_UP) : "0.00"))
                 .add("unitOfMeasurement='" + unitOfMeasurement + "'")
-                .add("weight=" + (weight != null ? weight : 0.0f))
+                .add("weight=" + weight + "'")
                 .add("size='" + (dimensions != null ? dimensions : "N/A") + "'")
                 .add("productCategory=" + (productCategory != null ? productCategory.getName() : "N/A"))
                 .add("description='" + (description != null ? description : "N/A") + "'")

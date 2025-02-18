@@ -53,7 +53,10 @@ public enum ErrorDescription {
     FILE_CONVERTING_FAILED("File could not be converted to Base64"),
     CUSTOMER_ALREADY_EXISTS("Customer already exists"),
     LIST_IS_EMPTY("List is empty"),
-    CUSTOMER_NOT_FOUND("Customer not found");
+    CUSTOMER_NOT_FOUND("Customer not found"),
+
+    SALE_NOT_FOUND("Sale not found")
+    ;
 
     private final String description;
 
