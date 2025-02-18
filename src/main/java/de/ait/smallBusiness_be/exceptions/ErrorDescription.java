@@ -41,6 +41,8 @@ public enum ErrorDescription {
     PRODUCT_ALREADY_EXISTS("Product with the same name and article already exists."),
     LIST_PRODUCTS_IS_EMPTY("List of products is empty"),
 
+    PRODUCTION_AMOUNT("Amount of the product must exceed the cost of materials."),
+
     INVALID_UNIT_OF_MEASUREMENT("Invalid unit of measurement format"),
     UNSUPPORTED_FILE_TYPE("Unsupported file type"),
     INVALID_FILE_NAME("Invalid file name"),
