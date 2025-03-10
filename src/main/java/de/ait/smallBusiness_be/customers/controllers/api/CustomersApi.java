@@ -32,7 +32,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/customers")
 public interface CustomersApi {
 
-    //@PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated()")
     @PostMapping
     @Operation(
             summary = "Add a new customer",
@@ -63,7 +63,7 @@ public interface CustomersApi {
     CustomerDto createCustomer(
             @RequestBody @Valid NewCustomerDto newCustomerDto);
 
-    //@PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated()")
     @GetMapping
     @Operation(
             summary = "Get all customers",
@@ -87,7 +87,7 @@ public interface CustomersApi {
             @PageableDefault(size = 10) Pageable pageable,
             @RequestParam(defaultValue = "name") String sort);
 
-    //@PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/customer-number")
     @Operation(
             summary = "Get all customers with customer number",
@@ -128,7 +128,7 @@ public interface CustomersApi {
     @ResponseStatus(HttpStatus.OK)
     CustomerDto getCustomerById(@PathVariable Long id);
 
-    //@PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAuthority('ADMIN')")
     @PutMapping("/{id}")
     @Operation(
             summary = "Update the customer",
@@ -160,7 +160,7 @@ public interface CustomersApi {
             @PathVariable Long id,
             @RequestBody @Valid NewCustomerDto newCustomerDto);
 
-    //@PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated()")
     @DeleteMapping("/{id}")
     @Operation(
             summary = "Delete customer by ID",

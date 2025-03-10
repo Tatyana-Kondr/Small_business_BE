@@ -18,7 +18,7 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
 
     Optional<Customer> findByCustomerNumber(String customerNumber);
 
-    Page<Customer> findAllByCustomerNumberIsNotNull(Pageable pageable);
+    Page<Customer> findAllByCustomerNumberIsNotNullAndCustomerNumberNot(Pageable pageable, String emptyStr);
 
     boolean existsByNameAndAddress(String name, Address map);
 
