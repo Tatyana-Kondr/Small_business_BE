@@ -58,7 +58,7 @@ public interface ProductsApi {
     ProductDto createProduct (@RequestBody @Valid NewProductDto newProductDto);
 
 
-    //@PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     @Operation(
             summary = "Get product by ID",
