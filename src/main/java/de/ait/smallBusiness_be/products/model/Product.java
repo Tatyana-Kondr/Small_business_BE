@@ -79,7 +79,7 @@ public class Product {
     @NotNull(message = "{validation.notNull}")
     private ProductCategory productCategory; // категории продуктов, например электрика, механика, пневматика и т.д.
 
-    @Size(min = 3, max = 1024, message = "{validation.description.size}")
+    @Size( max = 1024, message = "{validation.description.size}")
     @Pattern(regexp = DESCRIPTION_REGEX, message = "{description.Pattern.message}")
     private String description; // доп.информация
 
