@@ -80,7 +80,7 @@ public class EntityValidationConstants {
      *   <li>"Special dish *only today*"</li> (contains invalid character '*')
      * </ul>
      */
-    public static final String DESCRIPTION_REGEX = "^[A-Za-züöäßÜÄÖ0-9\\s.,!?&()\\[\\]\\'\"\\/-]+$";
+    public static final String DESCRIPTION_REGEX = "^[A-Za-züöäßÜÄÖ0-9\\s.,!?&()\\[\\]'\"\\/-]*$";
 
     /**
      * Regular expression pattern for validating restaurant names.
