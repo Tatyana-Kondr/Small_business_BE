@@ -21,8 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * 11/15/2024
@@ -52,15 +50,15 @@ public class ProductServiceImpl implements ProductService {
         if (exists) {
             throw new RestApiException(ErrorDescription.PRODUCT_ALREADY_EXISTS, HttpStatus.CONFLICT);
         }
-
+        UnitOfMeasurement unit = UnitOfMeasurement.valueOf(newProductDto.getUnitOfMeasurement());
         Product product = modelMapper.map(newProductDto, Product.class);
+        product.setUnitOfMeasurement(unit);
         Product savedProduct = productRepository.save(product);
         String art = newProductDto.getProductCategory().getArtName() + "-" + savedProduct.getId();
         savedProduct.setArticle(art);
         productRepository.save(savedProduct);
 
         return modelMapper.map(savedProduct, ProductDto.class);
-
     }
 
     @Override
