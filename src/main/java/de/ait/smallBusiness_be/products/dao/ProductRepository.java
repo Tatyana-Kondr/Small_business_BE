@@ -2,6 +2,8 @@ package de.ait.smallBusiness_be.products.dao;
 
 import de.ait.smallBusiness_be.products.model.Product;
 import de.ait.smallBusiness_be.products.model.ProductCategory;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
