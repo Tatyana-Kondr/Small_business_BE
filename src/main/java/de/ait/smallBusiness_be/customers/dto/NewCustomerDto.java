@@ -1,13 +1,12 @@
 package de.ait.smallBusiness_be.customers.dto;
 
-import de.ait.smallBusiness_be.customers.model.Address;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.validator.constraints.Length;
 
 import static de.ait.smallBusiness_be.constaints.EntityValidationConstants.*;
 
@@ -35,14 +34,17 @@ public class NewCustomerDto {
     AddressDto addressDto;
 
     @Pattern(regexp = PHONE_REGEX, message = "{phone.Pattern.message}")
+    @Nullable
     @Schema(description = "The customer's phone number", example = "+4917654875612")
     String phone;
 
     @Pattern(regexp = EMAIL_REGEX, message = "{email.Pattern.message}")
+    @Nullable
     @Schema(description = "The customer's e-mail", example = "amazon@mail.com")
     String email;
 
     @Pattern(regexp = WEBSITE_REGEX, message = "{website.Pattern.message}")
+    @Nullable
     @Schema(description = "The customer's website", example = "amazon.com")
     String website;
 }
