@@ -1,6 +1,7 @@
 package de.ait.smallBusiness_be.customers.services;
 
 import de.ait.smallBusiness_be.customers.dao.CustomerRepository;
+import de.ait.smallBusiness_be.customers.dto.AddressDto;
 import de.ait.smallBusiness_be.customers.dto.CustomerDto;
 import de.ait.smallBusiness_be.customers.dto.NewCustomerDto;
 import de.ait.smallBusiness_be.customers.model.Address;
@@ -121,6 +122,11 @@ public class CustomerServiceImpl implements  CustomerService{
         log.debug("checkCustomer вызван с параметром: {}", newCustomerDto);
         if (newCustomerDto == null) {
             throw new IllegalArgumentException("Ошибка: newCustomerDto = null!");
+        }
+
+        AddressDto addressDto = newCustomerDto.getAddressDto();
+        if (addressDto == null) {
+            throw new IllegalArgumentException("addressDto cannot be null");
         }
 
         boolean existsByNameAndAddress = customerRepository.existsByNameAndAddress(
