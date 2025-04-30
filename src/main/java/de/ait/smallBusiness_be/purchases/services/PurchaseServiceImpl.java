@@ -68,9 +68,9 @@ public class PurchaseServiceImpl implements PurchaseService{
             List<PurchaseItem> purchaseItems = newPurchaseDto.getPurchaseItems().stream()
                     .map(newPurchaseItemDto -> {
                         // Находим продукт по ID
-                        Product product = productRepository.findById(newPurchaseItemDto.getProduct().getId())
+                        Product product = productRepository.findById(newPurchaseItemDto.getProductId())
                                 .orElseThrow(() -> new IllegalArgumentException(
-                                        "Product not found with ID: " + newPurchaseItemDto.getProduct().getId()
+                                        "Product not found with ID: " + newPurchaseItemDto.getProductId()
                                 ));
 
                         //Найти максимальное значение position среди уже существующих PurchaseItem для данного purchase_id.
@@ -204,7 +204,7 @@ public class PurchaseServiceImpl implements PurchaseService{
                 .collect(Collectors.toMap(item -> item.getProduct().getId(), item -> item));
 
         List<Long> newProductIds = newPurchaseDto.getPurchaseItems().stream()
-                .map(item -> item.getProduct().getId())
+                .map(item -> item.getProductId())
                 .collect(Collectors.toList());
 
         // Пересчет итоговых сумм
@@ -215,7 +215,7 @@ public class PurchaseServiceImpl implements PurchaseService{
         List<PurchaseItem> updatedItems = new ArrayList<>();
 
         for (NewPurchaseItemDto itemDto : newPurchaseDto.getPurchaseItems()) {
-            Long productId = itemDto.getProduct().getId();
+            Long productId = itemDto.getProductId();
             PurchaseItem purchaseItem = existingItems.get(productId);
 
             if (purchaseItem == null) {
