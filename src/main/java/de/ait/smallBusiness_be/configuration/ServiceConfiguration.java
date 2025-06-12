@@ -83,7 +83,7 @@ public class ServiceConfiguration {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/api/**") // Ограничь CORS на API
-                        .allowedOrigins("http://localhost:5174") // Указываем конкретный origin
+                        .allowedOrigins("http://localhost:5173") // Указываем конкретный origin
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // Разрешаем PUT
                         .allowCredentials(true); // Разрешаем куки
             }
