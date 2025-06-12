@@ -1,6 +1,7 @@
 package de.ait.smallBusiness_be.customers.services;
 
 import de.ait.smallBusiness_be.customers.dao.CustomerRepository;
+import de.ait.smallBusiness_be.customers.dto.AddressDto;
 import de.ait.smallBusiness_be.customers.dto.CustomerDto;
 import de.ait.smallBusiness_be.customers.dto.NewCustomerDto;
 import de.ait.smallBusiness_be.customers.model.Address;
@@ -9,6 +10,8 @@ import de.ait.smallBusiness_be.exceptions.ErrorDescription;
 import de.ait.smallBusiness_be.exceptions.RestApiException;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -29,6 +32,7 @@ public class CustomerServiceImpl implements  CustomerService{
 
     private final CustomerRepository customerRepository;
     private final ModelMapper modelMapper;
+    private static final Logger log = LoggerFactory.getLogger(CustomerServiceImpl.class);
 
     @Override
     @Transactional
@@ -54,7 +58,7 @@ public class CustomerServiceImpl implements  CustomerService{
 
     @Override
     public Page<CustomerDto> getAllCustomersWithCustomerNumber(Pageable pageable) {
-        Page <Customer> customers = customerRepository.findAllByCustomerNumberIsNotNull(pageable);
+        Page <Customer> customers = customerRepository.findAllByCustomerNumberIsNotNullAndCustomerNumberNot(pageable, "");
         return customers.map(customer -> modelMapper.map(customer, CustomerDto.class));
     }
 
@@ -114,6 +118,17 @@ public class CustomerServiceImpl implements  CustomerService{
     }
 
     private void checkCustomer(NewCustomerDto newCustomerDto) {
+        log.debug("Проверяем клиента: {}", newCustomerDto);
+        log.debug("checkCustomer вызван с параметром: {}", newCustomerDto);
+        if (newCustomerDto == null) {
+            throw new IllegalArgumentException("Ошибка: newCustomerDto = null!");
+        }
+
+        AddressDto addressDto = newCustomerDto.getAddressDto();
+        if (addressDto == null) {
+            throw new IllegalArgumentException("addressDto cannot be null");
+        }
+
         boolean existsByNameAndAddress = customerRepository.existsByNameAndAddress(
                 newCustomerDto.getName(),
                 modelMapper.map(newCustomerDto.getAddressDto(), Address.class)
@@ -135,7 +150,12 @@ public class CustomerServiceImpl implements  CustomerService{
     }
 
     private void checkCustomerOnUpdate(Long id, NewCustomerDto newCustomerDto) {
+        log.info("Переданный объект в checkCustomerOnUpdate: {}", newCustomerDto);
+        if (newCustomerDto == null) {
+            throw new IllegalArgumentException("newCustomerDto is null");
+        }
         // Проверка на совпадение имени и адреса
+        log.info("AddressDto from newCustomerDto: {}", newCustomerDto.getAddressDto());
         customerRepository.findByNameAndAddress(
                         newCustomerDto.getName(),
                         modelMapper.map(newCustomerDto.getAddressDto(), Address.class))

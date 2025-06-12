@@ -18,11 +18,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * 11/15/2024
@@ -52,15 +51,15 @@ public class ProductServiceImpl implements ProductService {
         if (exists) {
             throw new RestApiException(ErrorDescription.PRODUCT_ALREADY_EXISTS, HttpStatus.CONFLICT);
         }
-
+        UnitOfMeasurement unit = UnitOfMeasurement.valueOf(newProductDto.getUnitOfMeasurement());
         Product product = modelMapper.map(newProductDto, Product.class);
+        product.setUnitOfMeasurement(unit);
         Product savedProduct = productRepository.save(product);
         String art = newProductDto.getProductCategory().getArtName() + "-" + savedProduct.getId();
         savedProduct.setArticle(art);
         productRepository.save(savedProduct);
 
         return modelMapper.map(savedProduct, ProductDto.class);
-
     }
 
     @Override
@@ -122,14 +121,21 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Page<ProductDto> findAllProducts(Pageable pageable) {
-        Page<Product> productsPage = productRepository.findAll(pageable);
+    public Page<ProductDto> findProducts(String searchTerm, Pageable pageable) {
+        Page<Product> productsPage;
+
+        if (StringUtils.hasText(searchTerm)) {
+            productsPage = productRepository.searchProducts(searchTerm, pageable);
+        } else {
+            productsPage = productRepository.findAll(pageable);
+        }
+
         if (productsPage.isEmpty()) {
             throw new RestApiException(ErrorDescription.LIST_PRODUCTS_IS_EMPTY, HttpStatus.NOT_FOUND);
         }
+
         return mapToProductDtoPage(productsPage);
     }
-
     @Override
     public Page<ProductDto> findProductsByCategoryId(int categoryId, Pageable pageable) {
         Page<Product> productsPage = productRepository.findByProductCategory_Id(categoryId, pageable);
@@ -165,14 +171,14 @@ public class ProductServiceImpl implements ProductService {
         return mapToProductDtoList(products);
     }
 
-    @Override
-    public List<ProductDto> searchProducts(String searchTerm) {
-        List<Product> products = productRepository.searchProducts(searchTerm);
-        if (products.isEmpty()) {
-            throw new RestApiException(ErrorDescription.LIST_PRODUCTS_IS_EMPTY, HttpStatus.NOT_FOUND);
-        }
-        return mapToProductDtoList(products);
-    }
+//    @Override
+//    public List<ProductDto> searchProducts(String searchTerm) {
+//        List<Product> products = productRepository.searchProducts(searchTerm);
+//        if (products.isEmpty()) {
+//            throw new RestApiException(ErrorDescription.LIST_PRODUCTS_IS_EMPTY, HttpStatus.NOT_FOUND);
+//        }
+//        return mapToProductDtoList(products);
+//    }
 
     public Product getProductOrThrow(Long id) {
         return productRepository.findById(id)

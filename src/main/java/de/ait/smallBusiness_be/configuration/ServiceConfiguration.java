@@ -12,6 +12,10 @@ import de.ait.smallBusiness_be.purchases.dto.PurchaseDto;
 import de.ait.smallBusiness_be.purchases.dto.PurchaseItemDto;
 import de.ait.smallBusiness_be.purchases.model.Purchase;
 import de.ait.smallBusiness_be.purchases.model.PurchaseItem;
+import de.ait.smallBusiness_be.sales.dto.SaleDto;
+import de.ait.smallBusiness_be.sales.dto.SaleItemDto;
+import de.ait.smallBusiness_be.sales.models.Sale;
+import de.ait.smallBusiness_be.sales.models.SaleItem;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.context.annotation.Bean;
@@ -51,11 +55,15 @@ public class ServiceConfiguration {
 
         //  Добавляем маппинг для PurchaseItem -> PurchaseItemDto
         modelMapper.createTypeMap(PurchaseItem.class, PurchaseItemDto.class)
-                .addMapping(src -> src.getPurchase().getId(), PurchaseItemDto::setPurchaseId);
+                .addMapping(src -> src.getPurchase().getId(), PurchaseItemDto::setPurchaseId)
+                .addMapping(src -> src.getProduct().getId(), PurchaseItemDto::setProductId)
+                .addMapping(src -> src.getProduct().getName(), PurchaseItemDto::setProductName)
+                .addMapping(src -> src.getProduct().getArticle(), PurchaseItemDto::setProductArticle);
 
-        //  Добавляем маппинг для Purchase -> PurchaseDto
+        // Добавляем маппинг для Purchase -> PurchaseDto
         modelMapper.createTypeMap(Purchase.class, PurchaseDto.class)
-                .addMapping(src -> src.getVendor().getId(), PurchaseDto::setVendorId);
+                .addMapping(src -> src.getVendor().getId(), PurchaseDto::setVendorId)
+                .addMapping(src -> src.getVendor().getName(), PurchaseDto::setVendorName);
 
         //  Добавляем маппинг для ProductionItem -> ProductionItemDto
         modelMapper.createTypeMap(ProductionItem.class, ProductionItemDto.class)
@@ -74,7 +82,10 @@ public class ServiceConfiguration {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/**").allowedOrigins("*");
+                registry.addMapping("/api/**") // Ограничь CORS на API
+                        .allowedOrigins("http://localhost:5173") // Указываем конкретный origin
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // Разрешаем PUT
+                        .allowCredentials(true); // Разрешаем куки
             }
         };
     }

@@ -62,12 +62,11 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
     }
 
     @Override
-    public ProductCategoryDto deleteProductCategoryById(Integer id) {
+    public void deleteProductCategoryById(Integer id) {
         ProductCategory productCategory = getProductCategoryOrThrow(id);
 
         productCategoryRepository.delete(productCategory);
 
-        return modelMapper.map(productCategory, ProductCategoryDto.class);
     }
 
     @Override

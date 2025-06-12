@@ -5,6 +5,7 @@ import de.ait.smallBusiness_be.products.dto.NewProductDto;
 import de.ait.smallBusiness_be.products.dto.ProductDto;
 import de.ait.smallBusiness_be.products.dto.UpdateProductDto;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -12,14 +13,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.tags.Tags;
 import jakarta.validation.Valid;
+import org.springdoc.api.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @Tags(
         @Tag(name = "Product controller")
@@ -58,7 +58,7 @@ public interface ProductsApi {
     ProductDto createProduct (@RequestBody @Valid NewProductDto newProductDto);
 
 
-    //@PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     @Operation(
             summary = "Get product by ID",
@@ -142,11 +142,11 @@ public interface ProductsApi {
     void removeProductById(@PathVariable Long id);
 
 
-    //@PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated()")
     @GetMapping
     @Operation(
-            summary = "Get all products",
-            description = "Retrieve a list of all products. Only authorized users are allowed.")
+            summary = "Get or search products",
+            description = "Returns a page of products. If search term is provided, filters by it. Only authorized users are allowed.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
                     description = "List of products retrieved successfully.",
@@ -158,10 +158,15 @@ public interface ProductsApi {
                             schema = @Schema(implementation = ErrorResponseDto.class)))
     })
     @ResponseStatus(HttpStatus.OK)
-    Page<ProductDto> getAllProducts(@PageableDefault(size = 10, sort = "name") Pageable pageable);
+    Page<ProductDto> getProducts(
+            @Parameter(description = "Search term for filtering products by name, article or vendor article", example = "wasser")
+            @RequestParam(required = false) String search,
+
+            @ParameterObject
+            @PageableDefault(size = 15, sort = "name") Pageable pageable);
 
 
-    //@PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/category/{category-id}")
     @Operation(
             summary = "Get all products by category",
@@ -182,21 +187,21 @@ public interface ProductsApi {
 
 
 
-@GetMapping("/search")
-@Operation(
-        summary = "Search products",
-        description = "Find products by a search term."
-)
-@ApiResponses(value = {
-        @ApiResponse(responseCode = "200",
-                description = "List of found products.",
-                content = @Content(mediaType = "application/json",
-                        schema = @Schema(implementation = ProductDto[].class))),
-        @ApiResponse(responseCode = "404",
-                description = "No products found.",
-                content = @Content(mediaType = "application/json",
-                        schema = @Schema(implementation = ErrorResponseDto.class)))
-})
-@ResponseStatus(HttpStatus.OK)
-List<ProductDto> searchProducts(@RequestParam String searchTerm);
+//@GetMapping("/search")
+//@Operation(
+//        summary = "Search products",
+//        description = "Find products by a search term."
+//)
+//@ApiResponses(value = {
+//        @ApiResponse(responseCode = "200",
+//                description = "List of found products.",
+//                content = @Content(mediaType = "application/json",
+//                        schema = @Schema(implementation = ProductDto[].class))),
+//        @ApiResponse(responseCode = "404",
+//                description = "No products found.",
+//                content = @Content(mediaType = "application/json",
+//                        schema = @Schema(implementation = ErrorResponseDto.class)))
+//})
+//@ResponseStatus(HttpStatus.OK)
+//List<ProductDto> searchProducts(@RequestParam String searchTerm);
 }

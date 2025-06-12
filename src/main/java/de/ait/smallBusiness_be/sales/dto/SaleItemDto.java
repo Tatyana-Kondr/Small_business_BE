@@ -1,24 +1,31 @@
 package de.ait.smallBusiness_be.sales.dto;
 
-import java.io.Serial;
-import java.io.Serializable;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.math.BigDecimal;
 
-public record SaleItemDto(
-        Long id,
-        Integer position,
-        Long saleId,
-        Long productId,
-        String productName,
-        BigDecimal quantity,
-        BigDecimal unitPrice,
-        BigDecimal discount,
-        BigDecimal discountAmount,
-        BigDecimal totalPrice,
-        BigDecimal tax,
-        BigDecimal taxAmount,
-        BigDecimal totalAmount) implements Serializable {
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@Schema(name = "SaleItemDto", description = "Data of Sale Item")
+public class SaleItemDto {
 
-    @Serial
-    private static final long serialVersionUID = 1L;
+    Long id;
+    Integer position;
+    Long saleId;
+    Long productId;
+    String productName;
+    BigDecimal quantity;
+    BigDecimal unitPrice;
+    BigDecimal discount;
+    BigDecimal discountAmount;
+    BigDecimal totalPrice;
+    BigDecimal tax;
+    BigDecimal taxAmount;
+    BigDecimal totalAmount;
 }

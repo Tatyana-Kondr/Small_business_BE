@@ -10,6 +10,7 @@ import org.springframework.data.domain.*;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -55,12 +56,22 @@ public class PurchaseRepositoryCustomImpl implements PurchaseRepositoryCustom {
 
     // Метод для фильтрации по полям
     @Override
-    public Page<Purchase> filterByFields(Pageable pageable, Long id, Long vendorId, String document, String documentNumber, BigDecimal total, String paymentStatus) {
+    public Page<Purchase> filterByFields(Pageable pageable,
+                                         Long id,
+                                         Long vendorId,
+                                         String vendorName,
+                                         String document,
+                                         String documentNumber,
+                                         BigDecimal total,
+                                         String paymentStatus,
+                                         LocalDate startDate,
+                                         LocalDate endDate,
+                                         String searchQuery) {
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
         CriteriaQuery<Purchase> query = cb.createQuery(Purchase.class);
         Root<Purchase> root = query.from(Purchase.class);
 
-        List<Predicate> predicates = buildFilterPredicates(cb, root, id, vendorId, document, documentNumber, total, paymentStatus);
+        List<Predicate> predicates = buildFilterPredicates(cb, root, id, vendorId, vendorName, document, documentNumber, total, paymentStatus, startDate, endDate, searchQuery);
 
         query.where(cb.and(predicates.toArray(new Predicate[0])));
         query.orderBy(cb.asc(root.get("id")));
@@ -74,7 +85,7 @@ public class PurchaseRepositoryCustomImpl implements PurchaseRepositoryCustom {
         // Подсчет общего количества записей
         CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
         Root<Purchase> countRoot = countQuery.from(Purchase.class);
-        List<Predicate> countPredicates = buildFilterPredicates(cb, countRoot, id, vendorId, document, documentNumber, total, paymentStatus);
+        List<Predicate> countPredicates = buildFilterPredicates(cb, countRoot, id, vendorId, vendorName, document, documentNumber, total, paymentStatus, startDate, endDate, searchQuery);
         countQuery.select(cb.count(countRoot)).where(cb.and(countPredicates.toArray(new Predicate[0])));
         Long totalCount = entityManager.createQuery(countQuery).getSingleResult();
 
@@ -100,43 +111,80 @@ public class PurchaseRepositoryCustomImpl implements PurchaseRepositoryCustom {
             // Поиск по номеру документа
             predicates.add(cb.like(cb.lower(root.get("documentNumber")), likePattern));
 
-            // Поиск по общей сумме
-            try {
-                BigDecimal total = new BigDecimal(searchQuery);
-                predicates.add(cb.equal(root.get("total"), total));
-            } catch (NumberFormatException ignored) {}
+            // Поиск по общей сумме (по строке)
+            predicates.add(cb.like(cb.function("str", String.class, root.get("total")), likePattern));
+
         }
 
         return predicates;
     }
 
 
+
     // Вспомогательный метод для создания предикатов для фильтрации
-    private List<Predicate> buildFilterPredicates(CriteriaBuilder cb, Root<Purchase> root, Long id, Long vendorId, String document, String documentNumber, BigDecimal total, String paymentStatus) {
+    private List<Predicate> buildFilterPredicates(
+            CriteriaBuilder cb,
+            Root<Purchase> root,
+            Long id,
+            Long vendorId,
+            String vendorName,
+            String document,
+            String documentNumber,
+            BigDecimal total,
+            String paymentStatus,
+            LocalDate startDate,
+            LocalDate endDate,
+            String searchQuery
+    ) {
         List<Predicate> predicates = new ArrayList<>();
 
         if (id != null) {
             predicates.add(cb.equal(root.get("id"), id));
         }
+
         if (vendorId != null) {
-            Join<Purchase, Customer> vendorJoin = root.join("vendor", JoinType.INNER);
-            predicates.add(cb.equal(vendorJoin.get("id"), vendorId));
+            predicates.add(cb.equal(root.get("vendor").get("id"), vendorId));
         }
-        if (document != null && !document.trim().isEmpty()) {
+
+        if (vendorName != null && !vendorName.isEmpty()) {
+            predicates.add(cb.like(cb.lower(root.get("vendor").get("name")), "%" + vendorName.toLowerCase() + "%"));
+        }
+
+        if (document != null && !document.isEmpty()) {
             predicates.add(cb.like(cb.lower(root.get("document")), "%" + document.toLowerCase() + "%"));
         }
-        if (documentNumber != null && !documentNumber.trim().isEmpty()) {
+
+        if (documentNumber != null && !documentNumber.isEmpty()) {
             predicates.add(cb.like(cb.lower(root.get("documentNumber")), "%" + documentNumber.toLowerCase() + "%"));
         }
+
         if (total != null) {
             predicates.add(cb.equal(root.get("total"), total));
         }
+
         if (paymentStatus != null && !paymentStatus.isEmpty()) {
-            predicates.add(cb.equal(root.get("paymentStatus"), paymentStatus));
+            predicates.add(cb.like(cb.lower(root.get("paymentStatus")), "%" + paymentStatus.toLowerCase() + "%"));
+        }
+
+        if (startDate != null) {
+            predicates.add(cb.greaterThanOrEqualTo(root.get("purchasingDate"), startDate));
+        }
+
+        if (endDate != null) {
+            predicates.add(cb.lessThanOrEqualTo(root.get("purchasingDate"), endDate));
+        }
+
+        if (searchQuery != null && !searchQuery.isEmpty()) {
+            String lowerSearch = "%" + searchQuery.toLowerCase() + "%";
+
+            Predicate vendorNamePredicate = cb.like(cb.lower(root.get("vendor").get("name")), lowerSearch);
+            Predicate documentPredicate = cb.like(cb.lower(root.get("document")), lowerSearch);
+            Predicate documentNumberPredicate = cb.like(cb.lower(root.get("documentNumber")), lowerSearch);
+            Predicate paymentStatusPredicate = cb.like(cb.lower(root.get("paymentStatus")), lowerSearch);
+
+            predicates.add(cb.or(vendorNamePredicate, documentPredicate, documentNumberPredicate, paymentStatusPredicate));
         }
 
         return predicates;
     }
-
-
 }

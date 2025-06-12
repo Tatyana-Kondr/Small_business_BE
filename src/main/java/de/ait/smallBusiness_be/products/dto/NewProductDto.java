@@ -28,7 +28,7 @@ public class NewProductDto{
     @Schema(description = "Product's name", example = "Lampe")
     String name;
 
-    @Size(min = 3, max = 50, message = "{validation.name.size}")
+    @Size( max = 50, message = "{validation.article.size}")
     @Schema(description = "Product's vendor article", example = "ab123")
     String vendorArticle;
 
@@ -40,4 +40,11 @@ public class NewProductDto{
     @NotNull(message = "{validation.notNull}")
     @Schema(description = "Product's category", example = "Electronics")
     ProductCategory productCategory;
+
+    @NotBlank(message = "{validation.notBlank}")
+    @Pattern(regexp = "KG|GR|LITER|METER|ST|STUNDE|SET|MM|CM|KM")
+    @Schema(description = "Unit Of Measurement",
+            example = "ST",
+            allowableValues = {"KG, PIECE, LITER, METER, ST, STUNDE, SET, MM, CM, KM"})
+    String unitOfMeasurement;
 }

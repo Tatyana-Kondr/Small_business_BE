@@ -30,7 +30,7 @@ public class NewPurchaseItemDto {
 
     @NotNull(message = "{validation.notNull}")
    // @Schema(description = "Product's id", example = "1548")
-    Product product;
+    Long productId;
 
     @Schema(description = "Name of product", example = "Lampe")
     String productName;

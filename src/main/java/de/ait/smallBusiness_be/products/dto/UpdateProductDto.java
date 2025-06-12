@@ -61,7 +61,7 @@ public class UpdateProductDto{
         @Schema(description = "Product's category", example = "Electronics")
         ProductCategory productCategory;
 
-        @Size(min = 3, max = 1024, message = "{validation.description.size}")
+        @Size( max = 1024, message = "{validation.description.size}")
         @Pattern(regexp = DESCRIPTION_REGEX, message = "{description.Pattern.message}")
         @Schema(description = "Product's description", example = "A new phone, perfect for your child")
         String description;

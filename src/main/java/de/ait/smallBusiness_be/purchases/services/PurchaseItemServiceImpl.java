@@ -48,8 +48,8 @@ public class PurchaseItemServiceImpl implements PurchaseItemService {
         Purchase purchase = purchaseRepository.findById(purchaseId)
                 .orElseThrow(() -> new IllegalArgumentException("Purchase not found with ID: " + purchaseId));
 
-        Product product = productRepository.findById(newPurchaseItemDto.getProduct().getId())
-                .orElseThrow(() -> new IllegalArgumentException("Product not found with ID: " + newPurchaseItemDto.getProduct().getId()));
+        Product product = productRepository.findById(newPurchaseItemDto.getProductId())
+                .orElseThrow(() -> new IllegalArgumentException("Product not found with ID: " + newPurchaseItemDto.getProductId()));
 
         Integer maxPosition = purchaseItemRepository.findMaxPositionByPurchaseId(purchaseId);
         int newPosition = (maxPosition != null) ? maxPosition + 1 : 1;

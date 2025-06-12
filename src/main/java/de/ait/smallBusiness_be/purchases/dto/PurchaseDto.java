@@ -29,6 +29,8 @@ public class PurchaseDto {
 
     Long vendorId;
 
+    String vendorName;
+
     LocalDate purchasingDate;
 
     String type;

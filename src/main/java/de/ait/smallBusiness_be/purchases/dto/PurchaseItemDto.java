@@ -26,7 +26,11 @@ public class PurchaseItemDto {
 
     Long id;
 
-    Product product;
+    Long productId;
+
+    String productName;
+
+    String productArticle;
 
     Long purchaseId;
 

@@ -45,23 +45,6 @@ public class NewPurchaseDto {
     @Schema(description = "Document's number", example = "12345-Aa")
     String documentNumber;
 
-    @DecimalMin(value = "0.0", message = "{validation.price.min}")
-    @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
-    @Schema(description = "Amount without percentage", example = "0")
-    BigDecimal subtotal; // Подитог
-
-    @DecimalMin(value = "0.0", message = "{validation.price.min}")
-    @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
-    @NotNull(message = "{validation.notNull}")
-    @Schema(description = "Amount tax", example = "0")
-    BigDecimal taxSum; // Сумма налога
-
-    @DecimalMin(value = "0.0", message = "{validation.price.min}")
-    @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
-    @NotNull(message = "{validation.notNull}")
-    @Schema(description = "Total amount", example = "0")
-    BigDecimal total; // Общая сумма
-
     @Schema(description = "Status of payment", example = "NICHT_BEZAHLT")
     String paymentStatus;
 

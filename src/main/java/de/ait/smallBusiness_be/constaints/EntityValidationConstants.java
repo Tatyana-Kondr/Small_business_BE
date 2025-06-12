@@ -45,7 +45,7 @@ public class EntityValidationConstants {
      *   <li>abc-def-ghij</li> (contains letters, which are not allowed)</li>
      * </ul>
      */
-    public static final String PHONE_REGEX = "^\\+?[0-9]{1,3}[-\\s.]?[0-9]{1,4}[-\\s.]?[0-9]{1,4}[-\\s.]?[0-9]{1,9}$";
+    public static final String PHONE_REGEX = "^$|^\\+?[0-9]{1,3}[-\\s.]?[0-9]{1,4}[-\\s.]?[0-9]{1,4}[-\\s.]?[0-9]{1,9}$";
 
     /**
      * Regular expression pattern for validating restaurant descriptions.
@@ -80,7 +80,7 @@ public class EntityValidationConstants {
      *   <li>"Special dish *only today*"</li> (contains invalid character '*')
      * </ul>
      */
-    public static final String DESCRIPTION_REGEX = "^[A-Za-züöäßÜÄÖ0-9\\s.,!?&()\\[\\]\\'\"\\/-]+$";
+    public static final String DESCRIPTION_REGEX = "^[A-Za-züöäßÜÄÖ0-9\\s.,!?&()\\[\\]'\"\\/-]*$";
 
     /**
      * Regular expression pattern for validating restaurant names.
@@ -334,7 +334,7 @@ public class EntityValidationConstants {
      *   <li>"user@domain,com"</li> (invalid character ',')
      * </ul>
      */
-    public static final String EMAIL_REGEX = "^[^@ \\t\\r\\n]+@[^@ \\t\\r\\n]+\\.[^@ \\t\\r\\n]+$";
+    public static final String EMAIL_REGEX = "^$|^[^@ \\t\\r\\n]+@[^@ \\t\\r\\n]+\\.[^@ \\t\\r\\n]+$";
 
     /**
      * Regular expression pattern for validating user first/last names.
@@ -367,7 +367,7 @@ public class EntityValidationConstants {
      * </ul>
      */
 
-    public static final String WEBSITE_REGEX = "^(https?://)?([\\w-]+\\.)+[\\w-]+(/[\\w-./?%&=]*)?$";
+    public static final String WEBSITE_REGEX = "^$|^(https?://)?([\\w-]+\\.)+[\\w-]+(/[\\w-./?%&=]*)?$";
 
     /**
      * Regular expression pattern for validating website URLs.

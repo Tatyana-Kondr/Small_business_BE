@@ -26,10 +26,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -68,23 +68,16 @@ public class PurchaseServiceImpl implements PurchaseService{
             List<PurchaseItem> purchaseItems = newPurchaseDto.getPurchaseItems().stream()
                     .map(newPurchaseItemDto -> {
                         // Находим продукт по ID
-                        Product product = productRepository.findById(newPurchaseItemDto.getProduct().getId())
+                        Product product = productRepository.findById(newPurchaseItemDto.getProductId())
                                 .orElseThrow(() -> new IllegalArgumentException(
-                                        "Product not found with ID: " + newPurchaseItemDto.getProduct().getId()
+                                        "Product not found with ID: " + newPurchaseItemDto.getProductId()
                                 ));
-
-                        //Найти максимальное значение position среди уже существующих PurchaseItem для данного purchase_id.
-                        //Назначить position = maxPosition + 1 (если maxPosition отсутствует, то position = 1).
-                        Integer maxPosition = purchaseItemRepository.findMaxPositionByPurchaseId(purchase.getId());
-                        int newPosition = (maxPosition != null) ? maxPosition + 1 : 1;
 
                         // Создаем PurchaseItem и устанавливаем продукт
                         PurchaseItem purchaseItem = modelMapper.map(newPurchaseItemDto, PurchaseItem.class);
                         purchaseItem.setProduct(product);
                         // Устанавливаем связь с Purchase
                         purchaseItem.setPurchase(purchase);
-                        //Устанавливаем позицию
-                        purchaseItem.setPosition(newPosition);
 
                         // Рассчитываем totalPrice, taxAmount и totalAmount
                         BigDecimal totalPrice = purchaseItem
@@ -162,8 +155,8 @@ public class PurchaseServiceImpl implements PurchaseService{
 
     @Override
     @Transactional(readOnly = true)
-    public Page<PurchaseDto> getAllPurchasesByFilter(Pageable pageable, Long id, Long vendorId, String document, String documentNumber, BigDecimal total, String paymentStatus) {
-        return purchaseRepository.filterByFields(pageable, id, vendorId, document, documentNumber, total, paymentStatus)
+    public Page<PurchaseDto> getAllPurchasesByFilter(Pageable pageable, Long id, Long vendorId, String vendorName, String document, String documentNumber, BigDecimal total, String paymentStatus, LocalDate startDate, LocalDate endDate, String searchQuery) {
+        return purchaseRepository.filterByFields(pageable, id, vendorId, vendorName, document, documentNumber, total, paymentStatus, startDate, endDate, searchQuery)
                 .map(purchase -> modelMapper.map(purchase, PurchaseDto.class));
     }
 
@@ -204,8 +197,8 @@ public class PurchaseServiceImpl implements PurchaseService{
                 .collect(Collectors.toMap(item -> item.getProduct().getId(), item -> item));
 
         List<Long> newProductIds = newPurchaseDto.getPurchaseItems().stream()
-                .map(item -> item.getProduct().getId())
-                .collect(Collectors.toList());
+                .map(item -> item.getProductId())
+                .toList();
 
         // Пересчет итоговых сумм
         AtomicReference<BigDecimal> subtotal = new AtomicReference<>(BigDecimal.ZERO);
@@ -215,7 +208,7 @@ public class PurchaseServiceImpl implements PurchaseService{
         List<PurchaseItem> updatedItems = new ArrayList<>();
 
         for (NewPurchaseItemDto itemDto : newPurchaseDto.getPurchaseItems()) {
-            Long productId = itemDto.getProduct().getId();
+            Long productId = itemDto.getProductId();
             PurchaseItem purchaseItem = existingItems.get(productId);
 
             if (purchaseItem == null) {
