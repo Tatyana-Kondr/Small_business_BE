@@ -48,7 +48,7 @@ public class SecurityConfig {
                         .requestMatchers(AUTH_WHITELIST).permitAll() // Swagger доступен всем
                         .requestMatchers(HttpMethod.POST, "/api/users/register","/api/auth/login", "/api/auth/logout").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/products", "/api/products/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/product-categories", "/api/customers").hasAuthority("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/product-categories", "/api/customers", "/api/purchases").hasAuthority("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/product-categories", "/api/purchases/{id}", "/api/productions/{id}", "/api/customers/{id}").hasAuthority("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/product-categories/{id}", "/api/products/{id}", "/api/purchaseItems{id}", "/api/productions/{id}", "/api/customers/{id}").hasAuthority("ADMIN")
 //                        .requestMatchers(HttpMethod.GET, "/api/products/**", "/api/product-categories/**").permitAll()
