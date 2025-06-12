@@ -22,6 +22,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Tags(
         @Tag(name = "Purchase controller")
@@ -146,10 +147,14 @@ public interface PurchasesApi {
             @RequestParam(defaultValue = "purchasingDate") String sort,
             @RequestParam(required = false) Long id,
             @RequestParam(required = false) Long vendorId,
+            @RequestParam(required = false) String vendorName,
             @RequestParam(required = false) String document,
             @RequestParam(required = false) String documentNumber,
             @RequestParam(required = false) BigDecimal total,
-            @RequestParam(required = false) String paymentStatus);
+            @RequestParam(required = false) String paymentStatus,
+            @RequestParam(required = false)LocalDate startDate,
+            @RequestParam(required = false)LocalDate endDate,
+            @RequestParam(required = false) String searchQuery);
 
     @PreAuthorize("isAuthenticated()")
     @PutMapping("/{id}")

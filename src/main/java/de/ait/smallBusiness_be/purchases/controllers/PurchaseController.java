@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /**
  * 17.01.2025
@@ -45,8 +46,9 @@ public class PurchaseController implements PurchasesApi{
     }
 
     @Override
-    public Page<PurchaseDto> getAllPurchasesByFilter(Pageable pageable, String sort, Long id, Long vendorId, String document, String documentNumber, BigDecimal total, String paymentStatus) {
-        return purchaseService.getAllPurchasesByFilter(pageable, id, vendorId, document, documentNumber, total, paymentStatus);
+    public Page<PurchaseDto> getAllPurchasesByFilter(Pageable pageable, String sort, Long id, Long vendorId, String vendorName, String document, String documentNumber, BigDecimal total, String paymentStatus, LocalDate startDate,
+                                                     LocalDate endDate, String searchQuery) {
+        return purchaseService.getAllPurchasesByFilter(pageable, id, vendorId, vendorName, document, documentNumber, total, paymentStatus, startDate, endDate, searchQuery);
     }
 
     @Override
