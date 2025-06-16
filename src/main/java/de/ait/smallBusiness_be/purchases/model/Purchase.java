@@ -75,6 +75,4 @@ public class Purchase {
     @OneToMany(mappedBy = "purchase", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     List<PurchaseItem> purchaseItems = new ArrayList<>(); // Список позиций
-
-
 }
