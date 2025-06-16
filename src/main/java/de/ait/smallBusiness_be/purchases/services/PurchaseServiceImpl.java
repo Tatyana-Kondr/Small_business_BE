@@ -6,7 +6,6 @@ import de.ait.smallBusiness_be.exceptions.ErrorDescription;
 import de.ait.smallBusiness_be.exceptions.RestApiException;
 import de.ait.smallBusiness_be.products.dao.ProductRepository;
 import de.ait.smallBusiness_be.products.model.Product;
-import de.ait.smallBusiness_be.purchases.dao.PurchaseItemRepository;
 import de.ait.smallBusiness_be.purchases.dao.PurchaseRepository;
 import de.ait.smallBusiness_be.purchases.dto.NewPurchaseDto;
 import de.ait.smallBusiness_be.purchases.dto.NewPurchaseItemDto;
@@ -47,7 +46,6 @@ public class PurchaseServiceImpl implements PurchaseService{
     private final PurchaseRepository purchaseRepository;
     private final CustomerRepository customerRepository;
     private final ProductRepository productRepository;
-    private final PurchaseItemRepository purchaseItemRepository;
     private final ModelMapper modelMapper;
 
     @Override
