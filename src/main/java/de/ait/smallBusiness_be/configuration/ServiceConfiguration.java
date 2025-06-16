@@ -12,10 +12,6 @@ import de.ait.smallBusiness_be.purchases.dto.PurchaseDto;
 import de.ait.smallBusiness_be.purchases.dto.PurchaseItemDto;
 import de.ait.smallBusiness_be.purchases.model.Purchase;
 import de.ait.smallBusiness_be.purchases.model.PurchaseItem;
-import de.ait.smallBusiness_be.sales.dto.SaleDto;
-import de.ait.smallBusiness_be.sales.dto.SaleItemDto;
-import de.ait.smallBusiness_be.sales.models.Sale;
-import de.ait.smallBusiness_be.sales.models.SaleItem;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.context.annotation.Bean;
@@ -57,7 +53,6 @@ public class ServiceConfiguration {
         modelMapper.createTypeMap(PurchaseItem.class, PurchaseItemDto.class)
                 .addMapping(src -> src.getPurchase().getId(), PurchaseItemDto::setPurchaseId)
                 .addMapping(src -> src.getProduct().getId(), PurchaseItemDto::setProductId)
-                .addMapping(src -> src.getProduct().getName(), PurchaseItemDto::setProductName)
                 .addMapping(src -> src.getProduct().getArticle(), PurchaseItemDto::setProductArticle);
 
         // Добавляем маппинг для Purchase -> PurchaseDto
