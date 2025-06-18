@@ -36,7 +36,8 @@ public class NewPurchaseDto {
     @Schema(description = "Date of purchase", example = "2025-01-01")
     LocalDate purchasingDate;
 
-    @Schema(description = "Type of operation", example = "EINKAUF, LIEFERANT_RABATT, VERKAUF, KUNDENERSTATTUNG")
+    @NotNull(message = "{validation.notNull}")
+    @Schema(description = "Type of operation", example = "EINKAUF, LIEFERANT_RABATT")
     String type;
 
     @Schema(description = "Type of purchasing document", example = "RECHNUNG, BON, BESTELLUNG")
