@@ -12,6 +12,12 @@ import de.ait.smallBusiness_be.purchases.dto.PurchaseDto;
 import de.ait.smallBusiness_be.purchases.dto.PurchaseItemDto;
 import de.ait.smallBusiness_be.purchases.model.Purchase;
 import de.ait.smallBusiness_be.purchases.model.PurchaseItem;
+import de.ait.smallBusiness_be.sales.dto.NewShippingDimensionsDto;
+import de.ait.smallBusiness_be.sales.dto.SaleDto;
+import de.ait.smallBusiness_be.sales.dto.SaleItemDto;
+import de.ait.smallBusiness_be.sales.models.Sale;
+import de.ait.smallBusiness_be.sales.models.SaleItem;
+import de.ait.smallBusiness_be.sales.models.ShippingDimensions;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.context.annotation.Bean;
@@ -59,6 +65,25 @@ public class ServiceConfiguration {
         modelMapper.createTypeMap(Purchase.class, PurchaseDto.class)
                 .addMapping(src -> src.getVendor().getId(), PurchaseDto::setVendorId)
                 .addMapping(src -> src.getVendor().getName(), PurchaseDto::setVendorName);
+
+        //  Добавляем маппинг для SaleItem -> SaleItemDto
+        modelMapper.createTypeMap(SaleItem.class, SaleItemDto.class)
+                .addMapping(src -> src.getSale().getId(), SaleItemDto::setSaleId)
+                .addMapping(src -> src.getProduct().getId(), SaleItemDto::setProductId)
+                .addMapping(src -> src.getProduct().getArticle(), SaleItemDto::setProductArticle);
+
+        // Добавляем маппинг для Sale -> SaleDto
+        modelMapper.createTypeMap(Sale.class, SaleDto.class)
+                .addMapping(src -> src.getCustomer().getId(), SaleDto::setCustomerId)
+                .addMapping(src -> src.getCustomer().getName(), SaleDto::setCustomerName);
+
+        modelMapper.createTypeMap(ShippingDimensions.class, NewShippingDimensionsDto.class)
+                .addMappings(mapper -> {
+                    mapper.map(ShippingDimensions::getWidth, NewShippingDimensionsDto::setWidth);
+                    mapper.map(ShippingDimensions::getHeight, NewShippingDimensionsDto::setHeight);
+                    mapper.map(ShippingDimensions::getLength, NewShippingDimensionsDto::setLength);
+                    mapper.map(ShippingDimensions::getWeight, NewShippingDimensionsDto::setWeight); // важно!
+                });
 
         //  Добавляем маппинг для ProductionItem -> ProductionItemDto
         modelMapper.createTypeMap(ProductionItem.class, ProductionItemDto.class)
