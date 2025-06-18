@@ -20,6 +20,7 @@ public class SaleItemDto {
     Long saleId;
     Long productId;
     String productName;
+    String productArticle;
     BigDecimal quantity;
     BigDecimal unitPrice;
     BigDecimal discount;
