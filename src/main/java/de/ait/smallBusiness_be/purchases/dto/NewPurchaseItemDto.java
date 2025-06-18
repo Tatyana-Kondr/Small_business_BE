@@ -1,12 +1,7 @@
 package de.ait.smallBusiness_be.purchases.dto;
 
-import de.ait.smallBusiness_be.products.model.Product;
-import de.ait.smallBusiness_be.purchases.model.Purchase;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.Digits;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -29,9 +24,11 @@ import java.math.BigDecimal;
 public class NewPurchaseItemDto {
 
     @NotNull(message = "{validation.notNull}")
-   // @Schema(description = "Product's id", example = "1548")
+    @Schema(description = "Product's id", example = "1548")
     Long productId;
 
+    @NotBlank(message = "{validation.notBlank}")
+    @Size(min = 2, max = 255, message = "{validation.name.size}")
     @Schema(description = "Name of product", example = "Lampe")
     String productName;
 
@@ -70,6 +67,6 @@ public class NewPurchaseItemDto {
     BigDecimal totalAmount;
 
     @NotNull(message = "{validation.notNull}")
-    @Schema(description = "Position", example = "1")
+    @Schema(description = "Position of the item in the purchase", example = "1")
     Integer position;
 }
