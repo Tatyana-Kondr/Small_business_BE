@@ -131,7 +131,7 @@ public interface PurchasesApi {
             @ApiResponse(responseCode = "200",
                     description = "List of Purchases retrieved successfully.",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = CustomerDto[].class))),
+                            schema = @Schema(implementation = PurchaseDto[].class))),
             @ApiResponse(responseCode = "404",
                     description = "No purchases found.",
                     content = @Content(mediaType = "application/json",

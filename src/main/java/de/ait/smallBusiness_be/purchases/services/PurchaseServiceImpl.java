@@ -95,7 +95,6 @@ public class PurchaseServiceImpl implements PurchaseService{
                         taxSum.updateAndGet(value -> value.add(taxAmount));
                         total.updateAndGet(value -> value.add(totalAmount));
 
-
                         // Вызов отдельного метода для обновления продукта
                         updateProductAfterPurchase(product, unitPrice, newPurchaseDto.getPurchasingDate());
 

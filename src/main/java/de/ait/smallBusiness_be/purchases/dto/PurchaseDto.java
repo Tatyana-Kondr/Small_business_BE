@@ -26,26 +26,15 @@ import java.util.List;
 public class PurchaseDto {
 
     Long id;
-
     Long vendorId;
-
     String vendorName;
-
     LocalDate purchasingDate;
-
     String type;
-
     String document;
-
     String documentNumber;
-
     BigDecimal subtotal; // Подитог
-
     BigDecimal taxSum; // Сумма налога
-
     BigDecimal total; // Общая сумма
-
     String paymentStatus;
-
     List<PurchaseItemDto> purchaseItems;
 }
