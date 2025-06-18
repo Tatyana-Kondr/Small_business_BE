@@ -28,7 +28,7 @@ public class NewShippingDimensionsDto {
     @Schema(description = "Length of the package in sm", example = "10.00")
     BigDecimal length;
 
-    @Digits(integer = 10, fraction = 2, message = "{validation.max.size}")
-    @Schema(description = "Weight of the package in kg", example = "10.00")
-    private BigDecimal weight;
+    @Digits(integer = 10, fraction = 3, message = "{validation.max.size}")
+    @Schema(description = "Weight of the package in kg", example = "0.530")
+    BigDecimal weight;
 }
