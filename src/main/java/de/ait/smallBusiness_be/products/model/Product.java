@@ -56,6 +56,10 @@ public class Product {
     @Digits(integer = 10, fraction = 2, message = "{validation.price.digits}")
     private BigDecimal purchasingPrice; // закупочная цена, по идее должна присваиваться цена с последней накладной, если ее значение превышает предыдущее
 
+    @Column(precision = 3)
+    @DecimalMin(value = "0", message = "{validation.markup.min}")
+    private BigDecimal markupPersentage; //наценка в %
+
     @Column
     @DecimalMin(value = "0.0", message = "{validation.price.min}")
     @Digits(integer = 10, fraction = 2, message = "{validation.price.digits}")
@@ -115,7 +119,7 @@ public class Product {
             if (this.purchasingPrice != null && this.purchasingPrice.compareTo(BigDecimal.ZERO) > 0) {
 
                 this.sellingPrice = this.purchasingPrice
-                        .multiply(BigDecimal.valueOf(1.2))
+                        .multiply(markupPersentage)
                         .setScale(2, RoundingMode.HALF_UP);
             } else {
 
@@ -145,6 +149,7 @@ public class Product {
                 .add("article='" + (article != null ? article : "N/A") + "'")
                 .add("vendorArticle='" + (vendorArticle != null ? vendorArticle : "N/A") + "'")
                 .add("purchasingPrice=" + (purchasingPrice != null ? purchasingPrice.setScale(2,RoundingMode.HALF_UP) : "0.00"))
+                .add("markup=" + markupPersentage)
                 .add("sellingPrice=" + (sellingPrice != null ? sellingPrice.setScale(2,RoundingMode.HALF_UP) : "0.00"))
                 .add("unitOfMeasurement='" + unitOfMeasurement + "'")
                 .add("weight=" + weight + "'")
