@@ -29,7 +29,7 @@ public class UpdateProductDto{
         @Schema(description = "Product's article", example = "BL-1")
         String article;
 
-        @Size(min = 3, max = 50, message = "{validation.name.size}")
+        @Size( max = 50, message = "{validation.name.size}")
         @Schema(description = "Product's vendor article", example = "ab123")
         String vendorArticle;
 
@@ -37,6 +37,10 @@ public class UpdateProductDto{
         @Digits(integer = 10, fraction = 2, message = "{validation.price.digits}")
         @Schema(description = "Product's purchasing price", example = "20.0")
         BigDecimal purchasingPrice;
+
+        @DecimalMin(value = "0.0", message = "{validation.tax.min}")
+        @Schema(description = "Markup percentage", example = "20")
+        BigDecimal markupPercentage;
 
         @DecimalMin(value = "0.0", message = "{validation.price.min}")
         @Digits(integer = 10, fraction = 2, message = "{validation.price.digits}")

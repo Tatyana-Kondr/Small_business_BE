@@ -90,6 +90,7 @@ public class ProductServiceImpl implements ProductService {
         product.setName(updateProductDto.getName());
         product.setArticle(updateProductDto.getArticle());
         product.setPurchasingPrice(updateProductDto.getPurchasingPrice());
+        product.setMarkupPercentage(updateProductDto.getMarkupPercentage());
         product.setSellingPrice(updateProductDto.getSellingPrice());
 
         if (updateProductDto.getUnitOfMeasurement() != null) {

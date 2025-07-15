@@ -37,6 +37,15 @@ public class NewProductDto{
     @Schema(description = "Product's purchasing price", example = "20.0")
     BigDecimal purchasingPrice;
 
+    @DecimalMin(value = "0.0", message = "{validation.tax.min}")
+    @Schema(description = "Markup percentage", example = "20")
+    BigDecimal markupPercentage;
+
+    @DecimalMin(value = "0.0", message = "{validation.price.min}")
+    @Digits(integer = 10, fraction = 2, message = "{validation.price.digits}")
+    @Schema(description = "Product's purchasing price", example = "20.0")
+    BigDecimal sellingPrice;
+
     @NotNull(message = "{validation.notNull}")
     @Schema(description = "Product's category", example = "Electronics")
     ProductCategory productCategory;
