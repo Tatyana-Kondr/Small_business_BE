@@ -114,7 +114,7 @@ public class EntityValidationConstants {
      *   <li>"New|Old"</li> (contains invalid character '|')
      * </ul>
      */
-    public static final String NAME_REGEX = "^[A-Za-zÀ-ÖØ-öø-ÿ0-9\\s&'’‘-]+$";
+    public static final String NAME_REGEX = "^[A-Za-zÀ-ÖØ-öø-ÿ0-9\\s&'’‘\\-/,\\.]+$";
 
     /**
      * Regular expression pattern for validating postal codes.
