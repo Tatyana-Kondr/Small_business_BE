@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -32,7 +33,6 @@ public class NewSaleDto {
         String typeOfOperation;
 
         @Schema(description = "Shipping method", example = "DHL_PAKET",allowableValues = {"DHL_PAKET, POST_MAXI_BRIEF, HERMES, ASH_LOGISTIK_LUFTFRACHT_TRANSPORTE_ZOLLSERVICE, ABHOLUNG"})
-        @Pattern(regexp = "DHL_PAKET|POST_MAXI_BRIEF|HERMES|ASH_LOGISTIK_LUFTFRACHT_TRANSPORTE_ZOLLSERVICE|ABHOLUNG")
         String shipping;
 
         @Schema(description = "Shipping dimensions (weight, width, height, length)")
@@ -68,6 +68,12 @@ public class NewSaleDto {
 
         @Schema(description = "Delivery bill number")
         private String deliveryBill;
+
+        @Schema(description = "Default tax percentage")
+        private BigDecimal defaultTax;
+
+        @Schema(description = "Default discount percentage")
+        private BigDecimal defaultDiscount;
 
         List<NewSaleItemDto> salesItems;
 }

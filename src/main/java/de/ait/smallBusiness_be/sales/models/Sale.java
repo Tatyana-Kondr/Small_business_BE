@@ -85,6 +85,10 @@ public class Sale {
     @Column
     private String deliveryBill;
 
+    @Column(precision = 2)
+    @DecimalMin(value = "0", message = "{validation.tax.min}")
+    private BigDecimal defaultDiscount;
+
     @Column(precision = 8, scale = 2)
     @DecimalMin(value = "0.0", message = "{validation.price.min}")
     @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
@@ -94,6 +98,10 @@ public class Sale {
     @DecimalMin(value = "0.0", message = "{validation.price.min}")
     @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
     private BigDecimal totalPrice;// (количество*цена-скидка)
+
+    @Column(precision = 2)
+    @DecimalMin(value = "0", message = "{validation.tax.min}")
+    private BigDecimal defaultTax;
 
     @Column(precision = 8, scale = 2)
     @DecimalMin(value = "0.0", message = "{validation.price.min}")

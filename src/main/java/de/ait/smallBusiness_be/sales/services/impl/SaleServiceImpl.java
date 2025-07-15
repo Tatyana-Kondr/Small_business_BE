@@ -13,6 +13,7 @@ import de.ait.smallBusiness_be.sales.dto.NewSaleDto;
 import de.ait.smallBusiness_be.sales.dto.NewSaleItemDto;
 import de.ait.smallBusiness_be.sales.dto.SaleDto;
 import de.ait.smallBusiness_be.sales.models.*;
+import de.ait.smallBusiness_be.sales.services.DocumentService;
 import de.ait.smallBusiness_be.sales.services.SaleService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -45,6 +46,8 @@ public class SaleServiceImpl implements SaleService {
     private final CustomerService customerService;
     private final ProductService productService;
     private final ModelMapper modelMapper;
+    private final DocumentService invoiceService;
+
 
     @Override
     @Transactional
@@ -66,6 +69,8 @@ public class SaleServiceImpl implements SaleService {
         sale.setCustomer(customer);
         sale.setInvoiceNumber(invoiceNumber);
         sale.setDeliveryBill(deliveryBill);
+        sale.setDefaultTax(newSale.getDefaultTax());
+        sale.setDefaultDiscount(newSale.getDefaultDiscount());
 
         // Маппинг габаритов
         if (newSale.getShippingDimensions() != null) {
@@ -88,6 +93,20 @@ public class SaleServiceImpl implements SaleService {
 
                         BigDecimal unitPrice = saleItem.getUnitPrice();
                         BigDecimal quantity = saleItem.getQuantity();
+
+                        BigDecimal taxPercent = saleItem.getTax();
+                        // 👇 Если налог в позиции отсутствует — берём из defaultTax
+                        if (taxPercent == null) {
+                            taxPercent = sale.getDefaultTax();
+                            saleItem.setTax(taxPercent);
+                        }
+
+                        BigDecimal discountPercent = saleItem.getDiscount();
+                        // 👇 Если скидка в позиции отсутствует — берём из defaultDiscount
+                        if (discountPercent == null) {
+                            discountPercent = sale.getDefaultDiscount();
+                            saleItem.setDiscount(discountPercent);
+                        }
 
                         BigDecimal totalPriceWithoutDiscount = unitPrice.multiply(quantity);
                         BigDecimal discountAmount = totalPriceWithoutDiscount
@@ -121,6 +140,9 @@ public class SaleServiceImpl implements SaleService {
         sale.setTotalAmount(total.get());
 
         Sale savedSale = saleRepository.save(sale);
+        invoiceService.generateInvoicePdf(savedSale, "invoices");
+        invoiceService.generateDeliveryBillPdf(savedSale, "delivery-bill");
+
         return modelMapper.map(savedSale, SaleDto.class);
     }
 

@@ -32,8 +32,10 @@ public class SaleDto {
     String orderType;
     LocalDate deliveryDate;
     String deliveryBill;
+    BigDecimal defaultDiscount;
     BigDecimal discountAmount;
     BigDecimal totalPrice;
+    BigDecimal defaultTax;
     BigDecimal taxAmount;
     BigDecimal totalAmount;
     List<SaleItemDto> saleItems;
