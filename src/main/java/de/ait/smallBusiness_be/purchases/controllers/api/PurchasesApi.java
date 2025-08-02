@@ -1,10 +1,9 @@
 package de.ait.smallBusiness_be.purchases.controllers.api;
 
-
-import de.ait.smallBusiness_be.customers.dto.CustomerDto;
 import de.ait.smallBusiness_be.exceptions.ErrorResponseDto;
 import de.ait.smallBusiness_be.purchases.dto.NewPurchaseDto;
 import de.ait.smallBusiness_be.purchases.dto.PurchaseDto;
+import de.ait.smallBusiness_be.purchases.model.PaymentStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -78,7 +77,8 @@ public interface PurchasesApi {
     })
     @ResponseStatus(HttpStatus.OK)
     Page<PurchaseDto> getAllPurchases(
-            @PageableDefault(size = 10, sort = "purchasingDate", direction = Sort.Direction.DESC) Pageable pageable);
+            @PageableDefault(size = 10, sort = {"purchasingDate", "documentNumber"},
+                    direction = Sort.Direction.DESC) Pageable pageable);
 
     @GetMapping("/{id}")
     @Operation(
@@ -209,4 +209,34 @@ public interface PurchasesApi {
     void deletePurchase(
             @PathVariable Long id);
 
+    @PreAuthorize("isAuthenticated()")
+    @PatchMapping("/{id}/update-payment-status")
+    @Operation(
+            summary = "Update purchase payment status",
+            description = "Update the payment status (e.g., TEILWEISEBEZAHLT or BEZAHLT) for a specific purchase.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200",
+                    description = "Payment status updated successfully.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = PurchaseDto.class))),
+            @ApiResponse(responseCode = "400",
+                    description = "Invalid purchase ID.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDto.class))),
+            @ApiResponse(responseCode = "401",
+                    description = "User unauthorized.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(type = "string"))),
+            @ApiResponse(responseCode = "403",
+                    description = "Forbidden.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(type = "string"))),
+            @ApiResponse(responseCode = "404",
+                    description = "Purchase not found.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDto.class)))
+    })
+    @ResponseStatus(HttpStatus.OK)
+    PurchaseDto updatePaymentStatus(
+            @PathVariable Long id);
 }

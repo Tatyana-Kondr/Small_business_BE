@@ -4,6 +4,8 @@ import de.ait.smallBusiness_be.customers.model.Customer;
 import de.ait.smallBusiness_be.customers.services.CustomerService;
 import de.ait.smallBusiness_be.exceptions.ErrorDescription;
 import de.ait.smallBusiness_be.exceptions.RestApiException;
+import de.ait.smallBusiness_be.payments.dao.PaymentRepository;
+import de.ait.smallBusiness_be.payments.model.Payment;
 import de.ait.smallBusiness_be.products.model.Product;
 import de.ait.smallBusiness_be.products.service.ProductService;
 import de.ait.smallBusiness_be.purchases.model.PaymentStatus;
@@ -15,6 +17,7 @@ import de.ait.smallBusiness_be.sales.dto.SaleDto;
 import de.ait.smallBusiness_be.sales.models.*;
 import de.ait.smallBusiness_be.sales.services.DocumentService;
 import de.ait.smallBusiness_be.sales.services.SaleService;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
@@ -30,6 +33,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -43,6 +47,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class SaleServiceImpl implements SaleService {
 
     private final SaleRepository saleRepository;
+    private final PaymentRepository paymentRepository;
     private final CustomerService customerService;
     private final ProductService productService;
     private final ModelMapper modelMapper;
@@ -286,6 +291,47 @@ public class SaleServiceImpl implements SaleService {
     @Transactional
     public boolean checkIfSaleExistsById(Long saleId) {
         return saleRepository.existsById(saleId);
+    }
+
+    @Override
+    @Transactional
+    public SaleDto updatePaymentStatus(Long saleId) {
+        Sale sale = saleRepository.findById(saleId)
+                .orElseThrow(() -> new EntityNotFoundException("Sale not found"));
+
+        // Получаем список оплат по saleId
+        List<Payment> payments = paymentRepository.findBySaleId(saleId);
+
+        BigDecimal totalPaid = payments.stream()
+                .map(Payment::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        PaymentStatus newStatus;
+        if (totalPaid.compareTo(BigDecimal.ZERO) == 0) {
+            newStatus = PaymentStatus.AUSSTEHEND;
+        } else if (totalPaid.compareTo(sale.getTotalAmount()) >= 0) {
+            newStatus = PaymentStatus.BEZAHLT;
+        } else {
+            newStatus = PaymentStatus.ANZAHLUNG;
+        }
+
+        // Обновляем статус и дату оплаты, если необходимо
+        if (sale.getPaymentStatus() != newStatus) {
+            sale.setPaymentStatus(newStatus);
+
+            if (newStatus == PaymentStatus.BEZAHLT) {
+                // Ищем дату последней оплаты
+                Optional<LocalDate> lastPaymentDate = payments.stream()
+                        .map(Payment::getPaymentDate)
+                        .max(LocalDate::compareTo);
+
+                lastPaymentDate.ifPresent(sale::setPaymentDate);
+            }
+
+            saleRepository.save(sale);
+        }
+
+        return modelMapper.map(sale, SaleDto.class);
     }
 
     @Override

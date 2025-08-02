@@ -59,4 +59,9 @@ public class SaleController implements SalesApi {
     public void deleteSale(Long id) {
     saleService.deleteSale(id);
     }
+
+    @Override
+    public SaleDto updatePaymentStatus(Long id) {
+      return saleService.updatePaymentStatus(id);
+    }
 }

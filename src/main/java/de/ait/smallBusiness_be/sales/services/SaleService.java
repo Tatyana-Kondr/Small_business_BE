@@ -18,6 +18,7 @@ public interface SaleService {
     void deleteSale(Long saleId);
     Sale getSaleOrThrow(Long id);
     boolean checkIfSaleExistsById(Long saleId);
+    SaleDto updatePaymentStatus(Long saleId);
     Page<SaleDto> searchSales(Pageable pageable, String query);
     Page<SaleDto> getAllSalesByFilter(Pageable pageable,
                                       Long id,

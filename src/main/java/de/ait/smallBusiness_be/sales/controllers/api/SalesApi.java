@@ -208,4 +208,35 @@ public interface SalesApi {
     void deleteSale(
             @PathVariable Long id);
 
+    @PreAuthorize("isAuthenticated()")
+    @PatchMapping("/{id}/update-payment-status")
+    @Operation(
+            summary = "Update sale payment status",
+            description = "Update the payment status (e.g., TEILWEISEBEZAHLT or BEZAHLT) for a specific sale.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200",
+                    description = "Payment status updated successfully.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = SaleDto.class))),
+            @ApiResponse(responseCode = "400",
+                    description = "Invalid sale ID.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDto.class))),
+            @ApiResponse(responseCode = "401",
+                    description = "User unauthorized.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(type = "string"))),
+            @ApiResponse(responseCode = "403",
+                    description = "Forbidden.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(type = "string"))),
+            @ApiResponse(responseCode = "404",
+                    description = "Sale not found.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDto.class)))
+    })
+    @ResponseStatus(HttpStatus.OK)
+    SaleDto updatePaymentStatus(
+            @PathVariable Long id);
+
 }
