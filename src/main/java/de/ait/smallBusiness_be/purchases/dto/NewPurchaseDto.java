@@ -46,7 +46,7 @@ public class NewPurchaseDto {
     @Schema(description = "Document's number", example = "12345-Aa")
     String documentNumber;
 
-    @Schema(description = "Status of payment", example = "NICHT_BEZAHLT")
+    @Schema(description = "Status of payment", example = "AUSSTEHEND")
     String paymentStatus;
 
     List<NewPurchaseItemDto> purchaseItems;

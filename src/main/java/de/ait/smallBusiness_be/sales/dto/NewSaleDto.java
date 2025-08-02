@@ -48,8 +48,8 @@ public class NewSaleDto {
         LocalDate salesDate;
 
         @NotNull(message = "{validation.notNull}")
-        @Pattern(regexp = "NICHT_BEZAHLT|TEILWEISEBEZAHLT|BEZAHLT|PENDING|CANCELLED")
-        @Schema(description = "Payment status", example = "NICHT_BEZAHLT", allowableValues = {"NICHT_BEZAHLT, TEILWEISEBEZAHLT, BEZAHLT,  PENDING, CANCELLED"})
+        @Pattern(regexp = "AUSSTEHEND|ANZAHLUNG|BEZAHLT|CANCELLED")
+        @Schema(description = "Payment status", example = "AUSSTEHEND", allowableValues = {"AUSSTEHEND, ANZAHLUNG, BEZAHLT, CANCELLED"})
         String paymentStatus;
 
         @PastOrPresent(message = "{validation.dateOfLastPurchase.pastOrPresent}")
