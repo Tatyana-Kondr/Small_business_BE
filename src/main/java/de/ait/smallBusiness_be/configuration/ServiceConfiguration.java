@@ -4,6 +4,8 @@ package de.ait.smallBusiness_be.configuration;
 import de.ait.smallBusiness_be.customers.dto.CustomerDto;
 import de.ait.smallBusiness_be.customers.dto.NewCustomerDto;
 import de.ait.smallBusiness_be.customers.model.Customer;
+import de.ait.smallBusiness_be.payments.dto.PaymentDto;
+import de.ait.smallBusiness_be.payments.model.Payment;
 import de.ait.smallBusiness_be.productions.dto.ProductionDto;
 import de.ait.smallBusiness_be.productions.dto.ProductionItemDto;
 import de.ait.smallBusiness_be.productions.model.Production;
@@ -82,8 +84,17 @@ public class ServiceConfiguration {
                     mapper.map(ShippingDimensions::getWidth, NewShippingDimensionsDto::setWidth);
                     mapper.map(ShippingDimensions::getHeight, NewShippingDimensionsDto::setHeight);
                     mapper.map(ShippingDimensions::getLength, NewShippingDimensionsDto::setLength);
-                    mapper.map(ShippingDimensions::getWeight, NewShippingDimensionsDto::setWeight); // важно!
+                    mapper.map(ShippingDimensions::getWeight, NewShippingDimensionsDto::setWeight);
                 });
+
+        // Добавляем маппинг для Payment -> PaymentDto
+        modelMapper.createTypeMap(Payment.class, PaymentDto.class)
+                .addMapping(src -> src.getCustomer().getId(), PaymentDto::setCustomerId)
+                .addMapping(src -> src.getCustomer().getName(), PaymentDto::setCustomerName)
+                .addMapping(src -> src.getSale().getId(), PaymentDto::setSaleId)
+                .addMapping(src -> src.getPurchase().getId(), PaymentDto::setPurchaseId)
+                .addMapping(src -> src.getPaymentMethod().getId(), PaymentDto::setPaymentMethodId)
+                .addMapping(src -> src.getPaymentProcess().getId(), PaymentDto::setPaymentProcessId);
 
         //  Добавляем маппинг для ProductionItem -> ProductionItemDto
         modelMapper.createTypeMap(ProductionItem.class, ProductionItemDto.class)
@@ -104,7 +115,7 @@ public class ServiceConfiguration {
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/api/**") // Ограничь CORS на API
                         .allowedOrigins("http://localhost:5173") // Указываем конкретный origin
-                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // Разрешаем PUT
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                         .allowCredentials(true); // Разрешаем куки
             }
         };
