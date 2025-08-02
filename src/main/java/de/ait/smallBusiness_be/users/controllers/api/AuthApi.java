@@ -62,6 +62,5 @@ public interface AuthApi {
     })
     @GetMapping("/me")
     @ResponseStatus(HttpStatus.OK)
-    UserDto getProfile(@Parameter(hidden = true)
-                       @AuthenticationPrincipal AuthenticatedUser currentUser);
+    UserDto getProfile(HttpServletRequest request);
 }
