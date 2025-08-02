@@ -56,14 +56,18 @@ public class Product {
     @Digits(integer = 10, fraction = 2, message = "{validation.price.digits}")
     private BigDecimal purchasingPrice; // закупочная цена, по идее должна присваиваться цена с последней накладной, если ее значение превышает предыдущее
 
+    @Column(precision = 3)
+    @DecimalMin(value = "0", message = "{validation.markup.min}")
+    @Digits(integer = 4, fraction = 2, message = "{validation.price.digits}")
+    private BigDecimal markupPercentage; //наценка в %
+
     @Column
     @DecimalMin(value = "0.0", message = "{validation.price.min}")
     @Digits(integer = 10, fraction = 2, message = "{validation.price.digits}")
     private BigDecimal sellingPrice;  // продажная цена, по идее должна присваиваться цена с последней продажи. Если продаж еще не было, то цена формируется из закупочной цены + 20%
 
     @Enumerated(EnumType.STRING)
-    @Column//(nullable = false)
-    //@NotNull(message = "{validation.notNull}")
+    @Column
     private UnitOfMeasurement unitOfMeasurement; // единица измерения
 
     @Column(precision = 8, scale = 3)
@@ -98,31 +102,6 @@ public class Product {
     @LastModifiedDate
     private LocalDateTime lastModifiedDate;
 
-//    @PostPersist
-//    public void postPersist() {
-//        generateArticle();
-//    }
-
-    @PrePersist
-    @PreUpdate
-    public void onSaveOrUpdate() {
-        calculateSellingPrice();
-    }
-
-
-    public void calculateSellingPrice() {
-        if (this.sellingPrice == null) {
-            if (this.purchasingPrice != null && this.purchasingPrice.compareTo(BigDecimal.ZERO) > 0) {
-
-                this.sellingPrice = this.purchasingPrice
-                        .multiply(BigDecimal.valueOf(1.2))
-                        .setScale(2, RoundingMode.HALF_UP);
-            } else {
-
-                this.sellingPrice = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
-            }
-        }
-    }
 
     @Override
     public boolean equals(Object o) {
@@ -145,6 +124,7 @@ public class Product {
                 .add("article='" + (article != null ? article : "N/A") + "'")
                 .add("vendorArticle='" + (vendorArticle != null ? vendorArticle : "N/A") + "'")
                 .add("purchasingPrice=" + (purchasingPrice != null ? purchasingPrice.setScale(2,RoundingMode.HALF_UP) : "0.00"))
+                .add("markup=" + markupPercentage)
                 .add("sellingPrice=" + (sellingPrice != null ? sellingPrice.setScale(2,RoundingMode.HALF_UP) : "0.00"))
                 .add("unitOfMeasurement='" + unitOfMeasurement + "'")
                 .add("weight=" + weight + "'")

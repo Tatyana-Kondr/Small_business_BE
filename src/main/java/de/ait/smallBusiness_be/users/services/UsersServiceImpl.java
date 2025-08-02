@@ -2,7 +2,6 @@ package de.ait.smallBusiness_be.users.services;
 
 import de.ait.smallBusiness_be.exceptions.ErrorDescription;
 import de.ait.smallBusiness_be.exceptions.RestApiException;
-import de.ait.smallBusiness_be.security.details.AuthenticatedUser;
 import de.ait.smallBusiness_be.users.dao.UsersRepository;
 import de.ait.smallBusiness_be.users.dto.NewUserDto;
 import de.ait.smallBusiness_be.users.dto.UserDto;
@@ -10,14 +9,10 @@ import de.ait.smallBusiness_be.users.model.User;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
 
 /**
  * 1/27/2025
@@ -89,7 +84,4 @@ public class UsersServiceImpl implements UsersService {
                 new RestApiException(ErrorDescription.USER_NOT_FOUND, HttpStatus.NOT_FOUND));
         return modelMapper.map(user, UserDto.class);
     }
-
-
-
 }

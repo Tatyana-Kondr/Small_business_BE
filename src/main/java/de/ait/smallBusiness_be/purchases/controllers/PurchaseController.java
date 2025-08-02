@@ -60,4 +60,9 @@ public class PurchaseController implements PurchasesApi{
     public void deletePurchase(Long id) {
         purchaseService.deletePurchase(id);
     }
+
+    @Override
+    public PurchaseDto updatePaymentStatus(Long id) {
+        return purchaseService.updatePaymentStatus(id);
+    }
 }

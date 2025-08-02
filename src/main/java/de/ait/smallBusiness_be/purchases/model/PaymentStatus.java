@@ -1,5 +1,5 @@
 package de.ait.smallBusiness_be.purchases.model;
 
 public enum PaymentStatus {
-    NICHT_BEZAHLT, TEILWEISEBEZAHLT, BEZAHLT,  PENDING, CANCELLED
+    AUSSTEHEND, ANZAHLUNG, BEZAHLT, CANCELLED
 }

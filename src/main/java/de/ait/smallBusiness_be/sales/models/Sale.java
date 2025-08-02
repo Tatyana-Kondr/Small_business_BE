@@ -40,7 +40,7 @@ public class Sale {
     @NotNull(message = "{validation.notNull}")
     private Customer customer;
 
-    @Column(nullable = false)
+    @Column(unique = true, nullable = false)
     private String invoiceNumber; // номер счета (начинается с года, а дальше подряд- пример: 2025-001)
 
     @Column
@@ -65,13 +65,29 @@ public class Sale {
     @PastOrPresent
     private LocalDate salesDate;
 
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private PaymentStatus paymentStatus;
+
     @Column
     @PastOrPresent
     private LocalDate paymentDate;
 
-    @Column(nullable = false)
-    @Enumerated(EnumType.STRING)
-    private PaymentStatus paymentStatus;
+    @Column
+    private String orderNumber;
+
+    @Column
+    private String orderType;
+
+    @Column
+    private LocalDate deliveryDate;
+
+    @Column
+    private String deliveryBill;
+
+    @Column(precision = 2)
+    @DecimalMin(value = "0", message = "{validation.tax.min}")
+    private BigDecimal defaultDiscount;
 
     @Column(precision = 8, scale = 2)
     @DecimalMin(value = "0.0", message = "{validation.price.min}")
@@ -83,6 +99,10 @@ public class Sale {
     @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
     private BigDecimal totalPrice;// (количество*цена-скидка)
 
+    @Column(precision = 2)
+    @DecimalMin(value = "0", message = "{validation.tax.min}")
+    private BigDecimal defaultTax;
+
     @Column(precision = 8, scale = 2)
     @DecimalMin(value = "0.0", message = "{validation.price.min}")
     @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
@@ -93,7 +113,7 @@ public class Sale {
     @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
     private BigDecimal totalAmount; // (количество*цена-скидка) + налог
 
-    @OneToMany(mappedBy = "sale", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "sale", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
-    private List<SaleItem> salesItems = new ArrayList<>();
+    private List<SaleItem> saleItems = new ArrayList<>();
 }

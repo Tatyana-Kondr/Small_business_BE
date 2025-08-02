@@ -4,26 +4,36 @@ import de.ait.smallBusiness_be.customers.model.Customer;
 import de.ait.smallBusiness_be.customers.services.CustomerService;
 import de.ait.smallBusiness_be.exceptions.ErrorDescription;
 import de.ait.smallBusiness_be.exceptions.RestApiException;
+import de.ait.smallBusiness_be.payments.dao.PaymentRepository;
+import de.ait.smallBusiness_be.payments.model.Payment;
 import de.ait.smallBusiness_be.products.model.Product;
 import de.ait.smallBusiness_be.products.service.ProductService;
+import de.ait.smallBusiness_be.purchases.model.PaymentStatus;
+import de.ait.smallBusiness_be.purchases.model.TypeOfOperation;
 import de.ait.smallBusiness_be.sales.dao.SaleRepository;
 import de.ait.smallBusiness_be.sales.dto.NewSaleDto;
+import de.ait.smallBusiness_be.sales.dto.NewSaleItemDto;
 import de.ait.smallBusiness_be.sales.dto.SaleDto;
-import de.ait.smallBusiness_be.sales.models.Sale;
-import de.ait.smallBusiness_be.sales.models.SaleItem;
-import de.ait.smallBusiness_be.sales.models.ShippingDimensions;
+import de.ait.smallBusiness_be.sales.models.*;
+import de.ait.smallBusiness_be.sales.services.DocumentService;
 import de.ait.smallBusiness_be.sales.services.SaleService;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -37,10 +47,12 @@ import java.util.concurrent.atomic.AtomicReference;
 public class SaleServiceImpl implements SaleService {
 
     private final SaleRepository saleRepository;
-
+    private final PaymentRepository paymentRepository;
     private final CustomerService customerService;
     private final ProductService productService;
     private final ModelMapper modelMapper;
+    private final DocumentService invoiceService;
+
 
     @Override
     @Transactional
@@ -48,19 +60,35 @@ public class SaleServiceImpl implements SaleService {
 
         Customer customer = customerService.getCustomerOrThrow(newSale.getCustomerId());
 
+        // Генерация invoiceNumber и deliveryBill (если не передано)
+        String invoiceNumber = newSale.getInvoiceNumber();
+        String deliveryBill = newSale.getDeliveryBill();
+
+        if (invoiceNumber == null || invoiceNumber.isBlank()) {
+            invoiceNumber = generateUniqueInvoiceNumber();
+            deliveryBill = invoiceNumber.replaceFirst("^RE", "LF");
+        }
+
+        // Маппинг в сущность + установка обязательных полей
         Sale sale = modelMapper.map(newSale, Sale.class);
         sale.setCustomer(customer);
-        sale.setShippingDimensions(newSale.getShippingDimensions() != null ?
-                modelMapper.map(newSale.getShippingDimensions(), ShippingDimensions.class) :
-                null);
+        sale.setInvoiceNumber(invoiceNumber);
+        sale.setDeliveryBill(deliveryBill);
+        sale.setDefaultTax(newSale.getDefaultTax());
+        sale.setDefaultDiscount(newSale.getDefaultDiscount());
 
+        // Маппинг габаритов
+        if (newSale.getShippingDimensions() != null) {
+            sale.setShippingDimensions(modelMapper.map(newSale.getShippingDimensions(), ShippingDimensions.class));
+        }
+
+        // Расчёт сумм
         AtomicReference<BigDecimal> discountSum = new AtomicReference<>(BigDecimal.ZERO);
         AtomicReference<BigDecimal> subtotal = new AtomicReference<>(BigDecimal.ZERO);
         AtomicReference<BigDecimal> taxSum = new AtomicReference<>(BigDecimal.ZERO);
         AtomicReference<BigDecimal> total = new AtomicReference<>(BigDecimal.ZERO);
 
-        if (newSale.getSalesItems()!=null && !newSale.getSalesItems().isEmpty()) {
-
+        if (newSale.getSalesItems() != null && !newSale.getSalesItems().isEmpty()) {
             List<SaleItem> saleItems = newSale.getSalesItems().stream()
                     .map(newSaleItemDto -> {
                         Product product = productService.getProductOrThrow(newSaleItemDto.getProductId());
@@ -68,28 +96,47 @@ public class SaleServiceImpl implements SaleService {
                         saleItem.setProduct(product);
                         saleItem.setSale(sale);
 
-                        BigDecimal totalPriceWithoutDiscount = saleItem.getUnitPrice().multiply(saleItem.getQuantity()); //стоимость без скидки (цена * количество)
+                        BigDecimal unitPrice = saleItem.getUnitPrice();
+                        BigDecimal quantity = saleItem.getQuantity();
+
+                        BigDecimal taxPercent = saleItem.getTax();
+                        // 👇 Если налог в позиции отсутствует — берём из defaultTax
+                        if (taxPercent == null) {
+                            taxPercent = sale.getDefaultTax();
+                            saleItem.setTax(taxPercent);
+                        }
+
+                        BigDecimal discountPercent = saleItem.getDiscount();
+                        // 👇 Если скидка в позиции отсутствует — берём из defaultDiscount
+                        if (discountPercent == null) {
+                            discountPercent = sale.getDefaultDiscount();
+                            saleItem.setDiscount(discountPercent);
+                        }
+
+                        BigDecimal totalPriceWithoutDiscount = unitPrice.multiply(quantity);
                         BigDecimal discountAmount = totalPriceWithoutDiscount
-                                .multiply(saleItem.getDiscount().movePointLeft(2)) // Это эквивалентно делению на 100.
-                                .setScale(2, RoundingMode.HALF_UP); // сумма скидки
-                        BigDecimal totalPrice = totalPriceWithoutDiscount.subtract(discountAmount); // сумма с учетом скидки (стоимость - скидка)
+                                .multiply(saleItem.getDiscount().movePointLeft(2))
+                                .setScale(2, RoundingMode.HALF_UP);
+                        BigDecimal totalPrice = totalPriceWithoutDiscount.subtract(discountAmount);
                         BigDecimal taxAmount = totalPrice
-                                .multiply(saleItem.getTax().movePointLeft(2)) // Это эквивалентно делению на 100.
-                                .setScale(2, RoundingMode.HALF_UP); // сумма налога
-                        BigDecimal totalAmount = totalPrice.add(taxAmount); // итоговая сумма с учетом скидки и налога (сумма с учетом скидки + налог)
+                                .multiply(saleItem.getTax().movePointLeft(2))
+                                .setScale(2, RoundingMode.HALF_UP);
+                        BigDecimal totalAmount = totalPrice.add(taxAmount);
 
                         saleItem.setDiscountAmount(discountAmount);
                         saleItem.setTotalPrice(totalPrice);
                         saleItem.setTaxAmount(taxAmount);
                         saleItem.setTotalAmount(totalAmount);
 
-                        discountSum.updateAndGet(value -> value.add(saleItem.getDiscountAmount()));
-                        subtotal.updateAndGet(value -> value.add(saleItem.getTotalPrice()));
-                        taxSum.updateAndGet(value -> value.add(saleItem.getTaxAmount()));
-                        total.updateAndGet(value -> value.add(saleItem.getTotalAmount()));
+                        discountSum.updateAndGet(val -> val.add(discountAmount));
+                        subtotal.updateAndGet(val -> val.add(totalPrice));
+                        taxSum.updateAndGet(val -> val.add(taxAmount));
+                        total.updateAndGet(val -> val.add(totalAmount));
+
                         return saleItem;
                     }).toList();
-            sale.setSalesItems(saleItems);
+
+            sale.setSaleItems(saleItems);
         }
 
         sale.setDiscountAmount(discountSum.get());
@@ -98,42 +145,242 @@ public class SaleServiceImpl implements SaleService {
         sale.setTotalAmount(total.get());
 
         Sale savedSale = saleRepository.save(sale);
+        invoiceService.generateInvoicePdf(savedSale, "invoices");
+        invoiceService.generateDeliveryBillPdf(savedSale, "delivery-bill");
 
         return modelMapper.map(savedSale, SaleDto.class);
     }
 
     @Override
+    @Transactional
     public Page<SaleDto> getAllSales(Pageable pageable) {
-        return null;
+
+        // Проверяем, корректно ли передана сортировка
+        List<String> allowedSortFields = List.of("salesDate", "invoiceNumber", "totalAmount"); // допустимые поля
+        Sort sort = pageable.getSort();
+
+        for (Sort.Order order : sort) {
+            if (!allowedSortFields.contains(order.getProperty())) {
+                // Если поле неверное, заменяем сортировку по умолчанию
+                pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(Sort.Direction.DESC, "salesDate"));
+                break;
+            }
+        }
+
+        Page<Sale> sales = saleRepository.findAll(pageable);
+
+        if (sales.isEmpty()) {
+            throw new RestApiException(ErrorDescription.LIST_IS_EMPTY, HttpStatus.NOT_FOUND);
+        }
+
+        return sales.map(sale -> modelMapper.map(sale, SaleDto.class));
     }
 
     @Override
+    @Transactional
     public SaleDto getSaleById(Long id) {
-
         Sale sale = getSaleOrThrow(id);
         return modelMapper.map(sale, SaleDto.class);
     }
 
     @Override
+    @Transactional
     public SaleDto updateSale(Long saleId, NewSaleDto updateSale) {
-        return null;
+        Sale sale = getSaleOrThrow(saleId);
+        Customer customer = customerService.getCustomerOrThrow(updateSale.getCustomerId());
+        sale.setCustomer(customer);
+        sale.setInvoiceNumber(updateSale.getInvoiceNumber());
+        sale.setAccountObject(updateSale.getAccountObject());
+        sale.setSalesDate(updateSale.getSalesDate());
+        sale.setShippingDimensions(updateSale.getShippingDimensions() != null ?
+                modelMapper.map(updateSale.getShippingDimensions(), ShippingDimensions.class) :
+                null);
+        try {
+            sale.setTypeOfOperation(TypeOfOperation.valueOf(updateSale.getTypeOfOperation().toUpperCase()));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid type of operation: " + updateSale.getTypeOfOperation());
+        }
+        try {
+            sale.setShipping(Shipping.valueOf(updateSale.getShipping().toUpperCase()));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid shipping: " + updateSale.getShipping());
+        }
+        try {
+            sale.setTermsOfPayment(TermsOfPayment.valueOf(updateSale.getTermsOfPayment().toUpperCase()));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid terms of payment: " + updateSale.getTermsOfPayment());
+        }
+        try {
+            sale.setPaymentStatus(PaymentStatus.valueOf(updateSale.getPaymentStatus().toUpperCase()));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid payment status: " + updateSale.getPaymentStatus());
+        }
+
+        // Удаляем все старые позиции
+        sale.getSaleItems().clear();
+        // Пересчет сумм
+        AtomicReference<BigDecimal> discountAmount = new AtomicReference<>(BigDecimal.ZERO);
+        AtomicReference<BigDecimal> totalPrice = new AtomicReference<>(BigDecimal.ZERO);
+        AtomicReference<BigDecimal> taxAmount = new AtomicReference<>(BigDecimal.ZERO);
+        AtomicReference<BigDecimal> totalAmount = new AtomicReference<>(BigDecimal.ZERO);
+
+        List<SaleItem> newItems = new ArrayList<>();
+        int position = 1;
+
+        for (NewSaleItemDto itemDto : updateSale.getSalesItems()) {
+            Product product = productService.getProductOrThrow(itemDto.getProductId());
+
+            SaleItem item = new SaleItem();
+            item.setSale(sale);
+            item.setProduct(product);
+            item.setProductName(itemDto.getProductName());
+            item.setQuantity(itemDto.getQuantity());
+            item.setUnitPrice(itemDto.getUnitPrice());
+            item.setDiscount(itemDto.getDiscount());
+            item.setTax(itemDto.getTax());
+            item.setPosition(position++);
+
+            // Расчёты
+            BigDecimal unitPrice = item.getUnitPrice();
+            BigDecimal quantity = item.getQuantity();
+
+            BigDecimal totalPriceWithoutDiscount = unitPrice.multiply(quantity); //стоимость без скидки (цена * количество)
+            BigDecimal discountSum = totalPriceWithoutDiscount
+                    .multiply(item.getDiscount().movePointLeft(2)) // Это эквивалентно делению на 100.
+                    .setScale(2, RoundingMode.HALF_UP); // сумма скидки
+            BigDecimal totalPriceWithDiscount = totalPriceWithoutDiscount.subtract(discountSum); // сумма с учетом скидки (стоимость - скидка)
+            BigDecimal taxSum = totalPriceWithDiscount
+                    .multiply(item.getTax().movePointLeft(2)) // Это эквивалентно делению на 100
+                    .setScale(2, RoundingMode.HALF_UP); // сумма налога
+            BigDecimal totalSum = totalPriceWithDiscount.add(taxSum); // итоговая сумма с учетом скидки и налога (сумма с учетом скидки + налог)
+
+            item.setDiscountAmount(discountSum);
+            item.setTotalPrice(totalPriceWithDiscount);
+            item.setTaxAmount(taxSum);
+            item.setTotalAmount(totalSum);
+
+            discountAmount.updateAndGet(v -> v.add(item.getDiscountAmount()));
+            totalPrice.updateAndGet(v -> v.add(item.getTotalPrice()));
+            taxAmount.updateAndGet(v -> v.add(item.getTaxAmount()));
+            totalAmount.updateAndGet(v -> v.add(item.getTotalAmount()));
+
+            newItems.add(item);
+        }
+
+        // Добавляем новые позиции
+        sale.getSaleItems().addAll(newItems);
+
+        // Обновляем итоги
+        sale.setSalesDate(updateSale.getSalesDate());
+        sale.setTotalPrice(totalPrice.get());
+        sale.setTaxAmount(taxAmount.get());
+        sale.setTotalAmount(totalAmount.get());
+
+        // Сохраняем
+        Sale updatedSale = saleRepository.save(sale);
+        return modelMapper.map(updatedSale, SaleDto.class);
     }
 
     @Override
     public void deleteSale(Long saleId) {
+        Sale sale = getSaleOrThrow(saleId);
+        saleRepository.delete(sale);
+    }
 
+    @Override
+    @Transactional
+    public boolean checkIfSaleExistsById(Long saleId) {
+        return saleRepository.existsById(saleId);
+    }
+
+    @Override
+    @Transactional
+    public SaleDto updatePaymentStatus(Long saleId) {
+        Sale sale = saleRepository.findById(saleId)
+                .orElseThrow(() -> new EntityNotFoundException("Sale not found"));
+
+        // Получаем список оплат по saleId
+        List<Payment> payments = paymentRepository.findBySaleId(saleId);
+
+        BigDecimal totalPaid = payments.stream()
+                .map(Payment::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        PaymentStatus newStatus;
+        if (totalPaid.compareTo(BigDecimal.ZERO) == 0) {
+            newStatus = PaymentStatus.AUSSTEHEND;
+        } else if (totalPaid.compareTo(sale.getTotalAmount()) >= 0) {
+            newStatus = PaymentStatus.BEZAHLT;
+        } else {
+            newStatus = PaymentStatus.ANZAHLUNG;
+        }
+
+        // Обновляем статус и дату оплаты, если необходимо
+        if (sale.getPaymentStatus() != newStatus) {
+            sale.setPaymentStatus(newStatus);
+
+            if (newStatus == PaymentStatus.BEZAHLT) {
+                // Ищем дату последней оплаты
+                Optional<LocalDate> lastPaymentDate = payments.stream()
+                        .map(Payment::getPaymentDate)
+                        .max(LocalDate::compareTo);
+
+                lastPaymentDate.ifPresent(sale::setPaymentDate);
+            }
+
+            saleRepository.save(sale);
+        }
+
+        return modelMapper.map(sale, SaleDto.class);
+    }
+
+    @Override
+    @Transactional
+    public Page<SaleDto> searchSales(Pageable pageable, String query) {
+        return saleRepository.searchSales(pageable,query)
+                .map(sale -> modelMapper.map(sale, SaleDto.class));
+    }
+
+    @Override
+    @Transactional
+    public Page<SaleDto> getAllSalesByFilter(Pageable pageable, Long id, Long customerId, String customerName, String invoiceNumber, BigDecimal totalAmount, String paymentStatus, LocalDate startDate, LocalDate endDate, String searchQuery) {
+        return saleRepository.filterSalesByFields(pageable, id, customerId, customerName, invoiceNumber, totalAmount, paymentStatus, startDate, endDate, searchQuery)
+                .map(sale -> modelMapper.map(sale, SaleDto.class));
     }
 
     public Sale getSaleOrThrow(Long id) {
-
         return saleRepository
                 .findById(id)
                 .orElseThrow(() -> new RestApiException(ErrorDescription.SALE_NOT_FOUND, HttpStatus.NOT_FOUND));
     }
 
-    @Override
-    public boolean checkIfSaleExistsById(Long saleId) {
+    private String generateUniqueInvoiceNumber() {
+        int attempts = 0;
+        while (attempts < 5) {  // ограничение по числу попыток
+            String candidate = generateInvoiceNumber();
 
-        return saleRepository.existsById(saleId);
+            // Проверяем, существует ли уже такой номер
+            boolean exists = saleRepository.existsByInvoiceNumber(candidate);
+            if (!exists) {
+                return candidate;
+            }
+
+            attempts++;
+        }
+        throw new RuntimeException("Не удалось сгенерировать уникальный номер счета");
     }
+
+    private String generateInvoiceNumber() {
+        int year = LocalDate.now().getYear();
+
+        // Получаем максимальный номер за год с блокировкой или в транзакции
+        Integer lastNumber = saleRepository.findLastInvoiceSequenceForYear(year);
+        if (lastNumber == null) lastNumber = 0;
+
+        int nextNumber = lastNumber + 1;
+        String formattedNumber = String.format("%04d", nextNumber);
+
+        return "RE-" + year + "-" + formattedNumber;
+    }
+
 }

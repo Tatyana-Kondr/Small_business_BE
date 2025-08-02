@@ -1,6 +1,5 @@
 package de.ait.smallBusiness_be.purchases.dao;
 
-import de.ait.smallBusiness_be.customers.model.Customer;
 import de.ait.smallBusiness_be.purchases.model.Purchase;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -13,7 +12,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-
 
 /**
  * 16.01.2025
@@ -113,13 +111,10 @@ public class PurchaseRepositoryCustomImpl implements PurchaseRepositoryCustom {
 
             // Поиск по общей сумме (по строке)
             predicates.add(cb.like(cb.function("str", String.class, root.get("total")), likePattern));
-
         }
 
         return predicates;
     }
-
-
 
     // Вспомогательный метод для создания предикатов для фильтрации
     private List<Predicate> buildFilterPredicates(

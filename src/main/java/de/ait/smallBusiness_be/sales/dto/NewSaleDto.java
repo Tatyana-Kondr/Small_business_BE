@@ -18,24 +18,21 @@ import java.util.List;
 @Schema(name = "New Sale", description = "Information for creating a new sale")
 public class NewSaleDto {
 
-        @Schema(description = "Customer ID", example = "12345")
+        @Schema(description = "Customer ID", example = "10")
         Long customerId;
 
-        @NotBlank(message = "{validation.notBlank}")
-        @Size(min = 5, max = 50, message = "{javax.validation.constraints.Size.message}")
-        @Schema(description = "Invoice number", example = "RE-2024-001")
+        @Schema(description = "Invoice number")
         String invoiceNumber;
 
         @Schema(description = "Account object (optional)", example = "Project Alpha")
         String accountObject;
 
         @NotNull(message = "{validation.notNull}")
-        @Pattern(regexp = "EINKAUF|LIEFERANT_RABATT|VERKAUF|KUNDENERSTATTUNG|EXCHANGE")
-        @Schema(description = "Type of operation", example = "VERKAUF",allowableValues = {"EINKAUF, LIEFERANT_RABATT, VERKAUF, KUNDENERSTATTUNG, EXCHANGE"})
+        @Pattern(regexp = "VERKAUF|KUNDENERSTATTUNG")
+        @Schema(description = "Type of operation", example = "VERKAUF",allowableValues = {" VERKAUF, KUNDENERSTATTUNG, EXCHANGE"})
         String typeOfOperation;
 
         @Schema(description = "Shipping method", example = "DHL_PAKET",allowableValues = {"DHL_PAKET, POST_MAXI_BRIEF, HERMES, ASH_LOGISTIK_LUFTFRACHT_TRANSPORTE_ZOLLSERVICE, ABHOLUNG"})
-        @Pattern(regexp = "DHL_PAKET|POST_MAXI_BRIEF|HERMES|ASH_LOGISTIK_LUFTFRACHT_TRANSPORTE_ZOLLSERVICE|ABHOLUNG")
         String shipping;
 
         @Schema(description = "Shipping dimensions (weight, width, height, length)")
@@ -46,37 +43,37 @@ public class NewSaleDto {
         @Pattern(regexp = "BETRAG_IM_BAR|ÜBERWEISUNG_7_TAGE_2_PROZENT_14_TAGE_NETTO|ÜBERWEISUNG_7_TAGE|ÜBERWEISUNG_14_TAGE|BETRAG_ERHALTEN_AM")
         String termsOfPayment;
 
-        @PastOrPresent
-        @Schema(description = "Date of the sale", example = "2024-02-05")
+        @PastOrPresent(message = "{validation.dateOfLastPurchase.pastOrPresent}")
+        @Schema(description = "Date of the sale", example = "2025-02-05")
         LocalDate salesDate;
 
-        @PastOrPresent
-        @Schema(description = "Date of payment", example = "2024-02-10")
-        LocalDate paymentDate;
-
         @NotNull(message = "{validation.notNull}")
-        @Pattern(regexp = "NICHT_BEZAHLT|TEILWEISEBEZAHLT|BEZAHLT|PENDING|CANCELLED")
-        @Schema(description = "Payment status", example = "NICHT_BEZAHLT", allowableValues = {"NICHT_BEZAHLT, TEILWEISEBEZAHLT, BEZAHLT,  PENDING, CANCELLED"})
+        @Pattern(regexp = "AUSSTEHEND|ANZAHLUNG|BEZAHLT|CANCELLED")
+        @Schema(description = "Payment status", example = "AUSSTEHEND", allowableValues = {"AUSSTEHEND, ANZAHLUNG, BEZAHLT, CANCELLED"})
         String paymentStatus;
 
-        @DecimalMin(value = "0", message = "{validation.tax.min}")
-        @Schema(description = "Discount amount", example = "00.00")
-        BigDecimal discountAmount;
+        @PastOrPresent(message = "{validation.dateOfLastPurchase.pastOrPresent}")
+        @Schema(description = "Date of the payment", example = "2025-02-01")
+        private LocalDate paymentDate;
 
-        @DecimalMin(value = "0.0", message = "{validation.price.min}")
-        @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
-        @Schema(description = "Total price before tax", example = "00.00")
-        BigDecimal totalPrice;
+        @Size(max = 50, message = "{javax.validation.constraints.Size.message}")
+        @Schema(description = "Order number", example = "12345")
+        private String orderNumber;
 
-        @DecimalMin(value = "0.0", message = "{validation.price.min}")
-        @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
-        @Schema(description = "Tax amount", example = "00.00")
-        BigDecimal taxAmount;
+        @Schema(description = "Order type", example = "A.Muller")
+        private String orderType;
 
-        @DecimalMin(value = "0.0", message = "{validation.price.min}")
-        @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
-        @Schema(description = "Total amount after tax", example = "00.00")
-        BigDecimal totalAmount;
+        @Schema(description = "Date of the delivery", example = "2025-02-05")
+        private LocalDate deliveryDate;
+
+        @Schema(description = "Delivery bill number")
+        private String deliveryBill;
+
+        @Schema(description = "Default tax percentage")
+        private BigDecimal defaultTax;
+
+        @Schema(description = "Default discount percentage")
+        private BigDecimal defaultDiscount;
 
         List<NewSaleItemDto> salesItems;
 }

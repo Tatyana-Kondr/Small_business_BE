@@ -1,6 +1,5 @@
 package de.ait.smallBusiness_be.sales.dto;
 
-import de.ait.smallBusiness_be.products.dto.NewDimensionsDto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -19,18 +18,25 @@ import java.util.List;
 public class SaleDto {
     Long id;
     Long customerId;
+    String customerName;
     String invoiceNumber;
     String accountObject;
     String typeOfOperation;
     String shipping;
-    NewDimensionsDto shippingDimensions;
+    NewShippingDimensionsDto shippingDimensions;
     String termsOfPayment;
     LocalDate salesDate;
-    LocalDate paymentDate;
     String paymentStatus;
+    LocalDate paymentDate;
+    String orderNumber;
+    String orderType;
+    LocalDate deliveryDate;
+    String deliveryBill;
+    BigDecimal defaultDiscount;
     BigDecimal discountAmount;
     BigDecimal totalPrice;
+    BigDecimal defaultTax;
     BigDecimal taxAmount;
     BigDecimal totalAmount;
-    List<SaleItemDto> salesItems;
+    List<SaleItemDto> saleItems;
 }

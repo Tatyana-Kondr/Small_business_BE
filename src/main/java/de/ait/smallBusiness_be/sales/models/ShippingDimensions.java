@@ -31,7 +31,5 @@ public class ShippingDimensions {
     private BigDecimal length;
 
     @Column(precision = 8, scale = 3)
-    @DecimalMin(value = "0.0", message = "{validation.weight.min}")
-    @Digits(integer = 5, fraction = 3, message = "{validation.weight.digits}")
     private BigDecimal weight;
 }

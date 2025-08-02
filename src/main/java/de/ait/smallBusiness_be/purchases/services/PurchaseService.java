@@ -18,4 +18,6 @@ public interface PurchaseService {
                                               BigDecimal total, String paymentStatus, LocalDate startDate, LocalDate endDate, String searchQuery);
     PurchaseDto updatePurchase(Long id, NewPurchaseDto newPurchaseDto);
     void deletePurchase(Long id);
+    PurchaseDto updatePaymentStatus(Long id);
+
 }

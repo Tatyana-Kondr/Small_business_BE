@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="de">
+<head>
+    <meta charset="UTF-8"/>
+    <style>
+        @page {
+            size: A4;
+            margin: 1cm 1.5cm 1cm 2.5cm;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            color: #000;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            page-break-inside: auto;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 3px;
+        }
+
+        th {
+            border-bottom: 1px solid #7B7C81;
+            background-color: #ffffff;
+        }
+
+        thead {
+            display: table-header-group;
+        }
+
+        tfoot {
+            display: table-footer-group;
+        }
+
+        .right {
+            text-align: right;
+        }
+
+        .center {
+            text-align: center;
+        }
+
+        .bold {
+            font-weight: bold;
+        }
+
+        .logo {
+            height: 100px;
+            width: auto;
+        }
+
+        .re {
+            font-size: 18px;
+            font-weight: bold;
+            font-family: "Microsoft Sans Serif", sans-serif;
+            color: #193f6e;
+            border-bottom: 2px solid #193f6e;
+            margin: 0;
+            padding: 0;
+        }
+
+        .totals td {
+            border: none;
+            padding: 4px 6px;
+        }
+
+        .info-table td {
+            vertical-align: top;
+        }
+
+        .info-left {
+            width: 60%;
+        }
+
+        .info-right {
+            width: 40%;
+        }
+
+        .contact {
+            font-size: 10px;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        .thanks {
+            font-size: 12px;
+            text-align: center;
+            margin: 30px 0px 20px 0px;
+            padding: 0;
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding-top: 10px;
+        }
+        .artikel-column {
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Верхняя часть: Логотип и данные -->
+<table style="margin-bottom: 10px;">
+    <tr>
+        <td class="right">
+            <img th:src="${logoPath}" alt="Logo" class="logo"/>
+        </td>
+    </tr>
+</table>
+
+<!-- Основной блок: левая и правая инфа -->
+<table class="info-table">
+    <tr>
+        <td class="info-left">
+            <p style="font-size: 10px; margin-bottom: 25px; margin-top: 15px">
+                A. Neufeld - EichtelgerWeg 7, 32657 Lemgo, DE
+            </p>
+            <h2 th:text="${sale.customer.name}" style="margin: 0 0 10px 0;">Kunde GmbH</h2>
+            <p style="font-size: 14px; margin: 0 0 5px 0;" th:text="${sale.customer.address.street + ' ' + sale.customer.address.building}">Straße 1</p>
+            <p style="font-size: 14px; margin: 0;" th:text="${sale.customer.address.postalCode + ' ' + sale.customer.address.city}">12345 Stadt</p>
+            <p th:if="${sale.customer.phone}" th:text="|Tel: ${sale.customer.phone}|" style="margin-top: 45px;">+77773333333</p>
+        </td>
+        <td class="info-right">
+            <p class="re">Lieferschein</p>
+            <table style="margin-top: 10px;">
+                <tr><td>Lieferschein-Nr:</td><td class="right" th:text="${sale.deliveryBill}">LF-2025-00015</td></tr>
+                <tr><td>Lieferdatum:</td><td class="right" th:text="${sale.deliveryDate != null ? sale.deliveryDate.format(T(java.time.format.DateTimeFormatter).ofPattern('dd.MM.yyyy')) : ''}">25.06.2025</td></tr>
+                <tr><td>Kunden-Nr:</td><td class="right" th:text="${sale.customer.customerNumber}">25190</td></tr>
+                <tr><td>Bestell-Nr:</td><td class="right" th:text="${sale.orderNumber}">4502728947</td></tr>
+                <tr><td>Bestellart:</td><td class="right" th:text="${sale.orderType}">Kusiak Robert</td></tr>
+                <tr><td>Sachbearbeiter:</td><td class="right" th:text="'Neufeld'">Neufeld</td></tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+<p style="margin-top: 50px; min-height: 15px;">
+    <span th:text="|Lieferschein zu der Rechnung ${sale.invoiceNumber} vom ${sale.deliveryDate != null ? sale.deliveryDate.format(T(java.time.format.DateTimeFormatter).ofPattern('dd.MM.yyyy')) : ''}|"></span>
+</p>
+
+<!-- Таблица с позициями -->
+<table style="margin-top: 10px; border-bottom: 1px solid #7B7C81;">
+    <thead>
+    <tr>
+        <th>Pos</th>
+        <th class="artikel-column">Artikel</th>
+        <th>Bezeichnung</th>
+        <th class="center">Menge</th>
+        <th class="center">Einheit</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="item, stat : ${sale.saleItems}">
+        <td th:text="${item.position}">1</td>
+        <td class="artikel-column" th:text="${item.product.article}">2022801290</td>
+        <td th:text="${item.productName}">FEINSTRAHLEN1</td>
+        <td class="center" th:text="${item.quantity}">17</td>
+        <td class="center" th:text="${item.product.unitOfMeasurement}">ST</td>
+    </tr>
+    </tbody>
+</table>
+
+
+
+<!-- Футер -->
+<div class="footer">
+    <div class="thanks bold">
+        BESTEN DANK FÜR IHRE ANFRAGE UND VERTRAUEN!!!
+    </div>
+    <div class="contact">
+        <p style="margin: 0 0 2px 0;">A. Neufeld, Eichtelger Weg 7, 32657 Lemgo, DE, Tel.: +49 (0) 52 61 / 60 74 00, alex.neufeld@gmx.net</p>
+        <p style="margin: 0 0 2px 0;">Bank: Postbank Hamburg, IBAN: DE19 2001 0020 0991 3552 02, BIC (SWIFT): PBNKDEFF</p>
+        <p style="margin: 0 0 2px 0;">PayPal: alex.neufeld@gmx.net&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;Ust-Id-Nr. / VAT-ID: DE274757218</p>
+    </div>
+</div>
+
+</body>
+</html>

@@ -28,6 +28,7 @@ public class ProductDto{
     String article;
     String vendorArticle;
     BigDecimal purchasingPrice;
+    BigDecimal markupPercentage;
     BigDecimal sellingPrice;
     String unitOfMeasurement;
     BigDecimal weight;

@@ -2,10 +2,10 @@ package de.ait.smallBusiness_be.users.controllers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.ait.smallBusiness_be.security.details.AuthenticatedUser;
 import de.ait.smallBusiness_be.users.controllers.api.AuthApi;
 import de.ait.smallBusiness_be.users.dto.LoginRequestDto;
 import de.ait.smallBusiness_be.users.dto.LoginResponseDto;
+import de.ait.smallBusiness_be.users.dto.SessionUserDto;
 import de.ait.smallBusiness_be.users.dto.UserDto;
 import de.ait.smallBusiness_be.users.services.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequiredArgsConstructor
@@ -44,7 +45,11 @@ public class AuthController implements AuthApi {
     }
 
     @Override
-    public UserDto getProfile(AuthenticatedUser currentUser) {
-        return authService.getUserProfile(currentUser);
+    public UserDto getProfile(HttpServletRequest request) {
+        SessionUserDto sessionUser = (SessionUserDto) request.getSession().getAttribute("user");
+        if (sessionUser == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not authenticated");
+        }
+        return authService.getUserProfile(sessionUser);
     }
 }

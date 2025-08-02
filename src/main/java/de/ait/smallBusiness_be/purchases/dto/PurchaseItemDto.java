@@ -25,26 +25,15 @@ import java.math.BigDecimal;
 public class PurchaseItemDto {
 
     Long id;
-
     Long productId;
-
     String productName;
-
     String productArticle;
-
     Long purchaseId;
-
     BigDecimal quantity;
-
     BigDecimal unitPrice;
-
     BigDecimal totalPrice;
-
     BigDecimal taxPercentage;
-
     BigDecimal taxAmount;
-
     BigDecimal totalAmount;
-
     Integer position;
 }

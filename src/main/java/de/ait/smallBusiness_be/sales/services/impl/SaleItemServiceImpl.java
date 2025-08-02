@@ -64,7 +64,8 @@ public class SaleItemServiceImpl implements SaleItemService {
         if (!saleService.checkIfSaleExistsById(saleId)) {
             throw new IllegalArgumentException("Sale with ID: " + saleId + " does not exist");
         }
-        return saleItemRepository.findAllBySaleIdOrderByPosition(saleId)
+        return saleItemRepository
+                .findAllBySaleIdOrderByPosition(saleId)
                 .stream()
                 .map(item -> modelMapper.map(item, SaleItemDto.class))
                 .collect(Collectors.toList());

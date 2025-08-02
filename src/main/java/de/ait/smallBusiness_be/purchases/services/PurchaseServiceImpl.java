@@ -4,6 +4,8 @@ import de.ait.smallBusiness_be.customers.dao.CustomerRepository;
 import de.ait.smallBusiness_be.customers.model.Customer;
 import de.ait.smallBusiness_be.exceptions.ErrorDescription;
 import de.ait.smallBusiness_be.exceptions.RestApiException;
+import de.ait.smallBusiness_be.payments.dao.PaymentRepository;
+import de.ait.smallBusiness_be.payments.model.Payment;
 import de.ait.smallBusiness_be.products.dao.ProductRepository;
 import de.ait.smallBusiness_be.products.model.Product;
 import de.ait.smallBusiness_be.purchases.dao.PurchaseRepository;
@@ -46,6 +48,7 @@ public class PurchaseServiceImpl implements PurchaseService{
     private final PurchaseRepository purchaseRepository;
     private final CustomerRepository customerRepository;
     private final ProductRepository productRepository;
+    private final PaymentRepository paymentRepository;
     private final ModelMapper modelMapper;
 
     @Override
@@ -95,7 +98,6 @@ public class PurchaseServiceImpl implements PurchaseService{
                         taxSum.updateAndGet(value -> value.add(taxAmount));
                         total.updateAndGet(value -> value.add(totalAmount));
 
-
                         // Вызов отдельного метода для обновления продукта
                         updateProductAfterPurchase(product, unitPrice, newPurchaseDto.getPurchasingDate());
 
@@ -126,8 +128,14 @@ public class PurchaseServiceImpl implements PurchaseService{
 
         for (Sort.Order order : sort) {
             if (!allowedSortFields.contains(order.getProperty())) {
-                // Если поле неверное, заменяем сортировку по умолчанию
-                pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(Sort.Direction.DESC, "purchasingDate"));
+                pageable = PageRequest.of(
+                        pageable.getPageNumber(),
+                        pageable.getPageSize(),
+                        Sort.by(
+                                Sort.Order.desc("purchasingDate"),
+                                Sort.Order.desc("documentNumber")
+                        )
+                );
                 break;
             }
         }
@@ -261,6 +269,37 @@ public class PurchaseServiceImpl implements PurchaseService{
         Purchase purchase = purchaseRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Purchase not found"));
         purchaseRepository.delete(purchase);
+    }
+
+    @Override
+    @Transactional
+    public PurchaseDto updatePaymentStatus(Long purchaseId) {
+        Purchase purchase = purchaseRepository.findById(purchaseId)
+                .orElseThrow(() -> new EntityNotFoundException("Purchase not found"));
+
+        // Получаем список оплат по purchaseId
+        List<Payment> payments = paymentRepository.findByPurchaseId(purchaseId);
+
+        BigDecimal totalPaid = payments.stream()
+                .map(Payment::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        PaymentStatus newStatus;
+
+        if (totalPaid.compareTo(BigDecimal.ZERO) == 0) {
+            newStatus = PaymentStatus.AUSSTEHEND;
+        } else if (totalPaid.compareTo(purchase.getTotal()) >= 0) {
+            newStatus = PaymentStatus.BEZAHLT;
+        } else {
+            newStatus = PaymentStatus.ANZAHLUNG;
+        }
+
+        // Обновляем статус, если он изменился
+        if (purchase.getPaymentStatus() != newStatus) {
+            purchase.setPaymentStatus(newStatus);
+            purchaseRepository.save(purchase);
+        }
+        return modelMapper.map(purchase, PurchaseDto.class);
     }
 
     private void updateProductAfterPurchase(Product product, BigDecimal unitPrice, LocalDate purchasingDate) {
