@@ -10,8 +10,10 @@ import de.ait.smallBusiness_be.products.model.ProductCategory;
 import de.ait.smallBusiness_be.products.service.ProductCategoryService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -31,6 +33,7 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
     final ModelMapper modelMapper;
 
     @Override
+    @Transactional
     public ProductCategoryDto addProductCategory(NewProductCategoryDto newProductCategoryDto) {
         // Приводим к верхнему регистру
         String nameToUpperCase = newProductCategoryDto.getName().toUpperCase();
@@ -62,14 +65,20 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
     }
 
     @Override
+    @Transactional
     public void deleteProductCategoryById(Integer id) {
         ProductCategory productCategory = getProductCategoryOrThrow(id);
 
-        productCategoryRepository.delete(productCategory);
-
+        try {
+            productCategoryRepository.delete(productCategory);
+            productCategoryRepository.flush();
+        } catch (DataIntegrityViolationException e) {
+            throw new RestApiException(ErrorDescription.CATEGORY_DELETE_FAILED, HttpStatus.CONFLICT);
+        }
     }
 
     @Override
+    @Transactional
     public ProductCategoryDto updateProductCategory(Integer id, NewProductCategoryDto newProductCategoryDto) {
         ProductCategory productCategory = getProductCategoryOrThrow(id);
 
