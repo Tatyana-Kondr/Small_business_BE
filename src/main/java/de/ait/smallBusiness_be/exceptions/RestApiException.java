@@ -30,5 +30,4 @@ public class RestApiException extends RuntimeException{
         super(errorDescription.getDescription());
         this.status = HttpStatus.BAD_REQUEST;
     }
-
 }
