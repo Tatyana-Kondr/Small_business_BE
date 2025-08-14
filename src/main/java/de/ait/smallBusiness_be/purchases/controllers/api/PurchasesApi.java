@@ -77,7 +77,7 @@ public interface PurchasesApi {
     })
     @ResponseStatus(HttpStatus.OK)
     Page<PurchaseDto> getAllPurchases(
-            @PageableDefault(size = 10, sort = {"purchasingDate", "documentNumber"},
+            @PageableDefault(size = 15, sort = {"purchasingDate", "documentNumber"},
                     direction = Sort.Direction.DESC) Pageable pageable);
 
     @GetMapping("/{id}")
@@ -118,7 +118,7 @@ public interface PurchasesApi {
     })
     @ResponseStatus(HttpStatus.OK)
     Page<PurchaseDto> searchPurchases(
-            @PageableDefault(size = 10) Pageable pageable,
+            @PageableDefault(size = 15) Pageable pageable,
             @RequestParam(defaultValue = "purchasingDate") String sort,
             @PathVariable String query);
 
@@ -143,7 +143,7 @@ public interface PurchasesApi {
     })
     @ResponseStatus(HttpStatus.OK)
     Page<PurchaseDto> getAllPurchasesByFilter(
-            @PageableDefault(size = 10) Pageable pageable,
+            @PageableDefault(size = 15) Pageable pageable,
             @RequestParam(defaultValue = "purchasingDate") String sort,
             @RequestParam(required = false) Long id,
             @RequestParam(required = false) Long vendorId,
