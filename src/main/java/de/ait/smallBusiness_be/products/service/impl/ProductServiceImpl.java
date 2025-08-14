@@ -13,6 +13,7 @@ import de.ait.smallBusiness_be.products.model.UnitOfMeasurement;
 import de.ait.smallBusiness_be.products.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -76,10 +77,14 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional
     public void deleteProductById(Long id) {
-
-        Product product = getProductOrThrow(id);
-        productRepository.delete(product);
+        try {
+            productRepository.deleteById(id);
+            productRepository.flush(); //сразу отправляем изменения в базу, чтобы исключение возникло здесь, если есть ограничения.
+        } catch (DataIntegrityViolationException e) {
+            throw new RestApiException(ErrorDescription.PRODUCT_DELETE_FAILED, HttpStatus.CONFLICT);
+        }
     }
 
     @Override
