@@ -5,6 +5,7 @@ import de.ait.smallBusiness_be.payments.dto.NewPaymentDto;
 import de.ait.smallBusiness_be.payments.dto.PaymentDto;
 import de.ait.smallBusiness_be.payments.dto.PaymentPrefillDto;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @Tags(
         @Tag(name = "Payment controller")
@@ -77,7 +79,7 @@ public interface PaymentApi {
                             schema = @Schema(type = "string")))
     })
     @ResponseStatus(HttpStatus.OK)
-    Page<PaymentDto> getAllPayments( @PageableDefault(size = 10, sort = {"paymentDate"},
+    Page<PaymentDto> getAllPayments( @PageableDefault(size = 15, sort = {"paymentDate"},
             direction = Sort.Direction.DESC) Pageable pageable);
 
     @PreAuthorize("isAuthenticated()")
@@ -101,7 +103,7 @@ public interface PaymentApi {
     })
     @ResponseStatus(HttpStatus.OK)
     Page<PaymentDto> searchPayments(
-            @PageableDefault(size = 10) Pageable pageable,
+            @PageableDefault(size = 15) Pageable pageable,
             @RequestParam(defaultValue = "paymentDate") String sort,
             @PathVariable String query);
 
@@ -126,11 +128,13 @@ public interface PaymentApi {
     })
     @ResponseStatus(HttpStatus.OK)
     Page<PaymentDto> getAllPaymentsByFilter(
-            @PageableDefault(size = 10) Pageable pageable,
+            @PageableDefault(size = 15) Pageable pageable,
             @RequestParam(defaultValue = "paymentDate") String sort,
             @RequestParam(required = false) Long id,
             @RequestParam(required = false) Long customerId,
             @RequestParam(required = false) String customerName,
+            @RequestParam(required = false) Long saleId,
+            @RequestParam(required = false) Long purchaseId,
             @RequestParam(required = false) LocalDate startDate,
             @RequestParam(required = false)LocalDate endDate,
             @RequestParam(required = false) String document,
@@ -248,5 +252,42 @@ public interface PaymentApi {
     })
     @ResponseStatus(HttpStatus.OK)
     PaymentPrefillDto getPrefillDataForPurchase(@PathVariable Long purchaseId);
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/all-sale-ids")
+    @Operation(
+            summary = "Get all unique sale IDs",
+            description = "Retrieve a list of all unique sale IDs.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200",
+                    description = "List of sale IDs retrieved successfully.",
+                    content = @Content(mediaType = "application/json",
+                            array = @ArraySchema(schema = @Schema(implementation = Long.class)))),
+            @ApiResponse(responseCode = "401",
+                    description = "User unauthorized.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(type = "string")))
+    })
+    @ResponseStatus(HttpStatus.OK)
+    List<Long> getAllSaleIds();
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/all-purchase-ids")
+    @Operation(
+            summary = "Get all unique purchase IDs",
+            description = "Retrieve a list of all unique purchase IDs.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200",
+                    description = "List of purchase IDs retrieved successfully.",
+                    content = @Content(mediaType = "application/json",
+                            array = @ArraySchema(schema = @Schema(implementation = Long.class)))),
+            @ApiResponse(responseCode = "401",
+                    description = "User unauthorized.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(type = "string")))
+    })
+    @ResponseStatus(HttpStatus.OK)
+    List<Long> getAllPurchaseIds();
+
 
 }

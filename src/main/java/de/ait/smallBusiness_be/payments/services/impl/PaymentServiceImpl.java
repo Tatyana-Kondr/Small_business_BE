@@ -18,8 +18,10 @@ import de.ait.smallBusiness_be.payments.services.PaymentService;
 import de.ait.smallBusiness_be.purchases.dao.PurchaseRepository;
 import de.ait.smallBusiness_be.purchases.model.Purchase;
 import de.ait.smallBusiness_be.purchases.model.TypeOfDocument;
+import de.ait.smallBusiness_be.purchases.services.PurchaseService;
 import de.ait.smallBusiness_be.sales.dao.SaleRepository;
 import de.ait.smallBusiness_be.sales.models.Sale;
+import de.ait.smallBusiness_be.sales.services.SaleService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -29,6 +31,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -44,6 +47,8 @@ public class PaymentServiceImpl implements PaymentService {
     private final PurchaseRepository purchaseRepository;
     private final PaymentMethodRepository paymentMethodRepository;
     private final PaymentProcessRepository paymentProcessRepository;
+    private final PurchaseService purchaseService;
+    private final SaleService saleService;
     private final ModelMapper modelMapper;
 
 
@@ -97,14 +102,8 @@ public class PaymentServiceImpl implements PaymentService {
                 .build();
     }
 
-
     @Override
     public PaymentDto createPayment(NewPaymentDto newPaymentDto) {
-
-//        if ((newPaymentDto.getSaleId() == null && newPaymentDto.getPurchaseId() == null)
-//                || (newPaymentDto.getSaleId() != null && newPaymentDto.getPurchaseId() != null)) {
-//            throw new IllegalArgumentException("Exactly one of saleId or purchaseId must be provided");
-//        }
 
         Customer customer = customerRepository.findById(newPaymentDto.getCustomerId())
                 .orElseThrow(() -> new EntityNotFoundException("Customer not found"));
@@ -163,7 +162,7 @@ public class PaymentServiceImpl implements PaymentService {
         }
         Page<Payment> payments = paymentRepository.findAll(pageable);
         if (payments.isEmpty()) {
-            throw new RestApiException(ErrorDescription.LIST_IS_EMPTY, HttpStatus.NOT_FOUND);
+            throw new RestApiException(ErrorDescription.LIST_PAYMENTS_IS_EMPTY, HttpStatus.NOT_FOUND);
         }
         return payments.map(payment -> modelMapper.map(payment, PaymentDto.class));
     }
@@ -175,8 +174,8 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    public Page<PaymentDto> getAllPaymentsByFilter(Pageable pageable, Long id, Long customerId, String customerName, LocalDate startDate, LocalDate endDate, String document, String documentNumber, BigDecimal amount, String searchQuery) {
-        return paymentRepository.filterByPaymentsFields(pageable, id, customerId, customerName, startDate, endDate, document, documentNumber, amount, searchQuery)
+    public Page<PaymentDto> getAllPaymentsByFilter(Pageable pageable, Long id, Long customerId, String customerName, Long saleId, Long purchaseId, LocalDate startDate, LocalDate endDate, String document, String documentNumber, BigDecimal amount, String searchQuery) {
+        return paymentRepository.filterByPaymentsFields(pageable, id, customerId, customerName, saleId, purchaseId, startDate, endDate, document, documentNumber, amount, searchQuery)
                 .map(payment -> modelMapper.map(payment, PaymentDto.class));
     }
 
@@ -228,10 +227,27 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
+    @Transactional
     public void deletePayment(Long id) {
-        if (!paymentRepository.existsById(id)) {
-            throw new EntityNotFoundException("Payment not found");
-        }
+        Payment payment = paymentRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Payment not found"));
+
         paymentRepository.deleteById(id);
+
+        if (payment.getPurchase() != null) {
+            purchaseService.updatePaymentStatus(payment.getPurchase().getId());
+        } else if (payment.getSale() != null) {
+            saleService.updatePaymentStatus(payment.getSale().getId());
+        }
+    }
+
+    @Override
+    public List<Long> getAllSaleIds() {
+        return paymentRepository.findDistinctSaleIds();
+    }
+
+    @Override
+    public List<Long> getAllPurchaseIds() {
+        return paymentRepository.findDistinctPurchaseIds();
     }
 }

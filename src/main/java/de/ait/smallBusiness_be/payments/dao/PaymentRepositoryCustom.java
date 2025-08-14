@@ -13,6 +13,8 @@ public interface PaymentRepositoryCustom {
                                          Long id,
                                          Long customerId,
                                          String customerName,
+                                         Long saleId,
+                                         Long PurchaseId,
                                          LocalDate startDate,
                                          LocalDate endDate,
                                          String document,

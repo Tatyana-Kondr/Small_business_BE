@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -35,8 +36,8 @@ public class PaymentController implements PaymentApi {
     }
 
     @Override
-    public Page<PaymentDto> getAllPaymentsByFilter(Pageable pageable, String sort, Long id, Long customerId, String customerName, LocalDate startDate, LocalDate endDate, String document, String documentNumber, BigDecimal amount, String searchQuery) {
-        return paymentService.getAllPaymentsByFilter(pageable, id, customerId, customerName, startDate, endDate, document, documentNumber, amount, searchQuery);
+    public Page<PaymentDto> getAllPaymentsByFilter(Pageable pageable, String sort, Long id, Long customerId, String customerName, Long saleId, Long purchaseId, LocalDate startDate, LocalDate endDate, String document, String documentNumber, BigDecimal amount, String searchQuery) {
+        return paymentService.getAllPaymentsByFilter(pageable, id, customerId, customerName, saleId, purchaseId, startDate, endDate, document, documentNumber, amount, searchQuery);
     }
 
     @Override
@@ -63,5 +64,16 @@ public class PaymentController implements PaymentApi {
     public PaymentPrefillDto getPrefillDataForPurchase(Long purchaseId) {
         return paymentService.getPrefillDataForPurchase(purchaseId);
     }
+
+    @Override
+    public List<Long> getAllSaleIds() {
+        return paymentService.getAllSaleIds();
+    }
+
+    @Override
+    public List<Long> getAllPurchaseIds() {
+        return paymentService.getAllPurchaseIds();
+    }
+
 
 }

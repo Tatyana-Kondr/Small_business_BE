@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 
 public interface PaymentService {
@@ -20,6 +21,8 @@ public interface PaymentService {
                                             Long id,
                                             Long customerId,
                                             String customerName,
+                                            Long saleId,
+                                            Long purchaseId,
                                             LocalDate startDate,
                                             LocalDate endDate,
                                             String document,
@@ -29,4 +32,6 @@ public interface PaymentService {
     PaymentDto getPayment(Long id);
     PaymentDto updatePayment(Long id, NewPaymentDto newPaymentDto);
     void deletePayment(Long id);
+    List<Long> getAllSaleIds();
+    List<Long> getAllPurchaseIds();
 }
