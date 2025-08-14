@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import static de.ait.smallBusiness_be.exceptions.ErrorDescription.CUSTOMER_ALREADY_EXISTS;
+import static de.ait.smallBusiness_be.exceptions.ErrorDescription.CUSTOMER_NUMBER_ALREADY_EXISTS;
 
 
 /**
@@ -118,10 +119,8 @@ public class CustomerServiceImpl implements  CustomerService{
     }
 
     private void checkCustomer(NewCustomerDto newCustomerDto) {
-        log.debug("Проверяем клиента: {}", newCustomerDto);
-        log.debug("checkCustomer вызван с параметром: {}", newCustomerDto);
         if (newCustomerDto == null) {
-            throw new IllegalArgumentException("Ошибка: newCustomerDto = null!");
+            throw new IllegalArgumentException("Error: newCustomerDto = null!");
         }
 
         AddressDto addressDto = newCustomerDto.getAddressDto();
@@ -138,8 +137,11 @@ public class CustomerServiceImpl implements  CustomerService{
                 && !newCustomerDto.getCustomerNumber().isBlank()
                 && customerRepository.existsByCustomerNumber(newCustomerDto.getCustomerNumber());
 
-        if (existsByNameAndAddress || existsByCustomerNumber) {
+        if (existsByNameAndAddress) {
             throw new RestApiException(CUSTOMER_ALREADY_EXISTS, HttpStatus.CONFLICT);
+        }
+        if (existsByCustomerNumber) {
+            throw new RestApiException(CUSTOMER_NUMBER_ALREADY_EXISTS, HttpStatus.CONFLICT);
         }
     }
 
@@ -169,7 +171,7 @@ public class CustomerServiceImpl implements  CustomerService{
             customerRepository.findByCustomerNumber(newCustomerDto.getCustomerNumber())
                     .ifPresent(existingCustomer -> {
                         if (!existingCustomer.getId().equals(id)) {
-                            throw new RestApiException(CUSTOMER_ALREADY_EXISTS, HttpStatus.CONFLICT);
+                            throw new RestApiException(CUSTOMER_NUMBER_ALREADY_EXISTS, HttpStatus.CONFLICT);
                         }
                     });
         }

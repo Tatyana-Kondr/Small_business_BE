@@ -36,10 +36,13 @@ public enum ErrorDescription {
 
     CATEGORY_NOT_FOUND("Category not found"),
     CATEGORY_ALREADY_EXISTS("Category already exists"),
+    CATEGORY_DELETE_FAILED("Category cannot be deleted because it is used in other records."),
 
     PRODUCT_NOT_FOUND("Product not found"),
     PRODUCT_ALREADY_EXISTS("Product with the same name and article already exists."),
     LIST_PRODUCTS_IS_EMPTY("List of products is empty"),
+    PRODUCT_DELETE_FAILED("Product cannot be deleted because it is used in other records."),
+
     PRODUCTION_AMOUNT("Amount of the product must exceed the cost of materials."),
 
     INVALID_UNIT_OF_MEASUREMENT("Invalid unit of measurement format"),
@@ -52,9 +55,14 @@ public enum ErrorDescription {
     UNSUPPORTED_OPERATION("Unsupported operation on the filesystem"),
     FILE_DELETE_FAILED("File could not be deleted"),
     FILE_CONVERTING_FAILED("File could not be converted to Base64"),
-    CUSTOMER_ALREADY_EXISTS("Customer already exists"),
-    LIST_IS_EMPTY("List is empty"),
+
+    CUSTOMER_ALREADY_EXISTS("Customer with the same name and address already exists"),
+    CUSTOMER_NUMBER_ALREADY_EXISTS("The customer number already exists."),
+
     CUSTOMER_NOT_FOUND("Customer not found"),
+
+    LIST_PAYMENTS_IS_EMPTY("List of payments is empty"),
+    LIST_IS_EMPTY("List is empty"),
 
     SALE_NOT_FOUND("Sale not found")
     ;
