@@ -183,7 +183,7 @@ public interface ProductsApi {
     })
     @ResponseStatus(HttpStatus.OK)
     Page<ProductDto> getProductsByCategory(@PathVariable("category-id") int categoryId,
-                                           @PageableDefault(size = 10, sort = "name") Pageable pageable);
+                                           @PageableDefault(size = 15, sort = "name") Pageable pageable);
 
 
 
