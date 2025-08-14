@@ -84,7 +84,7 @@ public interface CustomersApi {
     })
     @ResponseStatus(HttpStatus.OK)
     Page<CustomerDto> getAllCustomers(
-            @PageableDefault(size = 10) Pageable pageable,
+            @PageableDefault(size = 15) Pageable pageable,
             @RequestParam(defaultValue = "name") String sort);
 
     @PreAuthorize("isAuthenticated()")
@@ -108,7 +108,7 @@ public interface CustomersApi {
     })
     @ResponseStatus(HttpStatus.OK)
     Page<CustomerDto> getAllCustomersWithCustomerNumber(
-            @PageableDefault(size = 10) Pageable pageable,
+            @PageableDefault(size = 15) Pageable pageable,
             @RequestParam(defaultValue = "name") String sort);
 
     @GetMapping("/{id}")
