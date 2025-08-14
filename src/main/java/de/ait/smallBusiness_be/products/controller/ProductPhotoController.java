@@ -3,8 +3,6 @@ package de.ait.smallBusiness_be.products.controller;
 
 import de.ait.smallBusiness_be.products.model.ProductPhoto;
 import de.ait.smallBusiness_be.products.service.ProductPhotoService;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.tags.Tags;
 import lombok.RequiredArgsConstructor;
@@ -26,18 +24,17 @@ public class ProductPhotoController {
     private final ProductPhotoService productPhotoService;
 
 
-    @PostMapping(value = "/{productId}/files", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
-    public ResponseEntity<String> uploadFile(
+    @PostMapping(value = "/{productId}/files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ProductPhoto> uploadFile(
             @PathVariable Long productId,
-            @Parameter(description = "Product photo file", content = @Content(mediaType = MediaType.APPLICATION_OCTET_STREAM_VALUE))
             @RequestParam("file") MultipartFile file) {
         try {
-            String fileUrl = productPhotoService.uploadFile(productId, file);
-            return ResponseEntity.ok("File uploaded successfully: " + fileUrl);
+            ProductPhoto savedPhoto = productPhotoService.uploadFile(productId, file);
+            return ResponseEntity.ok(savedPhoto);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().build();
         } catch (IOException e) {
-            return ResponseEntity.status(500).body("File upload failed");
+            return ResponseEntity.status(500).build();
         }
     }
 

@@ -37,9 +37,8 @@ public class ProductPhotoServiceImpl implements ProductPhotoService {
     private static final List<String> DOCUMENT_TYPES = List.of("pdf", "docx");
 
     @Override
-    public String uploadFile(Long productId, MultipartFile file) {
+    public ProductPhoto uploadFile(Long productId, MultipartFile file) {
         try {
-            // Проверяем, существует ли продукт
             Optional<Product> productOpt = productRepository.findById(productId);
             if (productOpt.isEmpty()) {
                 throw new RestApiException("Product not found", HttpStatus.NOT_FOUND);
@@ -47,7 +46,6 @@ public class ProductPhotoServiceImpl implements ProductPhotoService {
 
             Product product = productOpt.get();
 
-            // Проверяем допустимый тип файла
             String fileExtension = getFileExtension(file.getOriginalFilename());
             Path targetDir;
             if (PHOTO_TYPES.contains(fileExtension.toLowerCase())) {
@@ -58,12 +56,11 @@ public class ProductPhotoServiceImpl implements ProductPhotoService {
                 throw new RestApiException("Unsupported file type: " + fileExtension, HttpStatus.BAD_REQUEST);
             }
 
-            // Создаем директорию, если ее нет
             if (!Files.exists(targetDir)) {
                 Files.createDirectories(targetDir);
             }
 
-            // Сохраняем временную запись
+            // Создаём временную запись
             ProductPhoto tempPhoto = ProductPhoto.builder()
                     .product(product)
                     .originFileName("temp")
@@ -71,27 +68,26 @@ public class ProductPhotoServiceImpl implements ProductPhotoService {
                     .build();
             tempPhoto = productPhotoRepository.save(tempPhoto);
 
-            // Генерируем имя файла
+            // Генерируем уникальное имя файла
             String uniqueFileName = product.getId() + "_" + tempPhoto.getId() + "." + fileExtension;
 
             // Сохраняем файл
             Path filePath = targetDir.resolve(uniqueFileName);
             Files.copy(file.getInputStream(), filePath);
 
-            // Генерируем URL для файла
+            // Генерируем URL
             String fileUrl = "/uploads/" + (PHOTO_TYPES.contains(fileExtension.toLowerCase()) ? "photos/" : "documents/") + uniqueFileName;
 
-            // Обновляем запись с финальным именем файла
+            // Обновляем запись
             tempPhoto.setOriginFileName(uniqueFileName);
             tempPhoto.setFileUrl(fileUrl);
-            productPhotoRepository.save(tempPhoto);
-
-            return fileUrl;
+            return productPhotoRepository.save(tempPhoto);
 
         } catch (IOException e) {
             throw new RestApiException("File upload failed: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
 
     @Override
     public void deletePhoto(Long photoId) {
