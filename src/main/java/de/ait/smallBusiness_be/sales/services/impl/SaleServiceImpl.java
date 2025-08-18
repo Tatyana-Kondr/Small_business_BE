@@ -187,9 +187,15 @@ public class SaleServiceImpl implements SaleService {
     @Transactional
     public SaleDto updateSale(Long saleId, NewSaleDto updateSale) {
         Sale sale = getSaleOrThrow(saleId);
+
+        // --- удаляем старые PDF ---
+        invoiceService.deleteInvoicePdf(sale, "invoices");
+        invoiceService.deleteDeliveryBillPdf(sale, "delivery-bill");
+
         Customer customer = customerService.getCustomerOrThrow(updateSale.getCustomerId());
         sale.setCustomer(customer);
         sale.setInvoiceNumber(updateSale.getInvoiceNumber());
+        sale.setDeliveryBill(updateSale.getDeliveryBill());
         sale.setAccountObject(updateSale.getAccountObject());
         sale.setSalesDate(updateSale.getSalesDate());
         sale.setShippingDimensions(updateSale.getShippingDimensions() != null ?
@@ -278,12 +284,16 @@ public class SaleServiceImpl implements SaleService {
 
         // Сохраняем
         Sale updatedSale = saleRepository.save(sale);
+        invoiceService.generateInvoicePdf(updatedSale, "invoices");
+        invoiceService.generateDeliveryBillPdf(updatedSale, "delivery-bill");
         return modelMapper.map(updatedSale, SaleDto.class);
     }
 
     @Override
     public void deleteSale(Long saleId) {
         Sale sale = getSaleOrThrow(saleId);
+        invoiceService.deleteInvoicePdf(sale, "invoices");
+        invoiceService.deleteDeliveryBillPdf(sale, "delivery-bill");
         saleRepository.delete(sale);
     }
 
