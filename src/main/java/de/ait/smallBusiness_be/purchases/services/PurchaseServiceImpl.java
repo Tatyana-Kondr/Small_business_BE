@@ -57,6 +57,10 @@ public class PurchaseServiceImpl implements PurchaseService{
         Customer customer = customerRepository.findById(newPurchaseDto.getVendorId())
                 .orElseThrow(() -> new EntityNotFoundException("Vendor not found"));
 
+        if (newPurchaseDto.getPurchaseItems() == null || newPurchaseDto.getPurchaseItems().isEmpty()) {
+            throw new RestApiException(ErrorDescription.NO_PRODUCT_IN_PURCHASE);
+        }
+
         Purchase purchase = modelMapper.map(newPurchaseDto, Purchase.class);
         purchase.setVendor(customer);
 
@@ -250,6 +254,9 @@ public class PurchaseServiceImpl implements PurchaseService{
             newItems.add(item);
         }
 
+        if (newPurchaseDto.getPurchaseItems() == null || newPurchaseDto.getPurchaseItems().isEmpty()) {
+            throw new RestApiException(ErrorDescription.NO_PRODUCT_IN_PURCHASE);
+        }
         // Добавляем новые позиции
         purchase.getPurchaseItems().addAll(newItems);
 

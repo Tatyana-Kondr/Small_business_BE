@@ -64,7 +64,10 @@ public enum ErrorDescription {
     LIST_PAYMENTS_IS_EMPTY("List of payments is empty"),
     LIST_IS_EMPTY("List is empty"),
 
-    SALE_NOT_FOUND("Sale not found")
+    NO_PRODUCT_IN_PURCHASE("No products in purchase"),
+
+    SALE_NOT_FOUND("Sale not found"),
+    NO_PRODUCT_IN_SALE("No products in sale"),
     ;
 
     private final String description;

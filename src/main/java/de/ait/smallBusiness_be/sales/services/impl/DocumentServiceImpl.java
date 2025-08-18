@@ -4,6 +4,7 @@ import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import de.ait.smallBusiness_be.exceptions.RestApiException;
 import de.ait.smallBusiness_be.sales.models.Sale;
 import de.ait.smallBusiness_be.sales.services.DocumentService;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -12,7 +13,6 @@ import org.thymeleaf.spring6.SpringTemplateEngine;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.InputStream;
 import java.io.OutputStream;
 import org.springframework.core.io.ClassPathResource;
 
@@ -21,6 +21,25 @@ import org.springframework.core.io.ClassPathResource;
 public class DocumentServiceImpl implements DocumentService {
 
     private final SpringTemplateEngine templateEngine;
+    // Логотип сохраняем один раз при инициализации
+    private String logoPath;
+
+    @PostConstruct
+    public void initLogo() {
+        try {
+            ClassPathResource logoResource = new ClassPathResource("static/images/logo.jpg");
+            if (!logoResource.exists()) {
+                throw new RestApiException("Логотип не найден в classpath", HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+            // Берём абсолютный путь (если ресурс реально существует как файл)
+            File logoFile = logoResource.getFile();
+            this.logoPath = logoFile.toURI().toString();
+            System.out.println("PDF logoPath = " + logoPath);
+        } catch (Exception e) {
+            throw new RestApiException("Ошибка при загрузке логотипа: " + e.getMessage(),
+                    HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
     @Override
     public void generateInvoicePdf(Sale sale, String baseFolder) {
@@ -35,37 +54,23 @@ public class DocumentServiceImpl implements DocumentService {
         }
 
         String outputPath = yearFolderPath + File.separator + invoiceNumber + ".pdf";
+        File outputFile = new File(outputPath);
 
-        // ✅ Получаем абсолютный file: URI для логотипа
-        String logoPath;
-        try {
-            // Читаем файл логотипа из classpath
-            ClassPathResource logoResource = new ClassPathResource("static/images/logo.jpg");
-            if (!logoResource.exists()) {
-                throw new RestApiException("Логотип не найден в classpath", HttpStatus.INTERNAL_SERVER_ERROR);
-            }
-
-            // Копируем его во временный файл с .jpg расширением
-            File tempLogoFile = File.createTempFile("logo", ".jpg");
-            try (InputStream in = logoResource.getInputStream();
-                 OutputStream out = new FileOutputStream(tempLogoFile)) {
-                in.transferTo(out);
-            }
-
-            logoPath = tempLogoFile.toURI().toString(); // file:/... путь
-            System.out.println("PDF logoPath = " + logoPath);
-        } catch (Exception e) {
-            throw new RestApiException("Ошибка при загрузке логотипа: " + e.getMessage(),
+        // Удаляем старый файл, если есть
+        if (outputFile.exists() && !outputFile.delete()) {
+            throw new RestApiException("Не удалось удалить старый PDF счёт: " + outputPath,
                     HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
+        // Готовим контекст Thymeleaf
         Context context = new Context();
         context.setVariable("sale", sale);
-        context.setVariable("logoPath", logoPath); // передаем абсолютный путь
+        context.setVariable("logoPath", logoPath);
 
         String htmlContent = templateEngine.process("invoice", context);
 
-        try (OutputStream outputStream = new FileOutputStream(outputPath)) {
+        // Генерируем PDF
+        try (OutputStream outputStream = new FileOutputStream(outputFile)) {
             PdfRendererBuilder builder = new PdfRendererBuilder();
             builder.useFastMode();
             builder.withHtmlContent(htmlContent, new File(".").toURI().toString());
@@ -90,34 +95,23 @@ public class DocumentServiceImpl implements DocumentService {
         }
 
         String outputPath = yearFolderPath + File.separator + deliveryBill + ".pdf";
+        File outputFile = new File(outputPath);
 
-        String logoPath;
-        try {
-            ClassPathResource logoResource = new ClassPathResource("static/images/logo.jpg");
-            if (!logoResource.exists()) {
-                throw new RestApiException("Логотип не найден в classpath", HttpStatus.INTERNAL_SERVER_ERROR);
-            }
-
-            File tempLogoFile = File.createTempFile("logo", ".jpg");
-            try (InputStream in = logoResource.getInputStream();
-                 OutputStream out = new FileOutputStream(tempLogoFile)) {
-                in.transferTo(out);
-            }
-
-            logoPath = tempLogoFile.toURI().toString();
-            System.out.println("PDF logoPath = " + logoPath);
-        } catch (Exception e) {
-            throw new RestApiException("Ошибка при загрузке логотипа: " + e.getMessage(),
+        // Удаляем старый файл, если есть
+        if (outputFile.exists() && !outputFile.delete()) {
+            throw new RestApiException("Не удалось удалить старую PDF накладную: " + outputPath,
                     HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
+        // Формируем контекст для Thymeleaf
         Context context = new Context();
         context.setVariable("sale", sale);
         context.setVariable("logoPath", logoPath);
 
         String htmlContent = templateEngine.process("delivery-bill", context);
 
-        try (OutputStream outputStream = new FileOutputStream(outputPath)) {
+        // Генерация PDF
+        try (OutputStream outputStream = new FileOutputStream(outputFile)) {
             PdfRendererBuilder builder = new PdfRendererBuilder();
             builder.useFastMode();
             builder.withHtmlContent(htmlContent, new File(".").toURI().toString());
@@ -125,6 +119,32 @@ public class DocumentServiceImpl implements DocumentService {
             builder.run();
         } catch (Exception e) {
             throw new RestApiException("Ошибка при создании PDF накладной: " + e.getMessage(),
+                    HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @Override
+    public void deleteInvoicePdf(Sale sale, String baseFolder) {
+        String invoiceNumber = sale.getInvoiceNumber();
+        String year = extractYearFromInvoiceNumber(invoiceNumber);
+
+        String filePath = baseFolder + File.separator + year + File.separator + invoiceNumber + ".pdf";
+        File file = new File(filePath);
+        if (file.exists() && !file.delete()) {
+            throw new RestApiException("Не удалось удалить PDF счёт: " + filePath,
+                    HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @Override
+    public void deleteDeliveryBillPdf(Sale sale, String baseFolder) {
+        String deliveryBill = sale.getDeliveryBill();
+        String year = extractYearFromInvoiceNumber(deliveryBill);
+
+        String filePath = baseFolder + File.separator + year + File.separator + deliveryBill + ".pdf";
+        File file = new File(filePath);
+        if (file.exists() && !file.delete()) {
+            throw new RestApiException("Не удалось удалить PDF накладную: " + filePath,
                     HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }

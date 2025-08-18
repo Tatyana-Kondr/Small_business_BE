@@ -202,10 +202,6 @@
         </td>
         <td style="width: 40%; vertical-align: top; text-align: right;">
             <table style="width: 100%; border-collapse: collapse;">
-                <tr th:if="${sale.defaultDiscount > 0}">
-                    <td class="right bold" style="text-align: left;">Rabatt:</td>
-                    <td class="right" style="text-align: right;" th:text="${#numbers.formatDecimal(sale.discountAmount, 1, 'COMMA', 2, 'POINT')} + ' €'">9,74 €</td>
-                </tr>
                 <tr>
                     <td class="right bold" style="text-align: left; padding-right: 10px;">Gesamt Netto:</td>
                     <td class="right" style="text-align: right;" th:text="${#numbers.formatDecimal(sale.totalPrice, 1, 'COMMA', 2, 'POINT')} + ' €'">97,41 €</td>
