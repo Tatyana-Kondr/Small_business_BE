@@ -53,6 +53,9 @@ public class User {
     @Enumerated(value = EnumType.STRING)
     private State state;
 
+    @Column(name = "refresh_token")
+    private String refreshToken;
+
 
     @Override
     public final boolean equals(Object o) {
