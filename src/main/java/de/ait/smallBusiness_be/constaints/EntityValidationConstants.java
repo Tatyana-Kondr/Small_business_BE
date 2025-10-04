@@ -274,39 +274,10 @@ public class EntityValidationConstants {
     public static final String BUILDING_REGEX = "^(?!\\s)(?!.*\\s{2,})[A-Za-z0-9-]+(?<!\\s)$";
 
     /**
-     * Regular expression pattern for validating restaurant category names.
-     * <p>
-     * This pattern allows category names that include:
-     * <ul>
-     *   <li>Uppercase and lowercase English letters (A-Z, a-z).</li>
-     *   <li>German special characters: Ä, Ö, Ü, ä, ö, ü, ß.</li>
-     *   <li>Spaces.</li>
-     * </ul>
-     * <p>
-     * The following restrictions apply:
-     * <ul>
-     *   <li>No leading or trailing spaces.</li>
-     *   <li>No consecutive spaces (i.e., no two or more spaces in a row).</li>
-     * </ul>
-     * <p>
-     * Valid examples:
-     * <ul>
-     *   <li>"Italian"</li>
-     *   <li>"Mexican"</li>
-     *   <li>"Café Ältere"</li>
-     *   <li>"Asian Fusion"</li>
-     * </ul>
-     * <p>
-     * Invalid examples:
-     * <ul>
-     *   <li>"  Italian"</li> (contains leading spaces)
-     *   <li>"Italian  "</li> (contains trailing spaces)
-     *   <li>"Mexican  Cuisine"</li> (contains consecutive spaces)
-     * </ul>
+     * Regex for validating German IBANs (always 22 characters).
+     * Format: "DE" + 20 digits.
      */
-
-    public static final String RESTAURANT_CATEGORY_REGEX ="^(?!\\s)(?!.*\\s{2,})[A-Za-z\\sÄÖÜäöüß]+(?<!\\s)$";
-
+    public static final String IBAN_DE_REGEX = "^DE\\d{20}$";
 
     /**
      * Regular expression pattern for validating email addresses.
