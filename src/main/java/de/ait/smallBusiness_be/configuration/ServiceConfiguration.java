@@ -20,6 +20,9 @@ import de.ait.smallBusiness_be.sales.dto.SaleItemDto;
 import de.ait.smallBusiness_be.sales.models.Sale;
 import de.ait.smallBusiness_be.sales.models.SaleItem;
 import de.ait.smallBusiness_be.sales.models.ShippingDimensions;
+import de.ait.smallBusiness_be.users.dto.NewUserDto;
+import de.ait.smallBusiness_be.users.dto.UserDto;
+import de.ait.smallBusiness_be.users.model.User;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.context.annotation.Bean;
@@ -105,6 +108,14 @@ public class ServiceConfiguration {
 
         modelMapper.typeMap(ProductionItem.class, ProductionItemDto.class)
                 .addMappings(mapper -> mapper.map(src -> src.getProduct().getId(), ProductionItemDto::setProductId));
+
+
+        // Добавляем маппинг для User -> UserDto
+        modelMapper.createTypeMap(User.class, UserDto.class);
+
+        // Добавляем маппинг для NewUserDto -> User
+        modelMapper.createTypeMap(NewUserDto.class, User.class);
+
         return modelMapper;
     }
 
@@ -116,6 +127,7 @@ public class ServiceConfiguration {
                 registry.addMapping("/api/**") // Ограничь CORS на API
                         .allowedOrigins("http://localhost:5173") // Указываем конкретный origin
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
+                        .allowedHeaders("*")
                         .allowCredentials(true); // Разрешаем куки
             }
         };
