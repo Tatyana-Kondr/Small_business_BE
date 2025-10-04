@@ -13,11 +13,10 @@ VALUES ('NETZWERK & INTERNET','NETZ');
 INSERT INTO product_categories (name, art_name)
 VALUES ('ELEKTRIK','EL');
 
-INSERT INTO account (email, password, role, state)
+INSERT INTO users (email, password, role)
 VALUES ('admin@gmail.com',
         '$2a$10$ogZC6BcipB1g3sdxRJpv0eCPDTl53UMSWIXvXR/Yn0qy.I2qt5q5S',
-        'ADMIN',
-        'CONFIRMED');
+        'ADMIN');
 
 SHOW INDEX FROM customers WHERE Column_name = 'customer_number';
 ## DROP INDEX index_name ON customers;
