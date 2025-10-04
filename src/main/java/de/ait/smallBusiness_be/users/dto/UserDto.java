@@ -1,5 +1,7 @@
 package de.ait.smallBusiness_be.users.dto;
 
+import de.ait.smallBusiness_be.users.model.Role;
+import de.ait.smallBusiness_be.users.model.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -23,9 +25,12 @@ public class UserDto {
     @Schema(description = "user ID", example = "1")
     private Long id;
 
+    @Schema(description = "user's name", example = "user_1")
+    private String username;
+
     @Schema(description = "User's email address", example = "user@gmail.com")
     private String email;
 
     @Schema(description = "Role assigned to the user", example = "USER")
-    private String role;
+    private Role role;
 }

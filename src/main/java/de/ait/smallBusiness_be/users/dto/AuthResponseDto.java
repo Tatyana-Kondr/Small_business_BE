@@ -11,10 +11,13 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 @Schema(name = "JWT Response", description = "JWT token response after successful login")
-public class JwtResponseDto {
+public class AuthResponseDto {
     @Schema(description = "JWT token", example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
-    private String token;
+    private String accessToken;
 
-    @Schema(description = "Token type", example = "Bearer")
-    private String type;
+    @Schema(description = "Refresh token", example = "gxkFKhbGcOiJIUzI1NiIsInR5cCI6IkpCJ7..")
+    private String refreshToken;
+
+    @Schema(description = "User role", example = "ADMIN")
+    private String role;
 }

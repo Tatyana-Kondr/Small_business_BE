@@ -7,6 +7,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 /**
  * 1/27/2025
@@ -23,18 +24,26 @@ public class AuthenticatedUser implements UserDetails {
     }
 
     @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() { // права пользователя
-        return Collections.singleton(new SimpleGrantedAuthority(user.getRole().toString()));
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
     }
 
     @Override
-    public String getPassword() { // в качестве пароля берем наш хэш
+    public String getPassword() {
         return user.getPassword();
     }
 
     @Override
-    public String getUsername() { // в качестве имени пользователя в нашем случае выступает email
+    public String getUsername() {
+        return user.getUsername();
+    }
+
+    public String getEmail() {
         return user.getEmail();
+    }
+
+    public Long getId() {
+        return user.getId();
     }
 
     @Override
@@ -44,7 +53,7 @@ public class AuthenticatedUser implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return !user.getState().equals(User.State.BANNED);
+        return true;
     }
 
     @Override
@@ -52,11 +61,8 @@ public class AuthenticatedUser implements UserDetails {
         return true;
     }
 
-    public Long getId() {
-        return this.user.getId();
-    }
-
-    public User getUser() {
-        return this.user;
+    @Override
+    public boolean isEnabled() {
+        return true;
     }
 }

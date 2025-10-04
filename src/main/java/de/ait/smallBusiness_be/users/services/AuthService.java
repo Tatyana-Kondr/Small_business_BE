@@ -1,22 +1,37 @@
 package de.ait.smallBusiness_be.users.services;
 
+import de.ait.smallBusiness_be.exceptions.ErrorDescription;
+import de.ait.smallBusiness_be.exceptions.RestApiException;
 import de.ait.smallBusiness_be.security.config.JwtUtil;
-import de.ait.smallBusiness_be.users.dao.UsersRepository;
-import de.ait.smallBusiness_be.users.dto.JwtResponseDto;
-import de.ait.smallBusiness_be.users.dto.LoginRequestDto;
+import de.ait.smallBusiness_be.users.dao.UserRepository;
+import de.ait.smallBusiness_be.users.dto.AuthRequestDto;
+import de.ait.smallBusiness_be.users.dto.AuthResponseDto;
+import de.ait.smallBusiness_be.users.dto.NewUserDto;
+import de.ait.smallBusiness_be.users.model.RefreshToken;
 import de.ait.smallBusiness_be.users.dto.UserDto;
+import de.ait.smallBusiness_be.users.model.Role;
 import de.ait.smallBusiness_be.users.model.User;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.Cookie;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.security.Principal;
+import java.util.Arrays;
+import java.util.List;
+
 
 /**
  * 1/30/2025
@@ -27,113 +42,154 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthService {
 
-    private final AuthenticationManager authenticationManager;
-    private final UsersRepository userRepository;
-    private final ModelMapper mapper;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final RefreshTokenService refreshTokenService;
+    private final AuthenticationManager authenticationManager;
+    private final ModelMapper modelMapper;
 
-    // Логин
-    public JwtResponseDto login(LoginRequestDto authRequest, HttpServletResponse response) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(authRequest.email(), authRequest.password())
+    private static final boolean IS_PROD = false; // true в продакшене
+
+    // -------------------- REGISTER --------------------
+    public UserDto register(NewUserDto newUser, Principal principal) {
+        // 1. Найдём текущего пользователя (тот, кто вызывает register)
+        User currentUser = userRepository.findByUsername(principal.getName())
+                .orElseThrow(() ->  new RestApiException(ErrorDescription.USERNAME_ALREADY_EXISTS, HttpStatus.CONFLICT));
+
+        // 2. Проверим, что он админ
+        if (currentUser.getRole() != Role.ADMIN) {
+            throw new RuntimeException("Только администратор может регистрировать новых пользователей!");
+        }
+
+        // 3. Проверим, что username ещё не занят
+        if (userRepository.existsByUsername(newUser.getUsername())) {
+            throw new RuntimeException("Пользователь с таким username уже существует!");
+        }
+
+        // 4. Создадим нового пользователя
+        User user = modelMapper.map(newUser, User.class);
+        user.setPassword(passwordEncoder.encode(newUser.getPassword()));
+        user.setRole(Role.USER); // по умолчанию USER
+
+        userRepository.save(user);
+
+        // 6. Возвращаем UserDto
+        return modelMapper.map(user, UserDto.class);
+}
+
+    // -------------------- LOGIN --------------------
+    public AuthResponseDto login(AuthRequestDto authRequest, HttpServletResponse response) {
+
+        User user = userRepository.findByUsername(authRequest.getUsername())
+                .orElseThrow(() -> new RestApiException(
+                        ErrorDescription.USER_NOT_FOUND,
+                        HttpStatus.UNAUTHORIZED));
+
+        // Теперь проверяем пароль
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(authRequest.getUsername(), authRequest.getPassword())
+            );
+        } catch (BadCredentialsException e) {
+            throw new RestApiException(ErrorDescription.INVALID_PASSWORD, HttpStatus.UNAUTHORIZED);
+        }
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(user.getUsername(), null,  List.of(new SimpleGrantedAuthority(user.getRole().name())))
         );
-        SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        User user = userRepository.findByEmail(authentication.getName())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        String accessToken = jwtUtil.generateAccessToken(user.getUsername(), user.getRole().name());
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
+        setRefreshCookie(response, refreshToken.getToken());
 
-        // Генерация токенов
-        String accessToken = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
-        String refreshToken = jwtUtil.generateRefreshToken(user.getEmail());
-
-        user.setRefreshToken(refreshToken);
-        userRepository.save(user);
-
-        // Устанавливаем HttpOnly cookie для refresh токена
-        Cookie cookie = new Cookie("refreshToken", refreshToken);
-        cookie.setHttpOnly(true);
-        cookie.setPath("/");
-        cookie.setMaxAge(30 * 24 * 60 * 60); // 30 дней
-        response.addCookie(cookie);
-
-        return JwtResponseDto.builder()
-                .token(accessToken)
-                .type("Bearer")
+        return AuthResponseDto.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken.getToken())
+                .role(user.getRole().name())
                 .build();
     }
 
-    // Refresh
-    public JwtResponseDto refreshToken(HttpServletRequest request, HttpServletResponse response) {
-        Cookie[] cookies = request.getCookies();
-        if (cookies == null) throw new RuntimeException("No cookies found");
 
-        String refreshToken = null;
-        for (Cookie c : cookies) {
-            if ("refreshToken".equals(c.getName())) refreshToken = c.getValue();
+
+    // -------------------- REFRESH --------------------
+    public AuthResponseDto refreshToken(HttpServletRequest request, HttpServletResponse response) {
+        String token = extractRefreshToken(request);
+
+        RefreshToken refreshToken = refreshTokenService.findByToken(token)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Refresh token not found"));
+
+        if (refreshTokenService.isExpired(refreshToken)) {
+            refreshTokenService.delete(refreshToken);
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Refresh token expired");
         }
 
-        if (refreshToken == null || !jwtUtil.validateToken(refreshToken)) {
-            throw new RuntimeException("Invalid refresh token");
-        }
+        User user = refreshToken.getUser();
+        String newAccessToken = jwtUtil.generateAccessToken(user.getUsername(), user.getRole().name());
 
-        String email = jwtUtil.getEmailFromToken(refreshToken);
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        // Можно обновить срок действия refresh-токена в базе, если нужно
+        setRefreshCookie(response, refreshToken.getToken());
 
-        if (!refreshToken.equals(user.getRefreshToken())) {
-            throw new RuntimeException("Refresh token mismatch");
-        }
-
-        // Генерация новых токенов
-        String newAccessToken = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
-        String newRefreshToken = jwtUtil.generateRefreshToken(user.getEmail());
-
-        user.setRefreshToken(newRefreshToken);
-        userRepository.save(user);
-
-        Cookie cookie = new Cookie("refreshToken", newRefreshToken);
-        cookie.setHttpOnly(true);
-        cookie.setPath("/");
-        cookie.setMaxAge(30 * 24 * 60 * 60); // 30 дней
-        response.addCookie(cookie);
-
-        return JwtResponseDto.builder()
-                .token(newAccessToken)
-                .type("Bearer")
+        return AuthResponseDto.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(refreshToken.getToken())
+                .role(user.getRole().name())
                 .build();
     }
 
-    // Logout
-    public void logout(HttpServletResponse response, String email) {
-        User user = userRepository.findByEmail(email).orElse(null);
-        if (user != null) {
-            user.setRefreshToken(null);  // удаляем refresh из базы
-            userRepository.save(user);
+    // -------------------- LOGOUT --------------------
+    public void logout(HttpServletRequest request, HttpServletResponse response) {
+        String token = extractRefreshToken(request);
+        if (token != null) {
+            refreshTokenService.findByToken(token).ifPresent(refreshTokenService::delete);
         }
-        // Удаляем refreshToken cookie
-        Cookie cookie = new Cookie("refreshToken", null);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(true); // обязательно, если приложение работает по HTTPS
-        cookie.setPath("/");
-        cookie.setMaxAge(0); // мгновенное удаление
-        response.addCookie(cookie);
-        // Дополнительно выставляем SameSite
-        response.addHeader("Set-Cookie",
-                "refreshToken=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Strict");
-        // чистим контекст
+        clearRefreshCookie(response);
         SecurityContextHolder.clearContext();
     }
 
-    // Получение профиля пользователя
-    public UserDto getUserProfile(String email) {
-        User user = userRepository.findByEmail(email)
+    // -------------------- GET USER PROFILE --------------------
+    public UserDto getUserProfile(String username) {
+        User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
         return UserDto.builder()
                 .id(user.getId())
+                .username(user.getUsername())
                 .email(user.getEmail())
-                .role(user.getRole().name())
+                .role(user.getRole())
                 .build();
+    }
+
+    // -------------------- HELPER METHODS --------------------
+    private void setRefreshCookie(HttpServletResponse response, String refreshToken) {
+        Cookie cookie = new Cookie("refreshToken", refreshToken);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(IS_PROD);
+        cookie.setPath("/");
+        cookie.setMaxAge(7 * 24 * 60 * 60); // 7 дней
+        cookie.setAttribute("SameSite", IS_PROD ? "None" : "Lax");
+        response.addCookie(cookie);
+    }
+
+    private void clearRefreshCookie(HttpServletResponse response) {
+        Cookie cookie = new Cookie("refreshToken", "");
+        cookie.setHttpOnly(true);
+        cookie.setSecure(IS_PROD);
+        cookie.setPath("/");
+        cookie.setMaxAge(0);
+        cookie.setAttribute("SameSite", IS_PROD ? "None" : "Lax");
+        response.addCookie(cookie);
+    }
+
+    private String extractRefreshToken(HttpServletRequest request) {
+        if (request.getCookies() == null) return null;
+        return Arrays.stream(request.getCookies())
+                .filter(c -> "refreshToken".equals(c.getName()))
+                .map(Cookie::getValue)
+                .findFirst()
+                .orElse(null);
     }
 }

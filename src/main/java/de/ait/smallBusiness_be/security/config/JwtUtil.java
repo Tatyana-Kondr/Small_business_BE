@@ -4,26 +4,48 @@ import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Component;
 import java.security.Key;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
 @Component
 public class JwtUtil {
-    private final String secret = "supersecretkeysupersecretkey123!";
-    private final long expirationMs = 1000 * 60 * 5; // 5 минут
-    private final Key key = Keys.hmacShaKeyFor(secret.getBytes());
 
-    public String generateToken(String email, String role) {
+    private final Key key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+
+    // Время жизни токенов
+    private final long accessTokenExpirationMs = 1000 * 60 * 5;     // 5 минут
+
+    // Генерация Access-токена
+    public String generateAccessToken(String username, String role) {
         return Jwts.builder()
-                .setSubject(email)
+                .setSubject(username)
                 .claim("role", role)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
-                .signWith(key, SignatureAlgorithm.HS256)
+                .setExpiration(new Date(System.currentTimeMillis() + accessTokenExpirationMs))
+                .signWith(key)
                 .compact();
     }
 
+    // Извлечение username из токена
+    public String getUsername(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .getSubject();
+    }
+
+    // Извлечение роли
+    public String getRole(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .get("role", String.class);
+    }
+
+    // Проверка валидности токена
     public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
@@ -32,24 +54,4 @@ public class JwtUtil {
             return false;
         }
     }
-
-    public String getEmailFromToken(String token) {
-        return Jwts.parserBuilder().setSigningKey(key).build()
-                .parseClaimsJws(token).getBody().getSubject();
-    }
-
-    public String getRoleFromToken(String token) {
-        return Jwts.parserBuilder().setSigningKey(key).build()
-                .parseClaimsJws(token).getBody().get("role", String.class);
-    }
-
-    public String generateRefreshToken(String email) {
-        return Jwts.builder()
-                .setSubject(email)
-                .setIssuedAt(new Date())
-                .setExpiration(Date.from(Instant.now().plus(30, ChronoUnit.DAYS))) // 30 дней
-                .signWith(key, SignatureAlgorithm.HS256)
-                .compact();
-    }
 }
-
