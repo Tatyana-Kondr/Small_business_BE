@@ -102,6 +102,10 @@ public class Product {
     @LastModifiedDate
     private LocalDateTime lastModifiedDate;
 
+    @Column
+    @Size(max = 30, message = "{validation.max.size}")
+    String storageLocation;
+
 
     @Override
     public boolean equals(Object o) {
@@ -133,6 +137,7 @@ public class Product {
                 .add("description='" + (description != null ? description : "N/A") + "'")
                 .add("customsNumber='" + (customsNumber != null ? customsNumber : "N/A") + "'")
                 .add("dateOfLastPurchase=" + (dateOfLastPurchase != null ? dateOfLastPurchase : "N/A"))
+                .add("storageLocation='" + storageLocation + "'")
                 .toString();
     }
 }

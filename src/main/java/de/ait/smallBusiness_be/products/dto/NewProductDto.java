@@ -56,4 +56,7 @@ public class NewProductDto{
             example = "ST",
             allowableValues = {"KG, PIECE, LITER, METER, ST, STUNDE, SET, MM, CM, KM"})
     String unitOfMeasurement;
+
+    @Schema(description = "Product storage location", example = "L1, p-11")
+    String storageLocation;
 }

@@ -116,6 +116,7 @@ public class ProductServiceImpl implements ProductService {
         product.setProductCategory(updateProductDto.getProductCategory());
         product.setDescription(updateProductDto.getDescription());
         product.setCustomsNumber(updateProductDto.getCustomsNumber());
+        product.setStorageLocation(updateProductDto.getStorageLocation());
         //product.setDateOfLastPurchase(updateProductDto.getDateOfLastPurchase());
         product.setLastModifiedDate(LocalDateTime.now());
 
