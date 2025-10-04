@@ -33,6 +33,9 @@ public enum ErrorDescription {
     REQUEST_NULL("Request cannot be null"),
     TOKEN_TYPE_NULL("Token type cannot be null"),
     NO_ROLE("No roles found for the user."),
+    INVALID_ROLE("Invalid user role"),
+
+    COMPANY_NOT_FOUND("Company not found"),
 
     CATEGORY_NOT_FOUND("Category not found"),
     CATEGORY_ALREADY_EXISTS("Category already exists"),
