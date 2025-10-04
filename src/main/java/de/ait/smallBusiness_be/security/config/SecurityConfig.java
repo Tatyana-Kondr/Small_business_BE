@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -41,22 +42,21 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .httpBasic(AbstractHttpConfigurer::disable)
+
                 .csrf(AbstractHttpConfigurer::disable)
+                .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
+                .cors(Customizer.withDefaults()) // включаем CORS, Spring будет использовать WebMvcConfigurer
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(AUTH_WHITELIST).permitAll() // Swagger доступен всем
-                        .requestMatchers(HttpMethod.POST, "/api/users/register","/api/auth/login", "/api/auth/logout").permitAll()
-//В                        .requestMatchers(HttpMethod.GET, "/api/products", "/api/products/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/product-categories", "/api/customers", "/api/purchases", "/api/sales", "/api/payments").hasAuthority("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/product-categories", "/api/purchases/{id}", "/api/productions/{id}", "/api/customers/{id}", "/api/sales/{id}").hasAuthority("ADMIN")
-                        .requestMatchers(HttpMethod.PATCH, "/api/purchases/**").hasAuthority("ADMIN")
-                         .requestMatchers(HttpMethod.DELETE, "/api/product-categories/{id}", "/api/products/{id}", "/api/purchaseItems/{id}", "/api/sales/{id}", "/api/productions/{id}", "/api/customers/{id}").hasAuthority("ADMIN")
-//                        .requestMatchers(HttpMethod.GET, "/api/products/**", "/api/product-categories/**").permitAll()
-//                        .requestMatchers(HttpMethod.POST, "/api/products", "/api/product-categories", "/api/customers").permitAll()
-//                        .requestMatchers(HttpMethod.PUT, "/api/products/{id}", "/api/product-categories/{id}").permitAll()
-//                        .requestMatchers(HttpMethod.DELETE, "/api/products/{id}",  "/api/product-categories/{id}").permitAll()
+                        .requestMatchers("/uploads/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/logout").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/product-categories",  "/api/shippings", "/api/companies", "/api/companies/{id}/logo").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET,  "/api/users").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH,  "/api/users/{id}/role", "/api/users/{id}").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/customers/{id}", "/api/product-categories/{id}", "/api/purchases/{id}", "/api/productions/{id}", "/api/shippings/{id}", "/api/companies/{id}").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/product-categories/{id}", "/api/shippings/{id}" ).hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
 
