@@ -128,7 +128,7 @@ public interface CustomersApi {
     @ResponseStatus(HttpStatus.OK)
     CustomerDto getCustomerById(@PathVariable Long id);
 
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     @Operation(
             summary = "Update the customer",
