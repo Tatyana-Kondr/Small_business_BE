@@ -50,8 +50,8 @@ public class Sale {
     @Enumerated(EnumType.STRING)
     private TypeOfOperation typeOfOperation;
 
-    @Column
-    @Enumerated(EnumType.STRING)
+    @ManyToOne
+    @JoinColumn(name = "shipping_id")
     private Shipping shipping;
 
     @Embedded

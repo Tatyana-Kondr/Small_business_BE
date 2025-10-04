@@ -22,7 +22,7 @@ public class SaleDto {
     String invoiceNumber;
     String accountObject;
     String typeOfOperation;
-    String shipping;
+    Long shippingId;
     NewShippingDimensionsDto shippingDimensions;
     String termsOfPayment;
     LocalDate salesDate;
