@@ -123,9 +123,9 @@
 <table class="info-table">
     <tr>
         <td class="info-left">
-            <p style="font-size: 10px; margin-bottom: 25px; margin-top: 15px">
-                A. Neufeld - EichtelgerWeg 7, 32657 Lemgo, DE
-            </p>
+            <p style="font-size: 10px; margin-bottom: 25px; margin-top: 15px"
+               th:text="${company.name + ' - ' + company.address}">Firma - Adresse</p>
+
             <h2 th:text="${sale.customer.name}" style="margin: 0 0 10px 0;">Kunde GmbH</h2>
             <p style="font-size: 14px; margin: 0 0 5px 0;" th:text="${sale.customer.address.street + ' ' + sale.customer.address.building}">Straße 1</p>
             <p style="font-size: 14px; margin: 0;" th:text="${sale.customer.address.postalCode + ' ' + sale.customer.address.city}">12345 Stadt</p>
@@ -161,7 +161,7 @@
     </tr>
     </thead>
     <tbody>
-    <tr th:each="item, stat : ${sale.saleItems}">
+    <tr th:each="item, stat : ${sale.saleItems}"  th:if="${item.product.productCategory.id != 2}">
         <td th:text="${item.position}">1</td>
         <td class="artikel-column" th:text="${item.product.article}">2022801290</td>
         <td th:text="${item.productName}">FEINSTRAHLEN1</td>
@@ -179,9 +179,17 @@
         BESTEN DANK FÜR IHRE ANFRAGE UND VERTRAUEN!!!
     </div>
     <div class="contact">
-        <p style="margin: 0 0 2px 0;">A. Neufeld, Eichtelger Weg 7, 32657 Lemgo, DE, Tel.: +49 (0) 52 61 / 60 74 00, alex.neufeld@gmx.net</p>
-        <p style="margin: 0 0 2px 0;">Bank: Postbank Hamburg, IBAN: DE19 2001 0020 0991 3552 02, BIC (SWIFT): PBNKDEFF</p>
-        <p style="margin: 0 0 2px 0;">PayPal: alex.neufeld@gmx.net&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;Ust-Id-Nr. / VAT-ID: DE274757218</p>
+        <p th:text="${company.name + ', ' + company.address + ', Tel.: ' + company.phone + ', ' + company.email}">
+            Firma, Adresse, Telefon, Email
+        </p>
+        <p th:text="'Bank: ' + ${company.bank} + ', IBAN: ' + ${company.ibanNumber} + ', BIC: ' + ${company.bicNumber}">
+            Bankdaten
+        </p>
+        <p>
+            PayPal: <span th:text="${company.email}"></span>
+            <span style="display: inline-block; width: 80px;"></span>
+            Ust-IdNr.: <span th:text="${company.vatId}"></span>
+        </p>
     </div>
 </div>
 
