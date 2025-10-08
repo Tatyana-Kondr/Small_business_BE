@@ -51,7 +51,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(AUTH_WHITELIST).permitAll() // Swagger доступен всем
                         .requestMatchers("/uploads/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/logout").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/logout", "/api/auth/refresh").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/product-categories",  "/api/shippings", "/api/companies", "/api/companies/{id}/logo").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET,  "/api/users").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH,  "/api/users/{id}/role", "/api/users/{id}").hasRole("ADMIN")
