@@ -101,14 +101,12 @@ public class ServiceConfiguration {
 
         //  Добавляем маппинг для ProductionItem -> ProductionItemDto
         modelMapper.createTypeMap(ProductionItem.class, ProductionItemDto.class)
-                .addMapping(src -> src.getProduction().getId(), ProductionItemDto::setProductionId);
+                .addMapping(src -> src.getProduction().getId(), ProductionItemDto::setProductionId)
+                .addMapping(src -> src.getProduct().getId(), ProductionItemDto::setProductId);
 
-        modelMapper.typeMap(Production.class, ProductionDto.class)
-                .addMappings(mapper -> mapper.map(src -> src.getProduct().getId(), ProductionDto::setProductId));
-
-        modelMapper.typeMap(ProductionItem.class, ProductionItemDto.class)
-                .addMappings(mapper -> mapper.map(src -> src.getProduct().getId(), ProductionItemDto::setProductId));
-
+        //  Добавляем маппинг для Production -> ProductionDto
+        modelMapper.createTypeMap(Production.class, ProductionDto.class)
+                .addMapping(src -> src.getProduct().getId(), ProductionDto::setProductId);
 
         // Добавляем маппинг для User -> UserDto
         modelMapper.createTypeMap(User.class, UserDto.class);
