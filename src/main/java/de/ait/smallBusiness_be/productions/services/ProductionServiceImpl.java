@@ -10,6 +10,7 @@ import de.ait.smallBusiness_be.productions.model.Production;
 import de.ait.smallBusiness_be.productions.model.ProductionItem;
 import de.ait.smallBusiness_be.products.dao.ProductRepository;
 import de.ait.smallBusiness_be.products.model.Product;
+import de.ait.smallBusiness_be.purchases.model.TypeOfOperation;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.Hibernate;
@@ -24,11 +25,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
+
 
 /**
  * 13.02.2025
@@ -113,7 +114,14 @@ public class ProductionServiceImpl implements ProductionService{
             throw new RestApiException(ErrorDescription.LIST_IS_EMPTY, HttpStatus.NOT_FOUND);
         }
 
-        return productions.map(production -> modelMapper.map(production, ProductionDto.class));
+        return productions.map(production -> {
+            // Инициализируем ленивую коллекцию productionItems
+            Hibernate.initialize(production.getProductionItems());
+            // Инициализируем вложенные продукты для productionItems
+            production.getProductionItems().forEach(item -> Hibernate.initialize(item.getProduct()));
+
+            return modelMapper.map(production, ProductionDto.class);
+        });
     }
 
     @Override
@@ -122,6 +130,7 @@ public class ProductionServiceImpl implements ProductionService{
         Production production = productionRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Production not found with ID: " + id));
         Hibernate.initialize(production.getProductionItems());
+        production.getProductionItems().forEach(item -> Hibernate.initialize(item.getProduct()));
         return modelMapper.map(production, ProductionDto.class);
     }
 
@@ -129,66 +138,59 @@ public class ProductionServiceImpl implements ProductionService{
     @Transactional
     public ProductionDto updateProduction(Long id, NewProductionDto newProductionDto) {
         Production production = productionRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Production not found with ID: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Production not found"));
 
         Product product = productRepository.findById(newProductionDto.getProductId())
-                .orElseThrow(() -> new IllegalArgumentException("Product not found with ID: " + newProductionDto.getProductId()));
+                .orElseThrow(() -> new EntityNotFoundException("Product not found with ID: " + newProductionDto.getProductId()));
 
+        // Обновляем базовые поля
         production.setProduct(product);
         production.setDateOfProduction(newProductionDto.getDateOfProduction());
+        try {
+            production.setType(TypeOfOperation.valueOf(newProductionDto.getType().toUpperCase()));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid type of operation: " + newProductionDto.getType());
+        }
         production.setQuantity(newProductionDto.getQuantity());
         production.setUnitPrice(newProductionDto.getUnitPrice());
-        production.setAmount(newProductionDto.getUnitPrice().multiply(newProductionDto.getQuantity()));
+        production.setAmount(newProductionDto.getUnitPrice().multiply(newProductionDto.getQuantity()).setScale(2, RoundingMode.HALF_UP));
 
-        AtomicReference<BigDecimal> totalPriceItems = new AtomicReference<>(BigDecimal.ZERO);
-        Map<Long, ProductionItem> existingItems = production.getProductionItems().stream()
-                .collect(Collectors.toMap(item -> item.getProduct().getId(), item -> item));
+        // Удаляем все старые позиции
+        production.getProductionItems().clear();
 
-        List<Long> newProductIds = newProductionDto.getProductionItems().stream()
-                .map(item -> item.getProductId())
-                .toList();
-
-        List<ProductionItem> updatedItems = new ArrayList<>();
+        // Пересчет сумм
+        AtomicReference<BigDecimal> materialsTotal = new AtomicReference<>(BigDecimal.ZERO);
+        List<ProductionItem> newItems = new ArrayList<>();
 
         for (NewProductionItemDto itemDto : newProductionDto.getProductionItems()) {
-            Long productId = itemDto.getProductId();
-            ProductionItem productionItem = existingItems.get(productId);
+            Product itemProduct = productRepository.findById(itemDto.getProductId())
+                    .orElseThrow(() -> new EntityNotFoundException("Product not found: " + itemDto.getProductId()));
 
-            if (productionItem == null) {
-                productionItem = new ProductionItem();
-                productionItem.setProduction(production);
-                productionItem.setProduct(productRepository.findById(productId)
-                        .orElseThrow(() -> new EntityNotFoundException("Product not found: " + productId)));
+            ProductionItem item = new ProductionItem();
+            item.setProduction(production);
+            item.setProduct(itemProduct);
+            try {
+                item.setType(TypeOfOperation.valueOf(itemDto.getType().toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Invalid type for ProductionItem: " + itemDto.getType());
             }
+            item.setQuantity(itemDto.getQuantity());
+            item.setUnitPrice(itemDto.getUnitPrice());
+            item.setTotalPrice(itemDto.getUnitPrice().multiply(itemDto.getQuantity()).setScale(2, RoundingMode.HALF_UP));
 
-            productionItem.setQuantity(itemDto.getQuantity());
-            productionItem.setUnitPrice(itemDto.getUnitPrice());
-            BigDecimal totalPrice = productionItem.getUnitPrice()
-                    .multiply(productionItem.getQuantity())
-                    .setScale(2, RoundingMode.HALF_UP);
-            productionItem.setTotalPrice(totalPrice);
-
-            updatedItems.add(productionItem);
+            newItems.add(item);
+            materialsTotal.updateAndGet(v -> v.add(item.getTotalPrice()));
         }
 
-        // Удаляем старые элементы, которых нет в новом списке (НЕ заменяем коллекцию)
-        production.getProductionItems().removeIf(item -> !newProductIds.contains(item.getProduct().getId()));
-
-        // Добавляем/обновляем существующие элементы
-        for (ProductionItem updatedItem : updatedItems) {
-            if (!production.getProductionItems().contains(updatedItem)) {
-                production.getProductionItems().add(updatedItem);
-            }
+        if (newItems.isEmpty()) {
+            throw new RestApiException(ErrorDescription.NO_PRODUCT_IN_PRODUCTION);
         }
-        // Подсчёт общей суммы после обновления всех ProductionItem
-        totalPriceItems.set(
-                production.getProductionItems().stream()
-                        .map(ProductionItem::getTotalPrice)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add)
-        );
 
+        // Добавляем новые позиции
+        production.getProductionItems().addAll(newItems);
 
-        if (production.getAmount().compareTo(totalPriceItems.get()) <= 0) {
+        // Проверка: сумма главного продукта должна быть больше суммы материалов
+        if (production.getAmount().compareTo(materialsTotal.get()) <= 0) {
             throw new RestApiException(ErrorDescription.PRODUCTION_AMOUNT, HttpStatus.CONFLICT);
         }
 
@@ -203,4 +205,33 @@ public class ProductionServiceImpl implements ProductionService{
                 .orElseThrow(() -> new IllegalArgumentException("Production not found with ID: " + id));
         productionRepository.delete(production);
     }
+
+    @Override
+    @Transactional
+    public Page<ProductionDto> searchProduction(Pageable pageable, String query) {
+        Page<Production> productions = productionRepository.searchProduction(pageable, query);
+
+        // Инициализация ленивых коллекций и вложенных продуктов
+        productions.forEach(production -> {
+            Hibernate.initialize(production.getProductionItems());
+            production.getProductionItems().forEach(item -> Hibernate.initialize(item.getProduct()));
+        });
+
+        return productions.map(production -> modelMapper.map(production, ProductionDto.class));
+    }
+
+    @Override
+    @Transactional
+    public Page<ProductionDto> getAllProductionsByFilter(Pageable pageable, LocalDate startDate, LocalDate endDate, String searchQuery) {
+        Page<Production> productions = productionRepository.getAllProductionsByFilter(pageable, startDate, endDate, searchQuery);
+
+        // Инициализация ленивых коллекций и вложенных продуктов
+        productions.forEach(production -> {
+            Hibernate.initialize(production.getProductionItems());
+            production.getProductionItems().forEach(item -> Hibernate.initialize(item.getProduct()));
+        });
+
+        return productions.map(production -> modelMapper.map(production, ProductionDto.class));
+    }
+
 }
