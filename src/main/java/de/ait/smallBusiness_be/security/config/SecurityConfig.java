@@ -50,13 +50,16 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(AUTH_WHITELIST).permitAll() // Swagger доступен всем
+                        .requestMatchers("/error").permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/logout", "/api/auth/refresh").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/product-categories",  "/api/shippings", "/api/companies", "/api/companies/{id}/logo").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET,  "/api/users").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH,  "/api/users/{id}/role", "/api/users/{id}").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/customers/{id}", "/api/product-categories/{id}", "/api/purchases/{id}", "/api/productions/{id}", "/api/shippings/{id}", "/api/companies/{id}").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/customers/{id}", "/api/product-categories/{id}", "/api/purchases/{id}", "/api/shippings/{id}", "/api/companies/{id}").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/product-categories/{id}", "/api/shippings/{id}" ).hasRole("ADMIN")
+                        .requestMatchers("/api/productions/search/**", "/api/productions/filter").authenticated()
                         .anyRequest().authenticated()
                 )
 
