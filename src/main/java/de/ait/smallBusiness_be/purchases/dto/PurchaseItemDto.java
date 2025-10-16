@@ -1,7 +1,5 @@
 package de.ait.smallBusiness_be.purchases.dto;
 
-import de.ait.smallBusiness_be.products.model.Product;
-import de.ait.smallBusiness_be.purchases.model.Purchase;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
