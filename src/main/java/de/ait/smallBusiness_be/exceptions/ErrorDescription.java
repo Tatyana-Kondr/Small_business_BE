@@ -69,6 +69,8 @@ public enum ErrorDescription {
 
     NO_PRODUCT_IN_PURCHASE("No products in purchase"),
 
+    NO_PRODUCT_IN_PRODUCTION("No products in production"),
+
     SALE_NOT_FOUND("Sale not found"),
     NO_PRODUCT_IN_SALE("No products in sale"),
     ;
