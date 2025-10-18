@@ -80,7 +80,8 @@ public class ServiceConfiguration {
         // Добавляем маппинг для Sale -> SaleDto
         modelMapper.createTypeMap(Sale.class, SaleDto.class)
                 .addMapping(src -> src.getCustomer().getId(), SaleDto::setCustomerId)
-                .addMapping(src -> src.getCustomer().getName(), SaleDto::setCustomerName);
+                .addMapping(src -> src.getCustomer().getName(), SaleDto::setCustomerName)
+                .addMapping(src -> src.getShipping().getId(), SaleDto::setShippingId);
 
         modelMapper.createTypeMap(ShippingDimensions.class, NewShippingDimensionsDto.class)
                 .addMappings(mapper -> {
