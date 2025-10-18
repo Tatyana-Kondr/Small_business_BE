@@ -34,7 +34,7 @@ public class PaymentPrefillDto {
     private Long purchaseId;
 
     @Schema(description = "Document type", example = "RECHNUNG")
-    private TypeOfDocument document;
+    private String document;
 
     @Schema(description = "Document number", example = "RE-2025-001")
     private String documentNumber;
