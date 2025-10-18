@@ -1,6 +1,5 @@
 package de.ait.smallBusiness_be.sales.services.impl;
 
-import de.ait.smallBusiness_be.customers.dao.CustomerRepository;
 import de.ait.smallBusiness_be.customers.model.Customer;
 import de.ait.smallBusiness_be.customers.services.CustomerService;
 import de.ait.smallBusiness_be.exceptions.ErrorDescription;
@@ -383,7 +382,7 @@ public class SaleServiceImpl implements SaleService {
 
             attempts++;
         }
-        throw new RuntimeException("Не удалось сгенерировать уникальный номер счета");
+        throw new RuntimeException("Failed to generate a unique invoice number");
     }
 
     private String generateInvoiceNumber() {
