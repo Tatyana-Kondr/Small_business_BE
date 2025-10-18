@@ -117,6 +117,9 @@ public class ProductionRepositoryCustomImpl implements ProductionRepositoryCusto
             // Поиск по amount (BigDecimal -> строка)
             predicates.add(cb.like(cb.lower(cb.function("str", String.class, root.get("amount"))), likePattern));
 
+            // Поиск по имени продукта (product.name)
+            predicates.add(cb.like(cb.lower(root.get("product").get("article")), likePattern));
+
           // Поиск по имени продукта (product.name)
          predicates.add(cb.like(cb.lower(root.get("product").get("name")), likePattern));
         }
