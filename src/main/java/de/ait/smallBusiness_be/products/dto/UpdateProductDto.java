@@ -73,7 +73,10 @@ public class UpdateProductDto{
         @Size(max = 20, message = "{validation.max.size}")
         @Schema(description = "Product's custom number", example = "534455")
         String customsNumber;
-//
+
+        @Size(max = 30, message = "{validation.max.size}")
+        @Schema(description = "Product storage location", example = "L1, p-11")
+        String storageLocation;
 //        @PastOrPresent(message = "{validation.dateOfLastPurchase.pastOrPresent}")
 //        LocalDateTime dateOfLastPurchase;
 }

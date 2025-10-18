@@ -15,9 +15,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
 
 @Tags(
         @Tag(name = "Production controller")
@@ -25,11 +27,10 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/productions")
 public interface ProductionsApi {
 
-    @PreAuthorize("isAuthenticated()")
     @PostMapping
     @Operation(
             summary = "Add a new production",
-            description = "Create a new production. Admin is allowed.")
+            description = "Create a new production. Authenticated users are allowed.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201",
                     description = "Production created successfully.",
@@ -39,7 +40,6 @@ public interface ProductionsApi {
                     description = "Invalid production data.",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponseDto.class))),
-
             @ApiResponse(responseCode = "401",
                     description = "User unauthorized.",
                     content = @Content(mediaType = "application/json",
@@ -53,7 +53,6 @@ public interface ProductionsApi {
     ProductionDto addProduction(
             @RequestBody @Valid NewProductionDto newProductionDto);
 
-    @PreAuthorize("isAuthenticated()")
     @GetMapping
     @Operation(
             summary = "Get all productions",
@@ -79,7 +78,7 @@ public interface ProductionsApi {
     @GetMapping("/{id}")
     @Operation(
             summary = "Get production by ID",
-            description = "Retrieve a production by its ID. Allowed to all users.")
+            description = "Retrieve a production by its ID. Allowed to all authenticated users.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
                     description = "Production retrieved successfully.",
@@ -93,11 +92,10 @@ public interface ProductionsApi {
     @ResponseStatus(HttpStatus.OK)
     ProductionDto getProductionById(@PathVariable Long id);
 
-    @PreAuthorize("isAuthenticated()")
     @PutMapping("/{id}")
     @Operation(
             summary = "Update the production",
-            description = "Update the production. Admin is allowed.")
+            description = "Update the production. Authenticated users are allowed.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
                     description = "Production updated successfully.",
@@ -121,11 +119,10 @@ public interface ProductionsApi {
             @PathVariable Long id,
             @RequestBody @Valid NewProductionDto newProductionDto);
 
-    @PreAuthorize("isAuthenticated()")
     @DeleteMapping("/{id}")
     @Operation(
             summary = "Delete production by ID",
-            description = "Delete an existing production. Admin is allowed.")
+            description = "Delete an existing production. Authenticated users are allowed.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204",
                     description = "Production deleted successfully."),
@@ -143,6 +140,44 @@ public interface ProductionsApi {
                             schema = @Schema(implementation = ErrorResponseDto.class)))
     })
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    void removeProduction(
-            @PathVariable Long id);
+    void removeProduction(@PathVariable Long id);
+
+    @GetMapping("/search/{query}")
+    @Operation(summary = "Search productions",
+            description = "Search productions by ID, product ID, product name or amount.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Productions found.",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProductionDto[].class))),
+            @ApiResponse(responseCode = "403",
+                    description = "Forbidden.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDto.class))),
+            @ApiResponse(responseCode = "404", description = "No productions found.",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDto.class)))
+    })
+    @ResponseStatus(HttpStatus.OK)
+    Page<ProductionDto> searchProductions(
+            @PageableDefault(size = 15) Pageable pageable,
+            @RequestParam(defaultValue = "dateOfProduction") String sort,
+            @PathVariable String query);
+
+    @GetMapping("/filter")
+    @Operation(summary = "Get productions by filter",
+            description = "Retrieve productions filtered by start date, end date and search query.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Productions found with filters.",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProductionDto[].class))),
+            @ApiResponse(responseCode = "403",
+                    description = "Forbidden.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDto.class))),
+            @ApiResponse(responseCode = "404", description = "No productions found.",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDto.class)))
+    })
+    @ResponseStatus(HttpStatus.OK)
+    Page<ProductionDto> getProductionsByFilter(
+            @PageableDefault(size = 15, sort = "dateOfProduction", direction = Sort.Direction.DESC) Pageable pageable,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) String query);
 }

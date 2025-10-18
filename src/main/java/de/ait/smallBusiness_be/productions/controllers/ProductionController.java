@@ -9,6 +9,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
+
 /**
  * 13.02.2025
  * SmB_be
@@ -45,5 +47,15 @@ public class ProductionController implements ProductionsApi {
     @Override
     public void removeProduction(Long id) {
         productionService.deleteProduction(id);
+    }
+
+    @Override
+    public Page<ProductionDto> searchProductions(Pageable pageable, String sort, String query) {
+        return productionService.searchProduction(pageable, query);
+    }
+
+    @Override
+    public Page<ProductionDto> getProductionsByFilter(Pageable pageable, LocalDate startDate, LocalDate endDate, String query) {
+        return productionService.getAllProductionsByFilter(pageable, startDate, endDate, query);
     }
 }

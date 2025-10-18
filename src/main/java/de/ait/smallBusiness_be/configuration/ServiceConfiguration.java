@@ -20,6 +20,9 @@ import de.ait.smallBusiness_be.sales.dto.SaleItemDto;
 import de.ait.smallBusiness_be.sales.models.Sale;
 import de.ait.smallBusiness_be.sales.models.SaleItem;
 import de.ait.smallBusiness_be.sales.models.ShippingDimensions;
+import de.ait.smallBusiness_be.users.dto.NewUserDto;
+import de.ait.smallBusiness_be.users.dto.UserDto;
+import de.ait.smallBusiness_be.users.model.User;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.context.annotation.Bean;
@@ -77,7 +80,8 @@ public class ServiceConfiguration {
         // Добавляем маппинг для Sale -> SaleDto
         modelMapper.createTypeMap(Sale.class, SaleDto.class)
                 .addMapping(src -> src.getCustomer().getId(), SaleDto::setCustomerId)
-                .addMapping(src -> src.getCustomer().getName(), SaleDto::setCustomerName);
+                .addMapping(src -> src.getCustomer().getName(), SaleDto::setCustomerName)
+                .addMapping(src -> src.getShipping().getId(), SaleDto::setShippingId);
 
         modelMapper.createTypeMap(ShippingDimensions.class, NewShippingDimensionsDto.class)
                 .addMappings(mapper -> {
@@ -98,13 +102,19 @@ public class ServiceConfiguration {
 
         //  Добавляем маппинг для ProductionItem -> ProductionItemDto
         modelMapper.createTypeMap(ProductionItem.class, ProductionItemDto.class)
-                .addMapping(src -> src.getProduction().getId(), ProductionItemDto::setProductionId);
+                .addMapping(src -> src.getProduction().getId(), ProductionItemDto::setProductionId)
+                .addMapping(src -> src.getProduct().getId(), ProductionItemDto::setProductId);
 
-        modelMapper.typeMap(Production.class, ProductionDto.class)
-                .addMappings(mapper -> mapper.map(src -> src.getProduct().getId(), ProductionDto::setProductId));
+        //  Добавляем маппинг для Production -> ProductionDto
+        modelMapper.createTypeMap(Production.class, ProductionDto.class)
+                .addMapping(src -> src.getProduct().getId(), ProductionDto::setProductId);
 
-        modelMapper.typeMap(ProductionItem.class, ProductionItemDto.class)
-                .addMappings(mapper -> mapper.map(src -> src.getProduct().getId(), ProductionItemDto::setProductId));
+        // Добавляем маппинг для User -> UserDto
+        modelMapper.createTypeMap(User.class, UserDto.class);
+
+        // Добавляем маппинг для NewUserDto -> User
+        modelMapper.createTypeMap(NewUserDto.class, User.class);
+
         return modelMapper;
     }
 
@@ -116,6 +126,7 @@ public class ServiceConfiguration {
                 registry.addMapping("/api/**") // Ограничь CORS на API
                         .allowedOrigins("http://localhost:5173") // Указываем конкретный origin
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
+                        .allowedHeaders("*")
                         .allowCredentials(true); // Разрешаем куки
             }
         };

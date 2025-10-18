@@ -23,13 +23,17 @@ import lombok.NoArgsConstructor;
 @Schema(name = "New User", description = "Registration data")
 public class NewUserDto {
 
+    @NotNull
+    @Schema(description = "User's name", example = "user_1")
+    private String username;
+
+    @NotNull
+    @Pattern(regexp = "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)\\S{4,}$")
+    @Schema(description = "User's password", example = "Qwerty007!")
+    private String password;
+
     @Email
     @NotNull
     @Schema(description = "User's email address", example = "user@gmail.com")
     private String email;
-
-    @NotNull
-    @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[@#$%^&+=!])(?=\\S+$).{8,}$")
-    @Schema(description = "User's password", example = "Qwerty007!")
-    private String password;
 }

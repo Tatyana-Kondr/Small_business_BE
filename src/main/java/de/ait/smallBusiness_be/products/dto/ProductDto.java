@@ -39,4 +39,5 @@ public class ProductDto{
     LocalDateTime createdDate;
     LocalDateTime dateOfLastPurchase;
     LocalDateTime lastModifiedDate;
+    String storageLocation;
 }

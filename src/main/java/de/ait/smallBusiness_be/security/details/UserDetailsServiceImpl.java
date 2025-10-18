@@ -1,7 +1,7 @@
 package de.ait.smallBusiness_be.security.details;
+import de.ait.smallBusiness_be.users.dao.UserRepository;
 import de.ait.smallBusiness_be.users.model.User;
 
-import de.ait.smallBusiness_be.users.dao.UsersRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -18,14 +18,12 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class UserDetailsServiceImpl implements UserDetailsService {
 
-    private final UsersRepository usersRepository;
+    private final UserRepository userRepository;
+
     @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-
-        User user = usersRepository.findByEmail(email)
-
-                .orElseThrow(() -> new UsernameNotFoundException("User with email <" + email + "> not found"));
-
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
         return new AuthenticatedUser(user);
     }
 }

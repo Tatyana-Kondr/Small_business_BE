@@ -33,6 +33,10 @@ public enum ErrorDescription {
     REQUEST_NULL("Request cannot be null"),
     TOKEN_TYPE_NULL("Token type cannot be null"),
     NO_ROLE("No roles found for the user."),
+    INVALID_ROLE("Invalid user role"),
+
+    COMPANY_NOT_FOUND("Company not found"),
+    LOGO_NOT_FOUND("Company logo not found"),
 
     CATEGORY_NOT_FOUND("Category not found"),
     CATEGORY_ALREADY_EXISTS("Category already exists"),
@@ -65,6 +69,8 @@ public enum ErrorDescription {
     LIST_IS_EMPTY("List is empty"),
 
     NO_PRODUCT_IN_PURCHASE("No products in purchase"),
+
+    NO_PRODUCT_IN_PRODUCTION("No products in production"),
 
     SALE_NOT_FOUND("Sale not found"),
     NO_PRODUCT_IN_SALE("No products in sale"),

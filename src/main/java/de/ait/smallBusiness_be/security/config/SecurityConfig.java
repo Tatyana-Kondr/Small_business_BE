@@ -1,23 +1,22 @@
 package de.ait.smallBusiness_be.security.config;
 
-
-import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
-import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
 
 /**
  * SmallBusiness_BE
@@ -29,6 +28,7 @@ import org.springframework.security.web.context.SecurityContextRepository;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
     private static final String[] AUTH_WHITELIST = {
             "/v3/api-docs/**",
@@ -37,42 +37,39 @@ public class SecurityConfig {
             "/swagger-ui.html"
     };
 
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .httpBasic(AbstractHttpConfigurer::disable)
 
                 .csrf(AbstractHttpConfigurer::disable)
+                .httpBasic(AbstractHttpConfigurer::disable)
+                .formLogin(AbstractHttpConfigurer::disable)
+                .cors(Customizer.withDefaults()) // включаем CORS, Spring будет использовать WebMvcConfigurer
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(AUTH_WHITELIST).permitAll() // Swagger доступен всем
-                        .requestMatchers(HttpMethod.POST, "/api/users/register","/api/auth/login", "/api/auth/logout").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/products", "/api/products/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/product-categories", "/api/customers", "/api/purchases", "/api/sales", "/api/payments").hasAuthority("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/product-categories", "/api/purchases/{id}", "/api/productions/{id}", "/api/customers/{id}", "/api/sales/{id}").hasAuthority("ADMIN")
-                        .requestMatchers(HttpMethod.PATCH, "/api/purchases/**").hasAuthority("ADMIN")
-                         .requestMatchers(HttpMethod.DELETE, "/api/product-categories/{id}", "/api/products/{id}", "/api/purchaseItems{id}", "/api/sales/{id}", "/api/productions/{id}", "/api/customers/{id}").hasAuthority("ADMIN")
-//                        .requestMatchers(HttpMethod.GET, "/api/products/**", "/api/product-categories/**").permitAll()
-//                        .requestMatchers(HttpMethod.POST, "/api/products", "/api/product-categories", "/api/customers").permitAll()
-//                        .requestMatchers(HttpMethod.PUT, "/api/products/{id}", "/api/product-categories/{id}").permitAll()
-//                        .requestMatchers(HttpMethod.DELETE, "/api/products/{id}",  "/api/product-categories/{id}").permitAll()
+                        .requestMatchers("/error").permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
+                        .requestMatchers("/uploads/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/logout", "/api/auth/refresh").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/product-categories",  "/api/shippings", "/api/companies", "/api/companies/{id}/logo").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET,  "/api/users").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH,  "/api/users/{id}/role", "/api/users/{id}").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/customers/{id}", "/api/product-categories/{id}", "/api/purchases/{id}", "/api/shippings/{id}", "/api/companies/{id}").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/product-categories/{id}", "/api/shippings/{id}" ).hasRole("ADMIN")
+                        .requestMatchers("/api/productions/search/**", "/api/productions/filter").authenticated()
                         .anyRequest().authenticated()
                 )
 
-                .formLogin(AbstractHttpConfigurer::disable) // Отключаем стандартный formLogin
-
-                .logout(logout -> logout
-                        .logoutUrl("/api/auth/logout")
-                        .addLogoutHandler((request, response, auth) -> SecurityContextHolder.clearContext())
-                        .logoutSuccessHandler((request, response, authentication) -> response.setStatus(HttpServletResponse.SC_OK))
-                )
-
+                // Stateless, потому что используем JWT
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // Используем сессии
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-                .securityContext(securityContext -> securityContext
-                        .securityContextRepository(securityContextRepository())
-                );
+
+                // Добавляем JWT фильтр перед стандартным UsernamePasswordAuthenticationFilter
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -82,13 +79,10 @@ public class SecurityConfig {
         return authConfig.getAuthenticationManager();
     }
 
-    @Bean
-    public SecurityContextRepository securityContextRepository() {
-        return new HttpSessionSecurityContextRepository();
-    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
+
 }

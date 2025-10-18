@@ -6,6 +6,7 @@ import de.ait.smallBusiness_be.products.service.ProductPhotoService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.tags.Tags;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -39,16 +40,11 @@ public class ProductPhotoController {
     }
 
     @DeleteMapping("/photos/{photoId}")
-    public ResponseEntity<String> deletePhoto(@PathVariable Long photoId) {
-        try {
-            productPhotoService.deletePhoto(photoId);
-            return ResponseEntity.ok("Photo deleted successfully");
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (IOException e) {
-            return ResponseEntity.status(500).body("File deletion failed");
-        }
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deletePhoto(@PathVariable Long photoId) {
+        productPhotoService.deletePhoto(photoId);
     }
+
 
     @GetMapping("/{productId}/photos")
     public ResponseEntity<List<ProductPhoto>> getPhotos(@PathVariable Long productId) {

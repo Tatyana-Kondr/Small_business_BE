@@ -22,7 +22,7 @@ import java.util.List;
 @RequestMapping("api/product-categories")
 public interface ProductCategoryApi {
 
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     @Operation(
             summary = "Add a new Product category",
@@ -91,7 +91,7 @@ public interface ProductCategoryApi {
     ProductCategoryDto getProductCategoryById(@PathVariable int id);
 
 
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     @Operation(
             summary = "Update Product category",
@@ -123,7 +123,7 @@ public interface ProductCategoryApi {
                                                  @RequestBody @Valid NewProductCategoryDto updatedCategory);
 
 
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     @Operation(
             summary = "Delete Product category",

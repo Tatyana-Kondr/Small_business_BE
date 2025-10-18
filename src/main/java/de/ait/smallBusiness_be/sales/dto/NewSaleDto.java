@@ -32,8 +32,9 @@ public class NewSaleDto {
         @Schema(description = "Type of operation", example = "VERKAUF",allowableValues = {" VERKAUF, KUNDENERSTATTUNG, EXCHANGE"})
         String typeOfOperation;
 
-        @Schema(description = "Shipping method", example = "DHL_PAKET",allowableValues = {"DHL_PAKET, POST_MAXI_BRIEF, HERMES, ASH_LOGISTIK_LUFTFRACHT_TRANSPORTE_ZOLLSERVICE, ABHOLUNG"})
-        String shipping;
+        @NotNull(message = "{validation.notNull}")
+        @Schema(description = "ID of the shipping (e.g., Hermes, Post)", example = "1", required = true)
+        Long shippingId;
 
         @Schema(description = "Shipping dimensions (weight, width, height, length)")
         NewShippingDimensionsDto shippingDimensions;

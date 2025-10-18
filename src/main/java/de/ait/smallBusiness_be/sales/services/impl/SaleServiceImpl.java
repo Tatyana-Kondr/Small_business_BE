@@ -11,12 +11,14 @@ import de.ait.smallBusiness_be.products.service.ProductService;
 import de.ait.smallBusiness_be.purchases.model.PaymentStatus;
 import de.ait.smallBusiness_be.purchases.model.TypeOfOperation;
 import de.ait.smallBusiness_be.sales.dao.SaleRepository;
+import de.ait.smallBusiness_be.sales.dao.ShippingRepository;
 import de.ait.smallBusiness_be.sales.dto.NewSaleDto;
 import de.ait.smallBusiness_be.sales.dto.NewSaleItemDto;
 import de.ait.smallBusiness_be.sales.dto.SaleDto;
 import de.ait.smallBusiness_be.sales.models.*;
 import de.ait.smallBusiness_be.sales.services.DocumentService;
 import de.ait.smallBusiness_be.sales.services.SaleService;
+import de.ait.smallBusiness_be.sales.services.ShippingService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -48,17 +50,20 @@ public class SaleServiceImpl implements SaleService {
 
     private final SaleRepository saleRepository;
     private final PaymentRepository paymentRepository;
+    private final ShippingRepository shippingRepository;
     private final CustomerService customerService;
     private final ProductService productService;
-    private final ModelMapper modelMapper;
+    private final ShippingService shippingService;
     private final DocumentService invoiceService;
-
+    private final ModelMapper modelMapper;
 
     @Override
     @Transactional
     public SaleDto createSale(NewSaleDto newSale) {
 
         Customer customer = customerService.getCustomerOrThrow(newSale.getCustomerId());
+        Shipping shipping = shippingRepository.findById(newSale.getShippingId())
+                .orElseThrow(() -> new EntityNotFoundException("Shipping not found"));
 
         // Генерация invoiceNumber и deliveryBill (если не передано)
         String invoiceNumber = newSale.getInvoiceNumber();
@@ -72,6 +77,7 @@ public class SaleServiceImpl implements SaleService {
         // Маппинг в сущность + установка обязательных полей
         Sale sale = modelMapper.map(newSale, Sale.class);
         sale.setCustomer(customer);
+        sale.setShipping(shipping);
         sale.setInvoiceNumber(invoiceNumber);
         sale.setDeliveryBill(deliveryBill);
         sale.setDefaultTax(newSale.getDefaultTax());
@@ -193,7 +199,11 @@ public class SaleServiceImpl implements SaleService {
         invoiceService.deleteDeliveryBillPdf(sale, "delivery-bill");
 
         Customer customer = customerService.getCustomerOrThrow(updateSale.getCustomerId());
+        Shipping shipping = shippingRepository.findById(updateSale.getShippingId())
+                .orElseThrow(() -> new EntityNotFoundException("Shipping not found"));
+
         sale.setCustomer(customer);
+        sale.setShipping(shipping);
         sale.setInvoiceNumber(updateSale.getInvoiceNumber());
         sale.setDeliveryBill(updateSale.getDeliveryBill());
         sale.setAccountObject(updateSale.getAccountObject());
@@ -205,11 +215,6 @@ public class SaleServiceImpl implements SaleService {
             sale.setTypeOfOperation(TypeOfOperation.valueOf(updateSale.getTypeOfOperation().toUpperCase()));
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Invalid type of operation: " + updateSale.getTypeOfOperation());
-        }
-        try {
-            sale.setShipping(Shipping.valueOf(updateSale.getShipping().toUpperCase()));
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid shipping: " + updateSale.getShipping());
         }
         try {
             sale.setTermsOfPayment(TermsOfPayment.valueOf(updateSale.getTermsOfPayment().toUpperCase()));
@@ -377,7 +382,7 @@ public class SaleServiceImpl implements SaleService {
 
             attempts++;
         }
-        throw new RuntimeException("Не удалось сгенерировать уникальный номер счета");
+        throw new RuntimeException("Failed to generate a unique invoice number");
     }
 
     private String generateInvoiceNumber() {
