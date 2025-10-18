@@ -71,7 +71,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .amount(sale.getTotalAmount())
                 .amountLeft(amountLeft)
                 .saleId(sale.getId())
-                .document(TypeOfDocument.RECHNUNG)
+                .document(TypeOfDocument.RECHNUNG.name())
                 .documentNumber(sale.getInvoiceNumber())
                 .type(PaymentType.EINNAHME)
                 .build();
@@ -96,7 +96,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .amount(purchase.getTotal())
                 .amountLeft(amountLeft)
                 .purchaseId(purchase.getId())
-                .document(TypeOfDocument.RECHNUNG)
+                .document(purchase.getDocument().name())
                 .documentNumber(purchase.getDocumentNumber())
                 .type(PaymentType.AUSGABE)
                 .build();
