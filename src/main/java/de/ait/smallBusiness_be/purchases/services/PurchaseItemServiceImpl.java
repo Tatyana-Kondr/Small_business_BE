@@ -124,8 +124,6 @@ public class PurchaseItemServiceImpl implements PurchaseItemService {
         // Пересчитываем суммы в Purchase
         recalculatePurchaseTotals(purchase);
 
-        // Сохраняем Purchase после изменений
-        purchaseRepository.save(purchase);
     }
 
     private void recalculatePurchaseItemTotals(PurchaseItem purchaseItem) {
