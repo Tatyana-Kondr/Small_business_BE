@@ -3,6 +3,7 @@ package de.ait.smallBusiness_be.sales.services.impl;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import de.ait.smallBusiness_be.company.dao.CompanyRepository;
 import de.ait.smallBusiness_be.company.model.Company;
+import de.ait.smallBusiness_be.exceptions.ErrorDescription;
 import de.ait.smallBusiness_be.exceptions.RestApiException;
 import de.ait.smallBusiness_be.sales.models.Sale;
 import de.ait.smallBusiness_be.sales.services.DocumentService;
@@ -18,7 +19,6 @@ import java.io.OutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import org.springframework.core.io.ClassPathResource;
 
 @Service
 @RequiredArgsConstructor
@@ -54,7 +54,7 @@ public class DocumentServiceImpl implements DocumentService {
 
         File yearFolder = new File(yearFolderPath);
         if (!yearFolder.exists() && !yearFolder.mkdirs()) {
-            throw new RestApiException("Не удалось создать папку для документов: " + yearFolderPath,
+            throw new RestApiException("Failed to create folder for documents: " + yearFolderPath,
                     HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
@@ -62,13 +62,13 @@ public class DocumentServiceImpl implements DocumentService {
         File outputFile = new File(outputPath);
 
         if (outputFile.exists() && !outputFile.delete()) {
-            throw new RestApiException("Не удалось удалить старый PDF-файл: " + outputPath,
+            throw new RestApiException("Failed to delete old PDF file: " + outputPath,
                     HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
         // Получаем данные компании
         Company company = companyRepository.findById(1L)
-                .orElseThrow(() -> new RestApiException("Компания не найдена", HttpStatus.INTERNAL_SERVER_ERROR));
+                .orElseThrow(() -> new RestApiException(ErrorDescription.COMPANY_NOT_FOUND, HttpStatus.NOT_FOUND));
 
         // Разрешаем путь логотипа
         String logoPath = resolveCompanyLogoPath(company);
@@ -89,7 +89,7 @@ public class DocumentServiceImpl implements DocumentService {
             builder.toStream(outputStream);
             builder.run();
         } catch (Exception e) {
-            throw new RestApiException("Ошибка при создании PDF " + templateName + ": " + e.getMessage(),
+            throw new RestApiException("Error while creating PDF " + templateName + ": " + e.getMessage(),
                     HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -100,7 +100,7 @@ public class DocumentServiceImpl implements DocumentService {
         String filePath = baseFolder + File.separator + year + File.separator + documentNumber + ".pdf";
         File file = new File(filePath);
         if (file.exists() && !file.delete()) {
-            throw new RestApiException("Не удалось удалить PDF документ: " + filePath,
+            throw new RestApiException("Failed to delete PDF document: " + filePath,
                     HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -119,17 +119,17 @@ public class DocumentServiceImpl implements DocumentService {
                     return logoFile.toURI().toString();
                 } else {
                     throw new RestApiException(
-                            "Логотип компании не найден по пути: " + logoPath,
+                            "Company logo not found at path: " + logoPath,
                             HttpStatus.INTERNAL_SERVER_ERROR
                     );
                 }
             }
 
-            throw new RestApiException("Логотип компании не найден", HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new RestApiException(ErrorDescription.LOGO_NOT_FOUND, HttpStatus.NOT_FOUND);
 
         } catch (Exception e) {
             throw new RestApiException(
-                    "Ошибка при загрузке логотипа: " + e.getMessage(),
+                    "Error loading logo: " + e.getMessage(),
                     HttpStatus.INTERNAL_SERVER_ERROR
             );
         }
@@ -141,6 +141,6 @@ public class DocumentServiceImpl implements DocumentService {
         if (parts.length >= 2) {
             return parts[1];
         }
-        throw new RestApiException("Неверный формат номера документа: " + invoiceNumber, HttpStatus.BAD_REQUEST);
+        throw new RestApiException("Invalid document number format: " + invoiceNumber, HttpStatus.BAD_REQUEST);
     }
 }

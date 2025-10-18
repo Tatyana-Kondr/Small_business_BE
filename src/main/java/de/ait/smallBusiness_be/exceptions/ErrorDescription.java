@@ -36,6 +36,7 @@ public enum ErrorDescription {
     INVALID_ROLE("Invalid user role"),
 
     COMPANY_NOT_FOUND("Company not found"),
+    LOGO_NOT_FOUND("Company logo not found"),
 
     CATEGORY_NOT_FOUND("Category not found"),
     CATEGORY_ALREADY_EXISTS("Category already exists"),
