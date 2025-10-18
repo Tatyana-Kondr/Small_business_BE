@@ -29,10 +29,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
+
 
 /**
  * 16.01.2025
@@ -64,59 +63,7 @@ public class PurchaseServiceImpl implements PurchaseService{
         Purchase purchase = modelMapper.map(newPurchaseDto, Purchase.class);
         purchase.setVendor(customer);
 
-        AtomicReference<BigDecimal> subtotal = new AtomicReference<>(BigDecimal.ZERO);
-        AtomicReference<BigDecimal> taxSum = new AtomicReference<>(BigDecimal.ZERO);
-        AtomicReference<BigDecimal> total = new AtomicReference<>(BigDecimal.ZERO);
-
-        // Проверяем и добавляем PurchaseItem к Purchase
-        if (newPurchaseDto.getPurchaseItems() != null && !newPurchaseDto.getPurchaseItems().isEmpty()) {
-            List<PurchaseItem> purchaseItems = newPurchaseDto.getPurchaseItems().stream()
-                    .map(newPurchaseItemDto -> {
-                        // Находим продукт по ID
-                        Product product = productRepository.findById(newPurchaseItemDto.getProductId())
-                                .orElseThrow(() -> new IllegalArgumentException(
-                                        "Product not found with ID: " + newPurchaseItemDto.getProductId()
-                                ));
-
-                        // Создаем PurchaseItem и устанавливаем продукт
-                        PurchaseItem purchaseItem = modelMapper.map(newPurchaseItemDto, PurchaseItem.class);
-                        purchaseItem.setProduct(product);
-                        // Устанавливаем связь с Purchase
-                        purchaseItem.setPurchase(purchase);
-
-                        // Рассчитываем totalPrice, taxAmount и totalAmount
-                        BigDecimal unitPrice = purchaseItem.getUnitPrice();
-                        BigDecimal quantity = purchaseItem.getQuantity();
-
-                        BigDecimal totalPrice = unitPrice.multiply(quantity);
-                        BigDecimal taxAmount = totalPrice
-                                .multiply(purchaseItem.getTaxPercentage().movePointLeft(2))
-                                .setScale(2, RoundingMode.HALF_UP);
-                        BigDecimal totalAmount = totalPrice.add(taxAmount);
-
-                        purchaseItem.setTotalPrice(totalPrice);
-                        purchaseItem.setTaxAmount(taxAmount);
-                        purchaseItem.setTotalAmount(totalAmount);
-
-                        subtotal.updateAndGet(value -> value.add(totalPrice));
-                        taxSum.updateAndGet(value -> value.add(taxAmount));
-                        total.updateAndGet(value -> value.add(totalAmount));
-
-                        // Вызов отдельного метода для обновления продукта
-                        updateProductAfterPurchase(product, unitPrice, newPurchaseDto.getPurchasingDate());
-
-                        return purchaseItem;
-                    })
-                    .collect(Collectors.toList());
-
-            // Устанавливаем PurchaseItems в Purchase
-            purchase.setPurchaseItems(purchaseItems);
-        }
-
-        // Устанавливаем пересчитанные суммы в Purchase
-        purchase.setSubtotal(subtotal.get());
-        purchase.setTaxSum(taxSum.get());
-        purchase.setTotal(total.get());
+        calculatePurchaseAmounts(purchase, newPurchaseDto);
 
         Purchase savedPurchase = purchaseRepository.save(purchase);
 
@@ -211,60 +158,7 @@ public class PurchaseServiceImpl implements PurchaseService{
         // Удаляем все старые позиции
         purchase.getPurchaseItems().clear();
 
-        // Пересчет сумм
-        AtomicReference<BigDecimal> subtotal = new AtomicReference<>(BigDecimal.ZERO);
-        AtomicReference<BigDecimal> taxSum = new AtomicReference<>(BigDecimal.ZERO);
-        AtomicReference<BigDecimal> total = new AtomicReference<>(BigDecimal.ZERO);
-
-        List<PurchaseItem> newItems = new ArrayList<>();
-        int position = 1;
-
-        for (NewPurchaseItemDto itemDto : newPurchaseDto.getPurchaseItems()) {
-            Product product = productRepository.findById(itemDto.getProductId())
-                    .orElseThrow(() -> new EntityNotFoundException("Product not found: " + itemDto.getProductId()));
-
-            PurchaseItem item = new PurchaseItem();
-            item.setPurchase(purchase);
-            item.setProduct(product);
-            item.setProductName(itemDto.getProductName());
-            item.setQuantity(itemDto.getQuantity());
-            item.setUnitPrice(itemDto.getUnitPrice());
-            item.setPosition(position++);
-
-            // Расчёты
-            BigDecimal totalPrice = item.getUnitPrice().multiply(item.getQuantity());
-            BigDecimal taxPercentage = itemDto.getTaxPercentage() != null ? itemDto.getTaxPercentage() : BigDecimal.ZERO;
-
-            BigDecimal taxAmount = totalPrice.multiply(taxPercentage.movePointLeft(2))
-                    .setScale(2, RoundingMode.HALF_UP);
-            BigDecimal totalAmount = totalPrice.add(taxAmount);
-
-            item.setTotalPrice(totalPrice);
-            item.setTaxPercentage(taxPercentage);
-            item.setTaxAmount(taxAmount);
-            item.setTotalAmount(totalAmount);
-
-            // Обновление продукта
-            updateProductAfterPurchase(product, item.getUnitPrice(), newPurchaseDto.getPurchasingDate());
-
-            subtotal.updateAndGet(v -> v.add(totalPrice));
-            taxSum.updateAndGet(v -> v.add(taxAmount));
-            total.updateAndGet(v -> v.add(totalAmount));
-
-            newItems.add(item);
-        }
-
-        if (newPurchaseDto.getPurchaseItems() == null || newPurchaseDto.getPurchaseItems().isEmpty()) {
-            throw new RestApiException(ErrorDescription.NO_PRODUCT_IN_PURCHASE);
-        }
-        // Добавляем новые позиции
-        purchase.getPurchaseItems().addAll(newItems);
-
-        // Обновляем итоги
-        purchase.setSubtotal(subtotal.get());
-        purchase.setTaxSum(taxSum.get());
-        purchase.setTotal(total.get());
-
+        calculatePurchaseAmounts(purchase, newPurchaseDto);
         // Сохраняем
         Purchase updatedPurchase = purchaseRepository.save(purchase);
         return modelMapper.map(updatedPurchase, PurchaseDto.class);
@@ -307,6 +201,54 @@ public class PurchaseServiceImpl implements PurchaseService{
             purchaseRepository.save(purchase);
         }
         return modelMapper.map(purchase, PurchaseDto.class);
+    }
+
+    private void calculatePurchaseAmounts(Purchase purchase, NewPurchaseDto newPurchaseDto) {
+        AtomicReference<BigDecimal> subtotal = new AtomicReference<>(BigDecimal.ZERO);
+        AtomicReference<BigDecimal> taxSum = new AtomicReference<>(BigDecimal.ZERO);
+        AtomicReference<BigDecimal> total = new AtomicReference<>(BigDecimal.ZERO);
+
+        List<PurchaseItem> purchaseItems = newPurchaseDto.getPurchaseItems().stream()
+                .map(dto -> createPurchaseItem(purchase, dto, subtotal, taxSum, total, newPurchaseDto.getPurchasingDate()))
+                .toList();
+
+        purchase.setPurchaseItems(purchaseItems);
+        purchase.setSubtotal(subtotal.get());
+        purchase.setTaxSum(taxSum.get());
+        purchase.setTotal(total.get());
+    }
+
+    private PurchaseItem createPurchaseItem(
+            Purchase purchase,
+            NewPurchaseItemDto dto,
+            AtomicReference<BigDecimal> subtotal,
+            AtomicReference<BigDecimal> taxSum,
+            AtomicReference<BigDecimal> total,
+            LocalDate purchasingDate) {
+
+        Product product = productRepository.findById(dto.getProductId())
+                .orElseThrow(() -> new IllegalArgumentException("Product not found with ID: " + dto.getProductId()));
+
+        PurchaseItem item = modelMapper.map(dto, PurchaseItem.class);
+        item.setPurchase(purchase);
+        item.setProduct(product);
+
+        BigDecimal totalPrice = dto.getUnitPrice().multiply(dto.getQuantity());
+        BigDecimal taxAmount = totalPrice.multiply(dto.getTaxPercentage().movePointLeft(2))
+                .setScale(2, RoundingMode.HALF_UP);
+        BigDecimal totalAmount = totalPrice.add(taxAmount);
+
+        item.setTotalPrice(totalPrice);
+        item.setTaxAmount(taxAmount);
+        item.setTotalAmount(totalAmount);
+
+        subtotal.updateAndGet(v -> v.add(totalPrice));
+        taxSum.updateAndGet(v -> v.add(taxAmount));
+        total.updateAndGet(v -> v.add(totalAmount));
+
+        updateProductAfterPurchase(product, dto.getUnitPrice(), purchasingDate);
+
+        return item;
     }
 
     private void updateProductAfterPurchase(Product product, BigDecimal unitPrice, LocalDate purchasingDate) {
