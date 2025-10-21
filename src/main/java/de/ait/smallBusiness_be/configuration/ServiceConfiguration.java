@@ -140,7 +140,7 @@ public class ServiceConfiguration {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/api/**")
-                        .allowedOrigins("*") // Разрешить всем — безопасно, если фронт встроен
+                        .allowedOrigins("http://wolke1:8080", "http://localhost:8080")
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowCredentials(true);
             }
