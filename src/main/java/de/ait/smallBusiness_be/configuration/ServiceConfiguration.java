@@ -140,7 +140,7 @@ public class ServiceConfiguration {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/api/**")
-                        .allowedOrigins("https://your-production-domain.com") // поменяй на свой фронт
+                        .allowedOrigins("*") // Разрешить всем — безопасно, если фронт встроен
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowCredentials(true);
             }
