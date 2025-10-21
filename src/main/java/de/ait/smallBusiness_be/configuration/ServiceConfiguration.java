@@ -27,6 +27,7 @@ import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -119,15 +120,29 @@ public class ServiceConfiguration {
     }
 
     @Bean
-    public WebMvcConfigurer cors() {
+    @Profile("dev") // активируется только при dev-профиле
+    public WebMvcConfigurer corsDev() {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/api/**") // Ограничь CORS на API
-                        .allowedOrigins("http://localhost:5173") // Указываем конкретный origin
+                registry.addMapping("/api/**")
+                        .allowedOrigins("http://localhost:5173")
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
-                        .allowedHeaders("*")
-                        .allowCredentials(true); // Разрешаем куки
+                        .allowCredentials(true);
+            }
+        };
+    }
+
+    @Bean
+    @Profile("prod") // активируется только при prod-профиле
+    public WebMvcConfigurer corsProd() {
+        return new WebMvcConfigurer() {
+            @Override
+            public void addCorsMappings(CorsRegistry registry) {
+                registry.addMapping("/api/**")
+                        .allowedOrigins("https://your-production-domain.com") // поменяй на свой фронт
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                        .allowCredentials(true);
             }
         };
     }
