@@ -125,7 +125,7 @@
 
 <!-- Верхняя часть: Логотип и данные -->
 <table style="margin-bottom: 10px;">
-    <tr>
+    <tr th:if="${logoPath != null}">
         <td class="right">
             <img th:src="${logoPath}" alt="Logo" class="logo"/>
         </td>

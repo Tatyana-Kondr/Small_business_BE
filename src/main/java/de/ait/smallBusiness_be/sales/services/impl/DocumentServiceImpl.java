@@ -70,7 +70,7 @@ public class DocumentServiceImpl implements DocumentService {
         Company company = companyRepository.findById(1L)
                 .orElseThrow(() -> new RestApiException(ErrorDescription.COMPANY_NOT_FOUND, HttpStatus.NOT_FOUND));
 
-        // Разрешаем путь логотипа
+        // Пытаемся получить путь логотипа — может быть null
         String logoPath = resolveCompanyLogoPath(company);
 
         // Подготавливаем контекст Thymeleaf
@@ -118,21 +118,17 @@ public class DocumentServiceImpl implements DocumentService {
                 if (logoFile.exists()) {
                     return logoFile.toURI().toString();
                 } else {
-                    throw new RestApiException(
-                            "Company logo not found at path: " + logoPath,
-                            HttpStatus.INTERNAL_SERVER_ERROR
-                    );
+                    System.out.println("Company logo not found at path: " + logoPath);
+                    return null;
                 }
             }
 
             throw new RestApiException(ErrorDescription.LOGO_NOT_FOUND, HttpStatus.NOT_FOUND);
 
         } catch (Exception e) {
-            throw new RestApiException(
-                    "Error loading logo: " + e.getMessage(),
-                    HttpStatus.INTERNAL_SERVER_ERROR
-            );
+            System.out.println("Error resolving logo path: " + e.getMessage());
         }
+        return null;
     }
 
 
