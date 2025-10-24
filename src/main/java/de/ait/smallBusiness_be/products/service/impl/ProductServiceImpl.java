@@ -3,6 +3,7 @@ package de.ait.smallBusiness_be.products.service.impl;
 import de.ait.smallBusiness_be.exceptions.ErrorDescription;
 import de.ait.smallBusiness_be.exceptions.RestApiException;
 import de.ait.smallBusiness_be.products.dao.ProductRepository;
+import de.ait.smallBusiness_be.products.dao.UnitOfMeasurementRepository;
 import de.ait.smallBusiness_be.products.dto.NewDimensionsDto;
 import de.ait.smallBusiness_be.products.dto.NewProductDto;
 import de.ait.smallBusiness_be.products.dto.UpdateProductDto;
@@ -11,6 +12,7 @@ import de.ait.smallBusiness_be.products.model.Dimensions;
 import de.ait.smallBusiness_be.products.model.Product;
 import de.ait.smallBusiness_be.products.model.UnitOfMeasurement;
 import de.ait.smallBusiness_be.products.service.ProductService;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -35,8 +37,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ProductServiceImpl implements ProductService {
 
-    final ProductRepository productRepository;
-    final ModelMapper modelMapper;
+     private final ProductRepository productRepository;
+     private final UnitOfMeasurementRepository unitOfMeasurementRepository;
+     private final ModelMapper modelMapper;
 
     @Override
     @Transactional
@@ -52,7 +55,9 @@ public class ProductServiceImpl implements ProductService {
         if (exists) {
             throw new RestApiException(ErrorDescription.PRODUCT_ALREADY_EXISTS, HttpStatus.CONFLICT);
         }
-        UnitOfMeasurement unit = UnitOfMeasurement.valueOf(newProductDto.getUnitOfMeasurement());
+         UnitOfMeasurement unit = unitOfMeasurementRepository.findById(newProductDto.getUnitOfMeasurementId())
+                 .orElseThrow(() -> new EntityNotFoundException("Unit Of Measurement not found"));
+
         Product product = modelMapper.map(newProductDto, Product.class);
         product.setUnitOfMeasurement(unit);
         Product savedProduct = productRepository.save(product);
@@ -98,9 +103,10 @@ public class ProductServiceImpl implements ProductService {
         product.setMarkupPercentage(updateProductDto.getMarkupPercentage());
         product.setSellingPrice(updateProductDto.getSellingPrice());
 
-        if (updateProductDto.getUnitOfMeasurement() != null) {
+        if (updateProductDto.getUnitOfMeasurementId() != null) {
             try {
-                UnitOfMeasurement unit = UnitOfMeasurement.valueOf(updateProductDto.getUnitOfMeasurement().toUpperCase());
+                UnitOfMeasurement unit = unitOfMeasurementRepository.findById(updateProductDto.getUnitOfMeasurementId())
+                        .orElseThrow(() -> new EntityNotFoundException("Unit Of Measurement not found"));
                 product.setUnitOfMeasurement(unit);
             } catch (IllegalArgumentException e) {
                 throw new RestApiException(ErrorDescription.INVALID_UNIT_OF_MEASUREMENT, HttpStatus.BAD_REQUEST);

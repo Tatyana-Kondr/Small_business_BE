@@ -2,6 +2,7 @@ package de.ait.smallBusiness_be.products.dto;
 
 
 import de.ait.smallBusiness_be.products.model.ProductCategory;
+import de.ait.smallBusiness_be.products.model.UnitOfMeasurement;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -30,7 +31,7 @@ public class ProductDto{
     BigDecimal purchasingPrice;
     BigDecimal markupPercentage;
     BigDecimal sellingPrice;
-    String unitOfMeasurement;
+    UnitOfMeasurement unitOfMeasurement;
     BigDecimal weight;
     NewDimensionsDto newDimensions;
     ProductCategory productCategory;

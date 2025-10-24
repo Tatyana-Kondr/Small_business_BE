@@ -46,16 +46,12 @@ public class NewProductDto{
     @Schema(description = "Product's purchasing price", example = "20.0")
     BigDecimal sellingPrice;
 
-    @NotNull(message = "{validation.notNull}")
     @Schema(description = "Product's category", example = "Electronics")
     ProductCategory productCategory;
 
-    @NotBlank(message = "{validation.notBlank}")
-    @Pattern(regexp = "KG|GR|LITER|METER|ST|STUNDE|SET|MM|CM|KM")
-    @Schema(description = "Unit Of Measurement",
-            example = "ST",
-            allowableValues = {"KG, PIECE, LITER, METER, ST, STUNDE, SET, MM, CM, KM"})
-    String unitOfMeasurement;
+    @NotNull(message = "{validation.notNull}")
+    @Schema(description = "Unit Of Measurement", example = "ST")
+    Long unitOfMeasurementId;
 
     @Schema(description = "Product storage location", example = "L1, p-11")
     String storageLocation;

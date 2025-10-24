@@ -5,12 +5,14 @@ import static org.assertj.core.api.Assertions.*;
 
 import de.ait.smallBusiness_be.exceptions.RestApiException;
 import de.ait.smallBusiness_be.products.dao.ProductRepository;
+import de.ait.smallBusiness_be.products.dao.UnitOfMeasurementRepository;
 import de.ait.smallBusiness_be.products.dto.NewDimensionsDto;
 import de.ait.smallBusiness_be.products.dto.NewProductDto;
 import de.ait.smallBusiness_be.products.dto.ProductDto;
 import de.ait.smallBusiness_be.products.dto.UpdateProductDto;
 import de.ait.smallBusiness_be.products.model.Product;
 import de.ait.smallBusiness_be.products.model.ProductCategory;
+import de.ait.smallBusiness_be.products.model.UnitOfMeasurement;
 import de.ait.smallBusiness_be.products.service.impl.ProductServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,17 +39,25 @@ class ProductServiceImplTest {
     private ProductRepository productRepository;
 
     @Mock
+    private UnitOfMeasurementRepository unitOfMeasurementRepository;
+
+    @Mock
     private ModelMapper modelMapper;
 
     // ===== ADD PRODUCT =====
     @Test
     void addProduct_success() {
+        // given
         NewProductDto newDto = new NewProductDto();
         newDto.setName("Product1");
         newDto.setVendorArticle("VA123");
         newDto.setPurchasingPrice(BigDecimal.valueOf(10));
-        newDto.setUnitOfMeasurement("ST");
+        newDto.setUnitOfMeasurementId(1L);
         newDto.setProductCategory(new ProductCategory());
+
+        UnitOfMeasurement unit = new UnitOfMeasurement();
+        unit.setId(1L);
+        unit.setName("ST");
 
         Product product = new Product();
         product.setId(1L);
@@ -55,6 +65,9 @@ class ProductServiceImplTest {
 
         when(productRepository.existsByNameAndVendorArticleAndPurchasingPriceAndProductCategory(
                 any(), any(), any(), any())).thenReturn(false);
+
+        when(unitOfMeasurementRepository.findById(1L)).thenReturn(Optional.of(unit));
+
         when(modelMapper.map(newDto, Product.class)).thenReturn(product);
         when(productRepository.save(any(Product.class))).thenReturn(product);
         when(modelMapper.map(product, ProductDto.class)).thenReturn(dto);
@@ -62,8 +75,10 @@ class ProductServiceImplTest {
         ProductDto result = service.addProduct(newDto);
 
         assertThat(result).isNotNull();
-        verify(productRepository, times(2)).save(product); // один раз с article
+        verify(productRepository, times(2)).save(product);
+        verify(unitOfMeasurementRepository).findById(1L); //
     }
+
 
     @Test
     void addProduct_duplicate_throws() {

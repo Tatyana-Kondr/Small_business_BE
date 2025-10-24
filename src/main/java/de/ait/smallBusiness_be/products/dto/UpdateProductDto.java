@@ -47,12 +47,8 @@ public class UpdateProductDto{
         @Schema(description = "Product's selling price", example = "22.0")
         BigDecimal sellingPrice;
 
-        @NotBlank(message = "{validation.notBlank}")
-        @Pattern(regexp = "KG|PIECE|LITER|METER|ST")
-        @Schema(description = "Unit Of Measurement",
-                example = "ST",
-                allowableValues = {"KG, PIECE, LITER, METER, ST"})
-        String unitOfMeasurement;
+        @Schema(description = "Unit Of Measurement", example = "ST")
+        Long unitOfMeasurementId;
 
         @DecimalMin(value = "0.0", message = "{validation.weight.min}")
         @Digits(integer = 5, fraction = 3, message = "{validation.weight.digits}")

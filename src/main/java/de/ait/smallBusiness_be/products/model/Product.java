@@ -66,8 +66,9 @@ public class Product {
     @Digits(integer = 10, fraction = 2, message = "{validation.price.digits}")
     private BigDecimal sellingPrice;  // продажная цена, по идее должна присваиваться цена с последней продажи. Если продаж еще не было, то цена формируется из закупочной цены + 20%
 
-    @Enumerated(EnumType.STRING)
-    @Column
+    @ManyToOne
+    @JoinColumn(name = "unit_of_measurement_id")
+    @NotNull(message = "{validation.notNull}")
     private UnitOfMeasurement unitOfMeasurement; // единица измерения
 
     @Column(precision = 8, scale = 3)
