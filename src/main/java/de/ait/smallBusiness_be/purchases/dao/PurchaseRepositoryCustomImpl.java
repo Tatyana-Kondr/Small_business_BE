@@ -58,7 +58,7 @@ public class PurchaseRepositoryCustomImpl implements PurchaseRepositoryCustom {
                                          Long id,
                                          Long vendorId,
                                          String vendorName,
-                                         String document,
+                                         Long documentId,
                                          String documentNumber,
                                          BigDecimal total,
                                          String paymentStatus,
@@ -69,7 +69,7 @@ public class PurchaseRepositoryCustomImpl implements PurchaseRepositoryCustom {
         CriteriaQuery<Purchase> query = cb.createQuery(Purchase.class);
         Root<Purchase> root = query.from(Purchase.class);
 
-        List<Predicate> predicates = buildFilterPredicates(cb, root, id, vendorId, vendorName, document, documentNumber, total, paymentStatus, startDate, endDate, searchQuery);
+        List<Predicate> predicates = buildFilterPredicates(cb, root, id, vendorId, vendorName, documentId, documentNumber, total, paymentStatus, startDate, endDate, searchQuery);
 
         query.where(cb.and(predicates.toArray(new Predicate[0])));
         query.orderBy(cb.asc(root.get("id")));
@@ -83,7 +83,7 @@ public class PurchaseRepositoryCustomImpl implements PurchaseRepositoryCustom {
         // Подсчет общего количества записей
         CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
         Root<Purchase> countRoot = countQuery.from(Purchase.class);
-        List<Predicate> countPredicates = buildFilterPredicates(cb, countRoot, id, vendorId, vendorName, document, documentNumber, total, paymentStatus, startDate, endDate, searchQuery);
+        List<Predicate> countPredicates = buildFilterPredicates(cb, countRoot, id, vendorId, vendorName, documentId, documentNumber, total, paymentStatus, startDate, endDate, searchQuery);
         countQuery.select(cb.count(countRoot)).where(cb.and(countPredicates.toArray(new Predicate[0])));
         Long totalCount = entityManager.createQuery(countQuery).getSingleResult();
 
@@ -123,7 +123,7 @@ public class PurchaseRepositoryCustomImpl implements PurchaseRepositoryCustom {
             Long id,
             Long vendorId,
             String vendorName,
-            String document,
+            Long documentId,
             String documentNumber,
             BigDecimal total,
             String paymentStatus,
@@ -145,9 +145,10 @@ public class PurchaseRepositoryCustomImpl implements PurchaseRepositoryCustom {
             predicates.add(cb.like(cb.lower(root.get("vendor").get("name")), "%" + vendorName.toLowerCase() + "%"));
         }
 
-        if (document != null && !document.isEmpty()) {
-            predicates.add(cb.like(cb.lower(root.get("document")), "%" + document.toLowerCase() + "%"));
+        if (documentId != null) {
+            predicates.add(cb.equal(root.get("document").get("id"), documentId));
         }
+
 
         if (documentNumber != null && !documentNumber.isEmpty()) {
             predicates.add(cb.like(cb.lower(root.get("documentNumber")), "%" + documentNumber.toLowerCase() + "%"));
@@ -173,11 +174,10 @@ public class PurchaseRepositoryCustomImpl implements PurchaseRepositoryCustom {
             String lowerSearch = "%" + searchQuery.toLowerCase() + "%";
 
             Predicate vendorNamePredicate = cb.like(cb.lower(root.get("vendor").get("name")), lowerSearch);
-            Predicate documentPredicate = cb.like(cb.lower(root.get("document")), lowerSearch);
             Predicate documentNumberPredicate = cb.like(cb.lower(root.get("documentNumber")), lowerSearch);
             Predicate paymentStatusPredicate = cb.like(cb.lower(root.get("paymentStatus")), lowerSearch);
 
-            predicates.add(cb.or(vendorNamePredicate, documentPredicate, documentNumberPredicate, paymentStatusPredicate));
+            predicates.add(cb.or(vendorNamePredicate, documentNumberPredicate, paymentStatusPredicate));
         }
 
         return predicates;

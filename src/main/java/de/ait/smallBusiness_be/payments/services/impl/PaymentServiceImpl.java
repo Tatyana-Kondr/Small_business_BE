@@ -16,6 +16,7 @@ import de.ait.smallBusiness_be.payments.model.PaymentProcess;
 import de.ait.smallBusiness_be.payments.model.PaymentType;
 import de.ait.smallBusiness_be.payments.services.PaymentService;
 import de.ait.smallBusiness_be.purchases.dao.PurchaseRepository;
+import de.ait.smallBusiness_be.purchases.dao.TypeOfDocumentRepository;
 import de.ait.smallBusiness_be.purchases.model.Purchase;
 import de.ait.smallBusiness_be.purchases.model.TypeOfDocument;
 import de.ait.smallBusiness_be.purchases.services.PurchaseService;
@@ -47,6 +48,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final PurchaseRepository purchaseRepository;
     private final PaymentMethodRepository paymentMethodRepository;
     private final PaymentProcessRepository paymentProcessRepository;
+    private final TypeOfDocumentRepository typeOfDocumentRepository;
     private final PurchaseService purchaseService;
     private final SaleService saleService;
     private final ModelMapper modelMapper;
@@ -65,13 +67,17 @@ public class PaymentServiceImpl implements PaymentService {
 
         BigDecimal amountLeft = sale.getTotalAmount().subtract(alreadyPaid).max(BigDecimal.ZERO);
 
+        TypeOfDocument document = typeOfDocumentRepository.findByName("RECHNUNG")
+                .orElseThrow(() -> new EntityNotFoundException("Type of document 'RECHNUNG' not found"));
+
         return PaymentPrefillDto.builder()
                 .customerId(sale.getCustomer().getId())
                 .customerName(sale.getCustomer().getName())
                 .amount(sale.getTotalAmount())
                 .amountLeft(amountLeft)
                 .saleId(sale.getId())
-                .document(TypeOfDocument.RECHNUNG.name())
+                .documentId(document.getId())
+                .documentName(document.getName())
                 .documentNumber(sale.getInvoiceNumber())
                 .type(PaymentType.EINNAHME)
                 .build();
@@ -90,13 +96,16 @@ public class PaymentServiceImpl implements PaymentService {
 
         BigDecimal amountLeft = purchase.getTotal().subtract(alreadyPaid).max(BigDecimal.ZERO);
 
+        TypeOfDocument document = purchase.getDocument();
+
         return PaymentPrefillDto.builder()
                 .customerId(purchase.getVendor().getId())
                 .customerName(purchase.getVendor().getName())
                 .amount(purchase.getTotal())
                 .amountLeft(amountLeft)
                 .purchaseId(purchase.getId())
-                .document(purchase.getDocument().name())
+                .documentId(document.getId())
+                .documentName(document.getName())
                 .documentNumber(purchase.getDocumentNumber())
                 .type(PaymentType.AUSGABE)
                 .build();
@@ -113,6 +122,9 @@ public class PaymentServiceImpl implements PaymentService {
 
         PaymentProcess process = paymentProcessRepository.findById(newPaymentDto.getPaymentProcessId())
                 .orElseThrow(() -> new EntityNotFoundException("Payment process not found"));
+
+        TypeOfDocument document = typeOfDocumentRepository.findById(newPaymentDto.getDocumentId())
+                .orElseThrow(() -> new EntityNotFoundException("Document not found"));
 
         Sale sale = null;
         if (newPaymentDto.getSaleId() != null) {
@@ -133,7 +145,7 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setAmount(newPaymentDto.getAmount());
         payment.setSale(sale);
         payment.setPurchase(purchase);
-        payment.setDocument(TypeOfDocument.valueOf(newPaymentDto.getDocument()));
+        payment.setDocument(document);
         payment.setDocumentNumber(newPaymentDto.getDocumentNumber());
         payment.setPaymentMethod(method);
         payment.setPaymentProcess(process);
@@ -174,8 +186,8 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    public Page<PaymentDto> getAllPaymentsByFilter(Pageable pageable, Long id, Long customerId, String customerName, Long saleId, Long purchaseId, LocalDate startDate, LocalDate endDate, String document, String documentNumber, BigDecimal amount, String searchQuery) {
-        return paymentRepository.filterByPaymentsFields(pageable, id, customerId, customerName, saleId, purchaseId, startDate, endDate, document, documentNumber, amount, searchQuery)
+    public Page<PaymentDto> getAllPaymentsByFilter(Pageable pageable, Long id, Long customerId, String customerName, Long saleId, Long purchaseId, LocalDate startDate, LocalDate endDate, Long documentId, String documentNumber, BigDecimal amount, String searchQuery) {
+        return paymentRepository.filterByPaymentsFields(pageable, id, customerId, customerName, saleId, purchaseId, startDate, endDate, documentId, documentNumber, amount, searchQuery)
                 .map(payment -> modelMapper.map(payment, PaymentDto.class));
     }
 
@@ -200,6 +212,9 @@ public class PaymentServiceImpl implements PaymentService {
         PaymentProcess process = paymentProcessRepository.findById(newPaymentDto.getPaymentProcessId())
                 .orElseThrow(() -> new EntityNotFoundException("Payment process not found"));
 
+        TypeOfDocument document = typeOfDocumentRepository.findById(newPaymentDto.getDocumentId())
+                .orElseThrow(() -> new EntityNotFoundException("Document not found"));
+
         Sale sale = null;
         if (newPaymentDto.getSaleId() != null) {
             sale = saleRepository.findById(newPaymentDto.getSaleId())
@@ -218,7 +233,7 @@ public class PaymentServiceImpl implements PaymentService {
         existing.setAmount(newPaymentDto.getAmount());
         existing.setSale(sale);
         existing.setPurchase(purchase);
-        existing.setDocument(TypeOfDocument.valueOf(newPaymentDto.getDocument()));
+        existing.setDocument(document);
         existing.setDocumentNumber(newPaymentDto.getDocumentNumber());
         existing.setPaymentMethod(method);
         existing.setPaymentProcess(process);

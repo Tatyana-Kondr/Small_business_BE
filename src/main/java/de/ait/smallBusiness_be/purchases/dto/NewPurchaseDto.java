@@ -1,17 +1,10 @@
 package de.ait.smallBusiness_be.purchases.dto;
 
-import de.ait.smallBusiness_be.customers.model.Customer;
-import de.ait.smallBusiness_be.purchases.model.PurchaseItem;
-import de.ait.smallBusiness_be.purchases.model.TypeOfDocument;
-import de.ait.smallBusiness_be.purchases.model.TypeOfOperation;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -40,8 +33,8 @@ public class NewPurchaseDto {
     @Schema(description = "Type of operation", example = "EINKAUF, LIEFERANT_RABATT")
     String type;
 
-    @Schema(description = "Type of purchasing document", example = "RECHNUNG, BON, BESTELLUNG")
-    String document;
+    @Schema(description = "Type of purchasing document", example = "RECHNUNG")
+    Long documentId;
 
     @Schema(description = "Document's number", example = "12345-Aa")
     String documentNumber;

@@ -49,12 +49,12 @@ public class PaymentRepositoryCustomImpl implements PaymentRepositoryCustom {
     }
 
     @Override
-    public Page<Payment> filterByPaymentsFields(Pageable pageable, Long id, Long customerId, String customerName, Long saleId, Long purchaseId, LocalDate startDate, LocalDate endDate, String document, String documentNumber, BigDecimal amount, String searchQuery) {
+    public Page<Payment> filterByPaymentsFields(Pageable pageable, Long id, Long customerId, String customerName, Long saleId, Long purchaseId, LocalDate startDate, LocalDate endDate, Long documentId, String documentNumber, BigDecimal amount, String searchQuery) {
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
         CriteriaQuery<Payment> query = cb.createQuery(Payment.class);
         Root<Payment> root = query.from(Payment.class);
 
-        List<Predicate> predicates = buildFilterPredicates(cb, root, id, customerId, customerName, saleId, purchaseId, document, documentNumber, amount, startDate, endDate, searchQuery);
+        List<Predicate> predicates = buildFilterPredicates(cb, root, id, customerId, customerName, saleId, purchaseId, documentId, documentNumber, amount, startDate, endDate, searchQuery);
 
         query.where(cb.and(predicates.toArray(new Predicate[0])));
         query.orderBy(cb.asc(root.get("id")));
@@ -68,7 +68,7 @@ public class PaymentRepositoryCustomImpl implements PaymentRepositoryCustom {
         // Подсчет общего количества записей
         CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
         Root<Payment> countRoot = countQuery.from(Payment.class);
-        List<Predicate> countPredicates = buildFilterPredicates(cb, countRoot, id, customerId, customerName, saleId, purchaseId, document, documentNumber, amount, startDate, endDate, searchQuery);
+        List<Predicate> countPredicates = buildFilterPredicates(cb, countRoot, id, customerId, customerName, saleId, purchaseId, documentId, documentNumber, amount, startDate, endDate, searchQuery);
         countQuery.select(cb.count(countRoot)).where(cb.and(countPredicates.toArray(new Predicate[0])));
         Long totalCount = entityManager.createQuery(countQuery).getSingleResult();
 
@@ -110,7 +110,7 @@ public class PaymentRepositoryCustomImpl implements PaymentRepositoryCustom {
             String customerName,
             Long saleId,
             Long purchaseId,
-            String document,
+            Long documentId,
             String documentNumber,
             BigDecimal amount,
             LocalDate startDate,
@@ -139,8 +139,8 @@ public class PaymentRepositoryCustomImpl implements PaymentRepositoryCustom {
             predicates.add(cb.equal(root.get("purchase").get("id"), purchaseId));
         }
 
-        if (document != null && !document.isEmpty()) {
-            predicates.add(cb.like(cb.lower(root.get("document")), "%" + document.toLowerCase() + "%"));
+        if (documentId != null) {
+            predicates.add(cb.equal(root.get("document").get("id"), documentId));
         }
 
         if (documentNumber != null && !documentNumber.isEmpty()) {
@@ -163,10 +163,10 @@ public class PaymentRepositoryCustomImpl implements PaymentRepositoryCustom {
             String lowerSearch = "%" + searchQuery.toLowerCase() + "%";
 
             Predicate customerNamePredicate = cb.like(cb.lower(root.get("customer").get("name")), lowerSearch);
-            Predicate documentPredicate = cb.like(cb.lower(root.get("document")), lowerSearch);
+            Predicate documentNamePredicate = cb.like(cb.lower(root.get("document").get("name")), lowerSearch);
             Predicate documentNumberPredicate = cb.like(cb.lower(root.get("documentNumber")), lowerSearch);
 
-            predicates.add(cb.or(customerNamePredicate, documentPredicate, documentNumberPredicate));
+            predicates.add(cb.or(customerNamePredicate, documentNamePredicate, documentNumberPredicate));
         }
 
         return predicates;

@@ -1,5 +1,6 @@
 package de.ait.smallBusiness_be.purchases.dto;
 
+import de.ait.smallBusiness_be.purchases.model.TypeOfDocument;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
@@ -30,7 +31,7 @@ public class PurchaseDto {
     String vendorName;
     LocalDate purchasingDate;
     String type;
-    String document;
+    TypeOfDocument document;
     String documentNumber;
     BigDecimal subtotal; // Подитог
     BigDecimal taxSum; // Сумма налога

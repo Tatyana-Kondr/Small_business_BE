@@ -1,6 +1,6 @@
 package de.ait.smallBusiness_be.payments.dto;
 
-import de.ait.smallBusiness_be.payments.model.PaymentType;
+import de.ait.smallBusiness_be.purchases.model.TypeOfDocument;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -25,7 +25,7 @@ public class PaymentDto {
     BigDecimal amount;
     Long saleId;
     Long purchaseId;
-    String document;
+    TypeOfDocument document;
     String documentNumber;
     Long paymentMethodId;
     Long paymentProcessId;

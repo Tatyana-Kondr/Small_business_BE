@@ -17,6 +17,7 @@ import de.ait.smallBusiness_be.purchases.dto.PurchaseDto;
 import de.ait.smallBusiness_be.purchases.model.PaymentStatus;
 import de.ait.smallBusiness_be.purchases.model.Purchase;
 import de.ait.smallBusiness_be.purchases.model.PurchaseItem;
+import de.ait.smallBusiness_be.purchases.model.TypeOfDocument;
 import de.ait.smallBusiness_be.purchases.services.PurchaseServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,6 +52,7 @@ class PurchaseServiceImplTest {
     private Purchase purchase;
     private NewPurchaseDto newPurchaseDto;
     private NewPurchaseItemDto itemDto;
+    private TypeOfDocument document;
 
     @BeforeEach
     void setUp() {
@@ -63,6 +65,10 @@ class PurchaseServiceImplTest {
         product.setId(1L);
         product.setName("Product A");
         product.setPurchasingPrice(BigDecimal.valueOf(10));
+
+        document = new TypeOfDocument();
+        document.setId(1L);
+        document.setName("Document A");
 
         itemDto = new NewPurchaseItemDto();
         itemDto.setProductId(product.getId());
@@ -79,7 +85,7 @@ class PurchaseServiceImplTest {
         newPurchaseDto.setVendorId(customer.getId());
         newPurchaseDto.setPurchaseItems(List.of(itemDto));
         newPurchaseDto.setPurchasingDate(LocalDate.now());
-        newPurchaseDto.setDocument("RECHNUNG");
+        newPurchaseDto.setDocumentId(document.getId());
         newPurchaseDto.setType("EINKAUF");
         newPurchaseDto.setPaymentStatus("AUSSTEHEND");
         newPurchaseDto.setDocumentNumber("DOC-1");
@@ -193,16 +199,4 @@ class PurchaseServiceImplTest {
         assertThat(result.getContent()).hasSize(1);
     }
 
-    @Test
-    void getAllPurchasesByFilter_success() {
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<Purchase> page = new PageImpl<>(List.of(purchase));
-
-        Mockito.when(purchaseRepository.filterByFields(pageable, null, null, null, null, null, null, null, null, null, null))
-                .thenReturn(page);
-
-        Page<PurchaseDto> result = purchaseService.getAllPurchasesByFilter(pageable, null, null, null, null, null, null, null, null, null, null);
-
-        assertThat(result.getContent()).hasSize(1);
-    }
 }

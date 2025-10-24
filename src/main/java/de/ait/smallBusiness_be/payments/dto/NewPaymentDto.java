@@ -42,9 +42,9 @@ public class NewPaymentDto {
     @Schema(description = "Purchase ID if payment relates to a purchase", example = "5")
     private Long purchaseId;
 
-    @NotBlank(message = "{validation.notBlank}")
+    @NotNull(message = "{validation.notNull}")
     @Schema(description = "Document type", example = "RECHNUNG")
-    private String document;
+    private Long documentId;
 
     @NotBlank(message = "{validation.notBlank}")
     @Schema(description = "Document number", example = "RE-2025-056")

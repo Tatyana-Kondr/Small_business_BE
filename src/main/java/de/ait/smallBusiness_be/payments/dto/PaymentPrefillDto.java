@@ -1,7 +1,6 @@
 package de.ait.smallBusiness_be.payments.dto;
 
 import de.ait.smallBusiness_be.payments.model.PaymentType;
-import de.ait.smallBusiness_be.purchases.model.TypeOfDocument;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
@@ -33,8 +32,11 @@ public class PaymentPrefillDto {
     @Schema(description = "Related purchase ID", example = "5")
     private Long purchaseId;
 
-    @Schema(description = "Document type", example = "RECHNUNG")
-    private String document;
+    @Schema(description = "Document type ID", example = "1")
+    private Long documentId;
+
+    @Schema(description = "Document name", example = "RECHNUNG")
+    private String documentName;
 
     @Schema(description = "Document number", example = "RE-2025-001")
     private String documentNumber;

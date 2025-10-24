@@ -25,7 +25,7 @@ public interface PaymentService {
                                             Long purchaseId,
                                             LocalDate startDate,
                                             LocalDate endDate,
-                                            String document,
+                                            Long documentId,
                                             String documentNumber,
                                             BigDecimal amount,
                                             String searchQuery);

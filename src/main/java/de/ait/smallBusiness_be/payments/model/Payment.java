@@ -51,8 +51,8 @@ public class Payment {
     @JoinColumn(name = "purchase_id")
     Purchase purchase;
 
-    @Column(nullable = false)
-    @Enumerated(EnumType.STRING)
+    @ManyToOne
+    @JoinColumn(name = "type_of_document_id")
     TypeOfDocument document;
 
     @Column(nullable = false)

@@ -17,7 +17,7 @@ public interface PaymentRepositoryCustom {
                                          Long PurchaseId,
                                          LocalDate startDate,
                                          LocalDate endDate,
-                                         String document,
+                                         Long documentId,
                                          String documentNumber,
                                          BigDecimal amount,
                                          String searchQuery);

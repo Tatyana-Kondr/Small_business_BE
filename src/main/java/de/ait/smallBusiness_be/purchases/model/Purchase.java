@@ -46,8 +46,9 @@ public class Purchase {
     @Enumerated(EnumType.STRING)
     TypeOfOperation type;
 
-    @Column(nullable = false)
-    @Enumerated(EnumType.STRING)
+    @ManyToOne
+    @JoinColumn(name = "type_of_document_id")
+    @NotNull(message = "{validation.notNull}")
     TypeOfDocument document;
 
     @Column(nullable = false)

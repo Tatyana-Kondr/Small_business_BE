@@ -46,9 +46,9 @@ public class PurchaseController implements PurchasesApi{
     }
 
     @Override
-    public Page<PurchaseDto> getAllPurchasesByFilter(Pageable pageable, String sort, Long id, Long vendorId, String vendorName, String document, String documentNumber, BigDecimal total, String paymentStatus, LocalDate startDate,
+    public Page<PurchaseDto> getAllPurchasesByFilter(Pageable pageable, String sort, Long id, Long vendorId, String vendorName, Long documentId, String documentNumber, BigDecimal total, String paymentStatus, LocalDate startDate,
                                                      LocalDate endDate, String searchQuery) {
-        return purchaseService.getAllPurchasesByFilter(pageable, id, vendorId, vendorName, document, documentNumber, total, paymentStatus, startDate, endDate, searchQuery);
+        return purchaseService.getAllPurchasesByFilter(pageable, id, vendorId, vendorName, documentId, documentNumber, total, paymentStatus, startDate, endDate, searchQuery);
     }
 
     @Override

@@ -36,8 +36,8 @@ public class PaymentController implements PaymentApi {
     }
 
     @Override
-    public Page<PaymentDto> getAllPaymentsByFilter(Pageable pageable, String sort, Long id, Long customerId, String customerName, Long saleId, Long purchaseId, LocalDate startDate, LocalDate endDate, String document, String documentNumber, BigDecimal amount, String searchQuery) {
-        return paymentService.getAllPaymentsByFilter(pageable, id, customerId, customerName, saleId, purchaseId, startDate, endDate, document, documentNumber, amount, searchQuery);
+    public Page<PaymentDto> getAllPaymentsByFilter(Pageable pageable, String sort, Long id, Long customerId, String customerName, Long saleId, Long purchaseId, LocalDate startDate, LocalDate endDate, Long documentId, String documentNumber, BigDecimal amount, String searchQuery) {
+        return paymentService.getAllPaymentsByFilter(pageable, id, customerId, customerName, saleId, purchaseId, startDate, endDate, documentId, documentNumber, amount, searchQuery);
     }
 
     @Override

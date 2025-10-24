@@ -148,7 +148,7 @@ public interface PurchasesApi {
             @RequestParam(required = false) Long id,
             @RequestParam(required = false) Long vendorId,
             @RequestParam(required = false) String vendorName,
-            @RequestParam(required = false) String document,
+            @RequestParam(required = false) Long documentId,
             @RequestParam(required = false) String documentNumber,
             @RequestParam(required = false) BigDecimal total,
             @RequestParam(required = false) String paymentStatus,

@@ -9,6 +9,7 @@ import de.ait.smallBusiness_be.payments.model.Payment;
 import de.ait.smallBusiness_be.products.dao.ProductRepository;
 import de.ait.smallBusiness_be.products.model.Product;
 import de.ait.smallBusiness_be.purchases.dao.PurchaseRepository;
+import de.ait.smallBusiness_be.purchases.dao.TypeOfDocumentRepository;
 import de.ait.smallBusiness_be.purchases.dto.NewPurchaseDto;
 import de.ait.smallBusiness_be.purchases.dto.NewPurchaseItemDto;
 import de.ait.smallBusiness_be.purchases.dto.PurchaseDto;
@@ -48,6 +49,7 @@ public class PurchaseServiceImpl implements PurchaseService{
     private final CustomerRepository customerRepository;
     private final ProductRepository productRepository;
     private final PaymentRepository paymentRepository;
+    private final TypeOfDocumentRepository typeOfDocumentRepository;
     private final ModelMapper modelMapper;
 
     @Override
@@ -56,12 +58,16 @@ public class PurchaseServiceImpl implements PurchaseService{
         Customer customer = customerRepository.findById(newPurchaseDto.getVendorId())
                 .orElseThrow(() -> new EntityNotFoundException("Vendor not found"));
 
+        TypeOfDocument document = typeOfDocumentRepository.findById(newPurchaseDto.getDocumentId())
+                .orElseThrow(() -> new EntityNotFoundException("Type of document not found."));
+
         if (newPurchaseDto.getPurchaseItems() == null || newPurchaseDto.getPurchaseItems().isEmpty()) {
             throw new RestApiException(ErrorDescription.NO_PRODUCT_IN_PURCHASE);
         }
 
         Purchase purchase = modelMapper.map(newPurchaseDto, Purchase.class);
         purchase.setVendor(customer);
+        purchase.setDocument(document);
 
         calculatePurchaseAmounts(purchase, newPurchaseDto);
 
@@ -117,8 +123,8 @@ public class PurchaseServiceImpl implements PurchaseService{
 
     @Override
     @Transactional(readOnly = true)
-    public Page<PurchaseDto> getAllPurchasesByFilter(Pageable pageable, Long id, Long vendorId, String vendorName, String document, String documentNumber, BigDecimal total, String paymentStatus, LocalDate startDate, LocalDate endDate, String searchQuery) {
-        return purchaseRepository.filterByFields(pageable, id, vendorId, vendorName, document, documentNumber, total, paymentStatus, startDate, endDate, searchQuery)
+    public Page<PurchaseDto> getAllPurchasesByFilter(Pageable pageable, Long id, Long vendorId, String vendorName, Long documentId, String documentNumber, BigDecimal total, String paymentStatus, LocalDate startDate, LocalDate endDate, String searchQuery) {
+        return purchaseRepository.filterByFields(pageable, id, vendorId, vendorName, documentId, documentNumber, total, paymentStatus, startDate, endDate, searchQuery)
                 .map(purchase -> modelMapper.map(purchase, PurchaseDto.class));
     }
 
@@ -131,15 +137,13 @@ public class PurchaseServiceImpl implements PurchaseService{
         Customer customer = customerRepository.findById(newPurchaseDto.getVendorId())
                 .orElseThrow(() -> new EntityNotFoundException("Customer not found"));
 
+        TypeOfDocument document = typeOfDocumentRepository.findById(newPurchaseDto.getDocumentId())
+                .orElseThrow(() -> new EntityNotFoundException("Type of document not found."));
+
         // Обновляем базовые поля
         purchase.setVendor(customer);
+        purchase.setDocument(document);
         purchase.setPurchasingDate(newPurchaseDto.getPurchasingDate());
-
-        try {
-            purchase.setDocument(TypeOfDocument.valueOf(newPurchaseDto.getDocument().toUpperCase()));
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid type of document: " + newPurchaseDto.getDocument());
-        }
 
         try {
             purchase.setType(TypeOfOperation.valueOf(newPurchaseDto.getType().toUpperCase()));

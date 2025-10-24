@@ -137,7 +137,7 @@ public interface PaymentApi {
             @RequestParam(required = false) Long purchaseId,
             @RequestParam(required = false) LocalDate startDate,
             @RequestParam(required = false)LocalDate endDate,
-            @RequestParam(required = false) String document,
+            @RequestParam(required = false) Long documentId,
             @RequestParam(required = false) String documentNumber,
             @RequestParam(required = false) BigDecimal amount,
             @RequestParam(required = false) String searchQuery);
