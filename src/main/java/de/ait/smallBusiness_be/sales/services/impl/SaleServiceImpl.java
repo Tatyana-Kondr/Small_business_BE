@@ -53,7 +53,6 @@ public class SaleServiceImpl implements SaleService {
     private final ShippingRepository shippingRepository;
     private final CustomerService customerService;
     private final ProductService productService;
-    private final ShippingService shippingService;
     private final DocumentService invoiceService;
     private final ModelMapper modelMapper;
 
