@@ -5,11 +5,14 @@ import de.ait.smallBusiness_be.customers.dto.CustomerDto;
 import de.ait.smallBusiness_be.customers.dto.NewCustomerDto;
 import de.ait.smallBusiness_be.customers.model.Customer;
 import de.ait.smallBusiness_be.payments.dto.PaymentDto;
+import de.ait.smallBusiness_be.payments.dto.PaymentPrefillDto;
 import de.ait.smallBusiness_be.payments.model.Payment;
 import de.ait.smallBusiness_be.productions.dto.ProductionDto;
 import de.ait.smallBusiness_be.productions.dto.ProductionItemDto;
 import de.ait.smallBusiness_be.productions.model.Production;
 import de.ait.smallBusiness_be.productions.model.ProductionItem;
+import de.ait.smallBusiness_be.products.dto.ProductDto;
+import de.ait.smallBusiness_be.products.model.Product;
 import de.ait.smallBusiness_be.purchases.dto.PurchaseDto;
 import de.ait.smallBusiness_be.purchases.dto.PurchaseItemDto;
 import de.ait.smallBusiness_be.purchases.model.Purchase;
@@ -45,45 +48,46 @@ public class ServiceConfiguration {
     @Bean
     ModelMapper getModelMapper() {
         ModelMapper modelMapper = new ModelMapper();
-        modelMapper.getConfiguration().setFieldMatchingEnabled(true)
+
+        modelMapper.getConfiguration()
+                .setFieldMatchingEnabled(true)
                 .setFieldAccessLevel(org.modelmapper.config.Configuration.AccessLevel.PRIVATE)
                 .setMatchingStrategy(MatchingStrategies.STRICT);
 
-        // Настройка маппинга Customer -> CustomerDto
+        //  Customer ↔ CustomerDto
         modelMapper.createTypeMap(Customer.class, CustomerDto.class)
                 .addMapping(Customer::getAddress, CustomerDto::setAddress);
 
-        // Настройка маппинга CustomerDto -> Customer
         modelMapper.createTypeMap(CustomerDto.class, Customer.class)
                 .addMapping(CustomerDto::getAddress, Customer::setAddress);
 
-        // Настройка маппинга NewCustomerDto -> Customer
         modelMapper.createTypeMap(NewCustomerDto.class, Customer.class)
                 .addMapping(NewCustomerDto::getAddressDto, Customer::setAddress);
 
-        //  Добавляем маппинг для PurchaseItem -> PurchaseItemDto
+        // PurchaseItem ↔ PurchaseItemDto
         modelMapper.createTypeMap(PurchaseItem.class, PurchaseItemDto.class)
                 .addMapping(src -> src.getPurchase().getId(), PurchaseItemDto::setPurchaseId)
                 .addMapping(src -> src.getProduct().getId(), PurchaseItemDto::setProductId)
                 .addMapping(src -> src.getProduct().getArticle(), PurchaseItemDto::setProductArticle);
 
-        // Добавляем маппинг для Purchase -> PurchaseDto
+        //  Purchase ↔ PurchaseDto
         modelMapper.createTypeMap(Purchase.class, PurchaseDto.class)
                 .addMapping(src -> src.getVendor().getId(), PurchaseDto::setVendorId)
                 .addMapping(src -> src.getVendor().getName(), PurchaseDto::setVendorName);
 
-        //  Добавляем маппинг для SaleItem -> SaleItemDto
+        //  SaleItem ↔ SaleItemDto
         modelMapper.createTypeMap(SaleItem.class, SaleItemDto.class)
                 .addMapping(src -> src.getSale().getId(), SaleItemDto::setSaleId)
                 .addMapping(src -> src.getProduct().getId(), SaleItemDto::setProductId)
                 .addMapping(src -> src.getProduct().getArticle(), SaleItemDto::setProductArticle);
 
-        // Добавляем маппинг для Sale -> SaleDto
+        //  Sale ↔ SaleDto
         modelMapper.createTypeMap(Sale.class, SaleDto.class)
                 .addMapping(src -> src.getCustomer().getId(), SaleDto::setCustomerId)
                 .addMapping(src -> src.getCustomer().getName(), SaleDto::setCustomerName)
                 .addMapping(src -> src.getShipping().getId(), SaleDto::setShippingId);
 
+        //  ShippingDimensions ↔ NewShippingDimensionsDto
         modelMapper.createTypeMap(ShippingDimensions.class, NewShippingDimensionsDto.class)
                 .addMappings(mapper -> {
                     mapper.map(ShippingDimensions::getWidth, NewShippingDimensionsDto::setWidth);
@@ -92,7 +96,7 @@ public class ServiceConfiguration {
                     mapper.map(ShippingDimensions::getWeight, NewShippingDimensionsDto::setWeight);
                 });
 
-        // Добавляем маппинг для Payment -> PaymentDto
+        //  Payment ↔ PaymentDto
         modelMapper.createTypeMap(Payment.class, PaymentDto.class)
                 .addMapping(src -> src.getCustomer().getId(), PaymentDto::setCustomerId)
                 .addMapping(src -> src.getCustomer().getName(), PaymentDto::setCustomerName)
@@ -101,20 +105,38 @@ public class ServiceConfiguration {
                 .addMapping(src -> src.getPaymentMethod().getId(), PaymentDto::setPaymentMethodId)
                 .addMapping(src -> src.getPaymentProcess().getId(), PaymentDto::setPaymentProcessId);
 
-        //  Добавляем маппинг для ProductionItem -> ProductionItemDto
+        modelMapper.createTypeMap(Payment.class, PaymentPrefillDto.class)
+                .addMapping(src -> src.getDocument().getId(), PaymentPrefillDto::setDocumentId)
+                .addMapping(src -> src.getDocument().getName(), PaymentPrefillDto::setDocumentName)
+                .addMapping(src -> src.getCustomer().getId(), PaymentPrefillDto::setCustomerId)
+                .addMapping(src -> src.getCustomer().getName(), PaymentPrefillDto::setCustomerName);
+
+
+        //  ProductionItem ↔ ProductionItemDto
         modelMapper.createTypeMap(ProductionItem.class, ProductionItemDto.class)
                 .addMapping(src -> src.getProduction().getId(), ProductionItemDto::setProductionId)
                 .addMapping(src -> src.getProduct().getId(), ProductionItemDto::setProductId);
 
-        //  Добавляем маппинг для Production -> ProductionDto
+        //  Production ↔ ProductionDto
         modelMapper.createTypeMap(Production.class, ProductionDto.class)
                 .addMapping(src -> src.getProduct().getId(), ProductionDto::setProductId);
 
-        // Добавляем маппинг для User -> UserDto
+        //  User ↔ UserDto
         modelMapper.createTypeMap(User.class, UserDto.class);
-
-        // Добавляем маппинг для NewUserDto -> User
         modelMapper.createTypeMap(NewUserDto.class, User.class);
+
+        //  Product ↔ ProductDto
+        modelMapper.createTypeMap(Product.class, ProductDto.class)
+                .addMappings(mapper -> {
+                    mapper.map(Product::getDimensions, ProductDto::setNewDimensions);
+                    mapper.map(Product::getUnitOfMeasurement, ProductDto::setUnitOfMeasurement);
+                });
+
+        modelMapper.createTypeMap(ProductDto.class, Product.class)
+                .addMappings(mapper -> {
+                    mapper.map(ProductDto::getNewDimensions, Product::setDimensions);
+                    mapper.map(ProductDto::getUnitOfMeasurement, Product::setUnitOfMeasurement);
+                });
 
         return modelMapper;
     }
