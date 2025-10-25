@@ -73,7 +73,7 @@ public class Product {
 
     @Column(precision = 8, scale = 3)
     @DecimalMin(value = "0.0", message = "{validation.weight.min}")
-    @Digits(integer = 7, fraction = 3, message = "{validation.weight.digits}")
+    @Digits(integer = 10, fraction = 3, message = "{validation.weight.digits}")
     private BigDecimal weight; // вес будет измерятся только в кг
 
     @Embedded
