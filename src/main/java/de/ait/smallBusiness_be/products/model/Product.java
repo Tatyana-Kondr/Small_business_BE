@@ -39,7 +39,7 @@ public class Product {
 
     @Column(nullable = false)
     @NotBlank(message = "validation.notBlank")
-    @Size(min = 3, max = 100, message = "{validation.name.size}")
+    @Size(min = 3, max = 150, message = "{validation.name.size}")
     @Pattern(regexp = NAME_REGEX, message = "{name.Pattern.message}")
     private String name;   // наименование продукта
 
