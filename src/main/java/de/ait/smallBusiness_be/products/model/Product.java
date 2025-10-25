@@ -43,7 +43,7 @@ public class Product {
     @Pattern(regexp = NAME_REGEX, message = "{name.Pattern.message}")
     private String name;   // наименование продукта
 
-    @Column(unique = true)
+    @Column(nullable = false)
     @Size(max = 30, message = "{validation.max.size}")
     private String article; // артикль который должен присваиваться автоматически или лучше сказать генерироваться, но также должна быть возможность его забивать вручную
 
