@@ -27,4 +27,7 @@ public class Dimensions {
 
     @Column(precision = 8, scale = 3)
     private BigDecimal length;
+
+    @Column(precision = 8, scale = 3)
+    private BigDecimal diameter;
 }
