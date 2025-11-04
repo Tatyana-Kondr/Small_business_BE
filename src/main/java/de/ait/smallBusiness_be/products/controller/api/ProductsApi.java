@@ -167,7 +167,7 @@ public interface ProductsApi {
 
 
     @PreAuthorize("isAuthenticated()")
-    @GetMapping("/category/{category-id}")
+    @GetMapping("/category/{categoryId}")
     @Operation(
             summary = "Get all products by category",
             description = "Retrieve a list of all products by category. Only authorized users are allowed.")
@@ -182,26 +182,9 @@ public interface ProductsApi {
                             schema = @Schema(implementation = ErrorResponseDto.class)))
     })
     @ResponseStatus(HttpStatus.OK)
-    Page<ProductDto> getProductsByCategory(@PathVariable("category-id") int categoryId,
+    Page<ProductDto> getProductsByCategory(@PathVariable("categoryId") int categoryId,
+                                           @RequestParam(name = "search", required = false) String search,
                                            @PageableDefault(size = 15, sort = "name") Pageable pageable);
 
 
-
-//@GetMapping("/search")
-//@Operation(
-//        summary = "Search products",
-//        description = "Find products by a search term."
-//)
-//@ApiResponses(value = {
-//        @ApiResponse(responseCode = "200",
-//                description = "List of found products.",
-//                content = @Content(mediaType = "application/json",
-//                        schema = @Schema(implementation = ProductDto[].class))),
-//        @ApiResponse(responseCode = "404",
-//                description = "No products found.",
-//                content = @Content(mediaType = "application/json",
-//                        schema = @Schema(implementation = ErrorResponseDto.class)))
-//})
-//@ResponseStatus(HttpStatus.OK)
-//List<ProductDto> searchProducts(@RequestParam String searchTerm);
 }
