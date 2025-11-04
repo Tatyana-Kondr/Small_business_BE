@@ -25,7 +25,7 @@ public class UpdateProductDto{
         String name;
 
         @NotBlank(message = "{validation.notBlank}")
-        @Size(min = 3, max = 50, message = "{validation.name.size}")
+        @Size(min = 1, max = 50, message = "{validation.name.size}")
         @Schema(description = "Product's article", example = "BL-1")
         String article;
 
@@ -62,7 +62,6 @@ public class UpdateProductDto{
         ProductCategory productCategory;
 
         @Size( max = 1024, message = "{validation.description.size}")
-        @Pattern(regexp = DESCRIPTION_REGEX, message = "{description.Pattern.message}")
         @Schema(description = "Product's description", example = "A new phone, perfect for your child")
         String description;
 

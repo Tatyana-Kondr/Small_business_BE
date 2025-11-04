@@ -24,11 +24,10 @@ public interface ProductService {
     void deleteProductById(Long id);
     ProductDto updateProduct(Long id, UpdateProductDto updateProductDto);
     Page<ProductDto> findProducts(String searchTerm, Pageable pageable);
-    Page<ProductDto> findProductsByCategoryId(int categoryId, Pageable pageable);
+    Page<ProductDto> findProductsByCategoryId(int categoryId, String searchTerm, Pageable pageable);
 
     Product getProductOrThrow(Long id);
     ProductDto findProductByArticle(String article);
     List<ProductDto> findProductsByVendorArticle(String vendorArticle);
     List<ProductDto> findProductsByName(String name);
-    //List<ProductDto> searchProducts(String searchTerm);
 }

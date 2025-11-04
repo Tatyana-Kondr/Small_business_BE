@@ -49,13 +49,8 @@ public class ProductController implements ProductsApi {
     }
 
     @Override
-    public Page<ProductDto> getProductsByCategory(int categoryId, Pageable pageable) {
-        return productService.findProductsByCategoryId(categoryId, pageable);
+    public Page<ProductDto> getProductsByCategory(int categoryId, String search, Pageable pageable) {
+        return productService.findProductsByCategoryId(categoryId, search, pageable);
     }
-
-//    @Override
-//    public List<ProductDto> searchProducts(String searchTerm) {
-//        return productService.searchProducts(searchTerm);
-//    }
 
 }
