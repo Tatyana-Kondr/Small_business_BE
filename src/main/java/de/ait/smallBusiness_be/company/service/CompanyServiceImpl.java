@@ -9,6 +9,7 @@ import de.ait.smallBusiness_be.exceptions.RestApiException;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -26,26 +27,17 @@ public class CompanyServiceImpl implements CompanyService {
     private final CompanyRepository companyRepository;
     private final ModelMapper modelMapper;
 
-    // Метод определяет путь к каталогу, где лежит jar
-    private static String getJarDir() {
-        try {
-            return Paths.get(CompanyServiceImpl.class
-                            .getProtectionDomain()
-                            .getCodeSource()
-                            .getLocation()
-                            .toURI())
-                    .getParent()
-                    .toString();
-        } catch (Exception e) {
-            return System.getProperty("user.dir");
-        }
-    }
+    @Value("${app.base-url}")
+    private String baseUrl;
 
-    // Путь к папке с логотипами
-    private final Path logoDir = Paths.get(getJarDir(), "uploads", "logos");
+    @Value("${app.uploads.logos}")
+    private String logoDirPath;
+
+    private Path logoDir;
 
     @PostConstruct
     public void init() throws IOException {
+        logoDir = Paths.get(logoDirPath);
         if (!Files.exists(logoDir)) {
             Files.createDirectories(logoDir);
         }
@@ -84,22 +76,19 @@ public class CompanyServiceImpl implements CompanyService {
                 .orElseThrow(() -> new RestApiException(ErrorDescription.COMPANY_NOT_FOUND, HttpStatus.NOT_FOUND));
 
         try {
-            // Удаляем старый логотип, если он есть
             if (company.getLogoUrl() != null && !company.getLogoUrl().isBlank()) {
-                Path oldFile = Paths.get(System.getProperty("user.dir"), company.getLogoUrl().replace("/uploads", "uploads"));
+                Path oldFile = Paths.get(logoDirPath, company.getLogoUrl()
+                        .substring(company.getLogoUrl().lastIndexOf('/') + 1));
                 Files.deleteIfExists(oldFile);
             }
 
             String filename = "company_" + id + "_" + file.getOriginalFilename();
             Path filePath = logoDir.resolve(filename).normalize().toAbsolutePath();
-
-            // Сохраняем файл
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-            // Обновляем company
-            company.setLogoUrl("/uploads/logos/" + filename);
-            Company saved = companyRepository.save(company);
+            company.setLogoUrl(baseUrl + "/uploads/logos/" + filename);
 
+            Company saved = companyRepository.save(company);
             return modelMapper.map(saved, CompanyDto.class);
 
         } catch (IOException e) {
