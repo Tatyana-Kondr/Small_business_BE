@@ -26,7 +26,23 @@ public class CompanyServiceImpl implements CompanyService {
     private final CompanyRepository companyRepository;
     private final ModelMapper modelMapper;
 
-    private final Path logoDir = Paths.get(System.getProperty("user.dir"), "uploads", "logos");
+    // Метод определяет путь к каталогу, где лежит jar
+    private static String getJarDir() {
+        try {
+            return Paths.get(CompanyServiceImpl.class
+                            .getProtectionDomain()
+                            .getCodeSource()
+                            .getLocation()
+                            .toURI())
+                    .getParent()
+                    .toString();
+        } catch (Exception e) {
+            return System.getProperty("user.dir");
+        }
+    }
+
+    // Путь к папке с логотипами
+    private final Path logoDir = Paths.get(getJarDir(), "uploads", "logos");
 
     @PostConstruct
     public void init() throws IOException {
