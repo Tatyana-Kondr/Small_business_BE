@@ -34,7 +34,8 @@ public class SecurityConfig {
             "/v3/api-docs/**",
             "/v3/api-docs.yaml",
             "/swagger-ui/**",
-            "/swagger-ui.html"
+            "/swagger-ui.html",
+            "/error"
     };
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -50,7 +51,7 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(AUTH_WHITELIST).permitAll() // Swagger доступен всем
-                        .requestMatchers("/error", "/", "/index.html", "/assets/**", "/media/**", "/favicon.ico", "/vite.svg").permitAll()
+                        .requestMatchers( "/", "/index.html", "/assets/**", "/media/**", "/favicon.ico", "/vite.svg", "/manifest.webmanifest", "/robots.txt").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/logout", "/api/auth/refresh").permitAll()
