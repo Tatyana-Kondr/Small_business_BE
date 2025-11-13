@@ -18,7 +18,6 @@ import de.ait.smallBusiness_be.sales.dto.SaleDto;
 import de.ait.smallBusiness_be.sales.models.*;
 import de.ait.smallBusiness_be.sales.services.DocumentService;
 import de.ait.smallBusiness_be.sales.services.SaleService;
-import de.ait.smallBusiness_be.sales.services.ShippingService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
