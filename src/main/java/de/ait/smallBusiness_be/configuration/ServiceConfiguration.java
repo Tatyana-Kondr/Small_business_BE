@@ -26,6 +26,10 @@ import de.ait.smallBusiness_be.sales.models.ShippingDimensions;
 import de.ait.smallBusiness_be.users.dto.NewUserDto;
 import de.ait.smallBusiness_be.users.dto.UserDto;
 import de.ait.smallBusiness_be.users.model.User;
+import de.ait.smallBusiness_be.warehouse.dto.WarehouseRecordDto;
+import de.ait.smallBusiness_be.warehouse.dto.WarehouseStockDto;
+import de.ait.smallBusiness_be.warehouse.models.Warehouse;
+import de.ait.smallBusiness_be.warehouse.models.WarehouseRecord;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.context.annotation.Bean;
@@ -111,6 +115,17 @@ public class ServiceConfiguration {
                 .addMapping(src -> src.getCustomer().getId(), PaymentPrefillDto::setCustomerId)
                 .addMapping(src -> src.getCustomer().getName(), PaymentPrefillDto::setCustomerName);
 
+        // WarehouseRecord → WarehouseRecordDto
+        modelMapper.createTypeMap(WarehouseRecord.class, WarehouseRecordDto.class)
+                .addMapping(src -> src.getProduct().getId(), WarehouseRecordDto::setProductId)
+                .addMapping(src -> src.getProduct().getName(), WarehouseRecordDto::setProductName)
+                .addMapping(WarehouseRecord::getQuantity, WarehouseRecordDto::setQuantity);
+
+        // Warehouse → WarehouseStockDto
+        modelMapper.createTypeMap(Warehouse.class, WarehouseStockDto.class)
+                .addMapping(src -> src.getProduct().getId(), WarehouseStockDto::setProductId)
+                .addMapping(src -> src.getProduct().getName(), WarehouseStockDto::setProductName)
+                .addMapping(Warehouse::getQuantity, WarehouseStockDto::setQuantity);
 
         //  ProductionItem ↔ ProductionItemDto
         modelMapper.createTypeMap(ProductionItem.class, ProductionItemDto.class)
@@ -137,6 +152,9 @@ public class ServiceConfiguration {
                     mapper.map(ProductDto::getNewDimensions, Product::setDimensions);
                     mapper.map(ProductDto::getUnitOfMeasurement, Product::setUnitOfMeasurement);
                 });
+
+
+
 
         return modelMapper;
     }
