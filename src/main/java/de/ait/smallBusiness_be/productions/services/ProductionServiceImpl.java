@@ -11,6 +11,7 @@ import de.ait.smallBusiness_be.productions.model.ProductionItem;
 import de.ait.smallBusiness_be.products.dao.ProductRepository;
 import de.ait.smallBusiness_be.products.model.Product;
 import de.ait.smallBusiness_be.purchases.model.TypeOfOperation;
+import de.ait.smallBusiness_be.warehouse.services.WarehouseService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.Hibernate;
@@ -44,6 +45,7 @@ public class ProductionServiceImpl implements ProductionService{
 
     private final ProductionRepository productionRepository;
     private final ProductRepository productRepository;
+    private final WarehouseService warehouseService;
     private final ModelMapper modelMapper;
 
     @Override
@@ -89,6 +91,27 @@ public class ProductionServiceImpl implements ProductionService{
             throw new RestApiException(ErrorDescription.PRODUCTION_AMOUNT, HttpStatus.CONFLICT);
         }
         Production savedProduction = productionRepository.save(production);
+
+        // Обновляем склад
+        savedProduction.getProductionItems().forEach(item -> {
+            warehouseService.recordOperation(
+                    item.getProduct(),
+                    TypeOfOperation.PRODUKTIONSMATERIAL,
+                    item.getQuantity(),
+                    savedProduction.getId(),
+                    null,
+                    savedProduction.getDateOfProduction()
+            );
+        });
+            warehouseService.recordOperation(
+                    savedProduction.getProduct(),
+                    TypeOfOperation.PRODUKTION,
+                    savedProduction.getQuantity(),
+                    savedProduction.getId(),
+                    null,
+                    savedProduction.getDateOfProduction()
+            );
+
 
         return modelMapper.map(savedProduction, ProductionDto.class);
     }
@@ -195,6 +218,23 @@ public class ProductionServiceImpl implements ProductionService{
         }
 
         Production updatedProduction = productionRepository.save(production);
+
+        // Синхронизируем документ со складом
+        warehouseService.syncDocument(
+                TypeOfOperation.PRODUKTIONSMATERIAL,
+                updatedProduction.getId(),
+                null,
+                updatedProduction.getDateOfProduction(),
+                updatedProduction.getProductionItems()
+        );
+        warehouseService.syncDocument(
+                TypeOfOperation.PRODUKTION,
+                updatedProduction.getId(),
+                null,
+                updatedProduction.getDateOfProduction(),
+                List.of(production)
+        );
+
         return modelMapper.map(updatedProduction, ProductionDto.class);
     }
 
@@ -203,6 +243,7 @@ public class ProductionServiceImpl implements ProductionService{
     public void deleteProduction(Long id) {
         Production production = productionRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Production not found with ID: " + id));
+        warehouseService.rollbackDocument(production.getId());
         productionRepository.delete(production);
     }
 
