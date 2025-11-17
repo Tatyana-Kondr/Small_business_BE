@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -121,6 +122,11 @@ public class ProductPhotoServiceImpl implements ProductPhotoService {
     @Override
     public List<ProductPhoto> getPhotosByProductId(Long productId) {
         return productPhotoRepository.findByProductId(productId);
+    }
+
+    @Override
+    public List<ProductPhoto> getAllPhotos() {
+        return productPhotoRepository.findAll();
     }
 
     private String getFileExtension(String fileName) {
