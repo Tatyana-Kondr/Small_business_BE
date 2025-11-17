@@ -1,7 +1,6 @@
 package de.ait.smallBusiness_be.warehouse.controllers;
 
 import de.ait.smallBusiness_be.exceptions.ErrorResponseDto;
-import de.ait.smallBusiness_be.purchases.dto.PurchaseDto;
 import de.ait.smallBusiness_be.warehouse.dto.WarehouseRecordDto;
 import de.ait.smallBusiness_be.warehouse.dto.WarehouseStockDto;
 import io.swagger.v3.oas.annotations.Operation;
