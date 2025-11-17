@@ -4,7 +4,6 @@ import de.ait.smallBusiness_be.customers.model.Customer;
 import de.ait.smallBusiness_be.products.model.Product;
 import de.ait.smallBusiness_be.purchases.model.TypeOfOperation;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.PastOrPresent;
 import lombok.AllArgsConstructor;
@@ -48,7 +47,6 @@ public class WarehouseRecord {
     @Column(name = "partner_name")
     private String partnerName;
 
-    @DecimalMin(value = "0.0", message = "{validation.price.min}")
     @Digits(integer = 6, fraction = 3, message = "{validation.price.digits}")
     private BigDecimal quantity;
 
