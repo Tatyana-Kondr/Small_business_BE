@@ -90,7 +90,7 @@ public interface PurchasesApi {
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = PurchaseDto.class))),
             @ApiResponse(responseCode = "404",
-                    description = "purchase not found.",
+                    description = "Purchase not found.",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponseDto.class)))
     })

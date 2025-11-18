@@ -51,4 +51,10 @@ public class ProductPhotoController {
         List<ProductPhoto> photos = productPhotoService.getPhotosByProductId(productId);
         return ResponseEntity.ok(photos);
     }
+
+    @GetMapping("/photos")
+    public ResponseEntity<List<ProductPhoto>> getAllProductPhotos() {
+        List<ProductPhoto> photos = productPhotoService.getAllPhotos();
+        return ResponseEntity.ok(photos);
+    }
 }

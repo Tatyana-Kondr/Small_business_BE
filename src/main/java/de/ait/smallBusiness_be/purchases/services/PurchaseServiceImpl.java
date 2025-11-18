@@ -14,6 +14,7 @@ import de.ait.smallBusiness_be.purchases.dto.NewPurchaseDto;
 import de.ait.smallBusiness_be.purchases.dto.NewPurchaseItemDto;
 import de.ait.smallBusiness_be.purchases.dto.PurchaseDto;
 import de.ait.smallBusiness_be.purchases.model.*;
+import de.ait.smallBusiness_be.warehouse.services.WarehouseService;
 import jakarta.persistence.EntityNotFoundException;
 
 import lombok.RequiredArgsConstructor;
@@ -43,13 +44,14 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 @RequiredArgsConstructor
-public class PurchaseServiceImpl implements PurchaseService{
+public class PurchaseServiceImpl implements PurchaseService {
 
     private final PurchaseRepository purchaseRepository;
     private final CustomerRepository customerRepository;
     private final ProductRepository productRepository;
     private final PaymentRepository paymentRepository;
     private final TypeOfDocumentRepository typeOfDocumentRepository;
+    private final WarehouseService warehouseService;
     private final ModelMapper modelMapper;
 
     @Override
@@ -72,6 +74,18 @@ public class PurchaseServiceImpl implements PurchaseService{
         calculatePurchaseAmounts(purchase, newPurchaseDto);
 
         Purchase savedPurchase = purchaseRepository.save(purchase);
+
+        // Обновляем склад
+        savedPurchase.getPurchaseItems().forEach(item -> {
+            warehouseService.recordOperation(
+                    item.getProduct(),
+                    savedPurchase.getType(),
+                    item.getQuantity(),
+                    savedPurchase.getId(),
+                    savedPurchase.getVendor(),
+                    savedPurchase.getPurchasingDate()
+            );
+        });
 
         return modelMapper.map(savedPurchase, PurchaseDto.class);
     }
@@ -144,6 +158,7 @@ public class PurchaseServiceImpl implements PurchaseService{
         purchase.setVendor(customer);
         purchase.setDocument(document);
         purchase.setPurchasingDate(newPurchaseDto.getPurchasingDate());
+        purchase.setDocumentNumber(newPurchaseDto.getDocumentNumber());
 
         try {
             purchase.setType(TypeOfOperation.valueOf(newPurchaseDto.getType().toUpperCase()));
@@ -157,14 +172,20 @@ public class PurchaseServiceImpl implements PurchaseService{
             throw new IllegalArgumentException("Invalid payment status: " + newPurchaseDto.getPaymentStatus());
         }
 
-        purchase.setDocumentNumber(newPurchaseDto.getDocumentNumber());
-
         // Удаляем все старые позиции
         purchase.getPurchaseItems().clear();
-
         calculatePurchaseAmounts(purchase, newPurchaseDto);
-        // Сохраняем
+
         Purchase updatedPurchase = purchaseRepository.save(purchase);
+
+        // Синхронизируем документ со складом
+        warehouseService.syncDocument(
+                updatedPurchase.getType(),
+                updatedPurchase.getId(),
+                updatedPurchase.getVendor(),
+                updatedPurchase.getPurchasingDate(),
+                updatedPurchase.getPurchaseItems()
+        );
         return modelMapper.map(updatedPurchase, PurchaseDto.class);
     }
 
@@ -173,6 +194,7 @@ public class PurchaseServiceImpl implements PurchaseService{
     public void deletePurchase(Long id) {
         Purchase purchase = purchaseRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Purchase not found"));
+        warehouseService.rollbackDocument(purchase.getId());
         purchaseRepository.delete(purchase);
     }
 
@@ -284,5 +306,4 @@ public class PurchaseServiceImpl implements PurchaseService{
             productRepository.save(product);
         }
     }
-
 }

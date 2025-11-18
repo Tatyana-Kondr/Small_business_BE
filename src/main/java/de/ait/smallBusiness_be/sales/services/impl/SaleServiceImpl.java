@@ -18,7 +18,7 @@ import de.ait.smallBusiness_be.sales.dto.SaleDto;
 import de.ait.smallBusiness_be.sales.models.*;
 import de.ait.smallBusiness_be.sales.services.DocumentService;
 import de.ait.smallBusiness_be.sales.services.SaleService;
-import de.ait.smallBusiness_be.sales.services.ShippingService;
+import de.ait.smallBusiness_be.warehouse.services.WarehouseService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -54,6 +54,7 @@ public class SaleServiceImpl implements SaleService {
     private final CustomerService customerService;
     private final ProductService productService;
     private final DocumentService invoiceService;
+    private final WarehouseService warehouseService;
     private final ModelMapper modelMapper;
 
     @Override
@@ -152,6 +153,18 @@ public class SaleServiceImpl implements SaleService {
         Sale savedSale = saleRepository.save(sale);
         invoiceService.generateInvoicePdf(savedSale, "invoices");
         invoiceService.generateDeliveryBillPdf(savedSale, "delivery-bill");
+
+        // Обновляем склад
+        savedSale.getSaleItems().forEach(item -> {
+            warehouseService.recordOperation(
+                    item.getProduct(),
+                    savedSale.getTypeOfOperation(),
+                    item.getQuantity(),
+                    savedSale.getId(),
+                    savedSale.getCustomer(),
+                    savedSale.getSalesDate()
+            );
+        });
 
         return modelMapper.map(savedSale, SaleDto.class);
     }
@@ -290,14 +303,25 @@ public class SaleServiceImpl implements SaleService {
         Sale updatedSale = saleRepository.save(sale);
         invoiceService.generateInvoicePdf(updatedSale, "invoices");
         invoiceService.generateDeliveryBillPdf(updatedSale, "delivery-bill");
+
+        // Синхронизируем документ со складом
+        warehouseService.syncDocument(
+                updatedSale.getTypeOfOperation(),
+                updatedSale.getId(),
+                updatedSale.getCustomer(),
+                updatedSale.getSalesDate(),
+                updatedSale.getSaleItems()
+        );
         return modelMapper.map(updatedSale, SaleDto.class);
     }
 
     @Override
     public void deleteSale(Long saleId) {
-        Sale sale = getSaleOrThrow(saleId);
+        Sale sale = saleRepository.findById(saleId)
+                .orElseThrow(() -> new EntityNotFoundException("Sale not found"));
         invoiceService.deleteInvoicePdf(sale, "invoices");
         invoiceService.deleteDeliveryBillPdf(sale, "delivery-bill");
+        warehouseService.rollbackDocument(sale.getId());
         saleRepository.delete(sale);
     }
 

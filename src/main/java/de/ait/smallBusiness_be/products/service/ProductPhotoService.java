@@ -12,4 +12,5 @@ public interface ProductPhotoService {
     void deletePhoto(Long photoId);
 
     List<ProductPhoto> getPhotosByProductId(Long productId);
+    List<ProductPhoto> getAllPhotos();
 }
