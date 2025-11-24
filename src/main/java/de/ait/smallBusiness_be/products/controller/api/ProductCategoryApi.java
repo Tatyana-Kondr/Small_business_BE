@@ -26,7 +26,7 @@ public interface ProductCategoryApi {
     @PostMapping
     @Operation(
             summary = "Add a new Product category",
-            description = "Create a new Product category. Only ADMINs are allowed.")
+            description = "Create a new Product category. Only ADMIN are allowed.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201",
                     description = "Product category created successfully.",
@@ -95,7 +95,7 @@ public interface ProductCategoryApi {
     @PutMapping("/{id}")
     @Operation(
             summary = "Update Product category",
-            description = "Update an existing Product category. Only ADMINs are allowed.")
+            description = "Update an existing Product category. Only ADMIN are allowed.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
                     description = "Product category updated successfully.",
@@ -127,7 +127,7 @@ public interface ProductCategoryApi {
     @DeleteMapping("/{id}")
     @Operation(
             summary = "Delete Product category",
-            description = "Delete a Product category by its ID. Only ADMINs are allowed.")
+            description = "Delete a Product category by its ID. Only ADMIN are allowed.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204",
                     description = "Product category deleted successfully."),

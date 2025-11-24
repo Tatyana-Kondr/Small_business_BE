@@ -24,13 +24,13 @@ public interface DocumentApi {
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/invoices/{year}/{invoiceNumber}.pdf")
     @Operation(
-            summary = "Получить PDF счёт по номеру и году",
-            description = "Возвращает PDF-файл счета, сгенерированного при продаже"
+            summary = "Get a PDF invoice by number and year.",
+            description = "Returns a PDF file of the invoice generated during the sale."
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "PDF счёт найден",
+            @ApiResponse(responseCode = "200", description = "PDF invoice found",
                     content = @Content(mediaType = "application/pdf")),
-            @ApiResponse(responseCode = "404", description = "Счёт не найден",
+            @ApiResponse(responseCode = "404", description = "PDF invoice not found",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponseDto.class)))
     })
@@ -42,13 +42,13 @@ public interface DocumentApi {
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/delivery-bill/{year}/{deliveryBillNumber}.pdf")
     @Operation(
-            summary = "Получить PDF товарную накладную по номеру и году",
-            description = "Возвращает PDF-файл накладной, сгенерированной при продаже"
+            summary = "Get a PDF delivery-bill by number and year",
+            description = "Returns the PDF file of the delivery-bill generated during the sale."
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "PDF накладная найдена",
+            @ApiResponse(responseCode = "200", description = "PDF delivery-bill found",
                     content = @Content(mediaType = "application/pdf")),
-            @ApiResponse(responseCode = "404", description = "Накладная не найдена",
+            @ApiResponse(responseCode = "404", description = "PDF delivery-bill not found",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponseDto.class)))
     })

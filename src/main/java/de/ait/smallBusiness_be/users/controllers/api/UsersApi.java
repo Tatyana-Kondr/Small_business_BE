@@ -50,7 +50,7 @@ public interface UsersApi {
     @GetMapping("/{id}")
     @Operation(
             summary = "Get user by ID",
-            description = "Retrieve a user by its ID. Admin is allowed.")
+            description = "Retrieve a user by its ID.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
                     description = "User retrieved successfully.",

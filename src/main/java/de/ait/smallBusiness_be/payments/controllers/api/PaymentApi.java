@@ -34,7 +34,7 @@ public interface PaymentApi {
     @PostMapping
     @Operation(
             summary = "Add a new payment",
-            description = "Create a new payment. Admin is allowed.")
+            description = "Create a new payment.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201",
                     description = "Payment created successfully.",
@@ -143,10 +143,11 @@ public interface PaymentApi {
             @RequestParam(required = false) String searchQuery);
 
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     @Operation(
             summary = "Get payment by ID",
-            description = "Retrieve a payment by its ID. Allowed to all users.")
+            description = "Retrieve a payment by its ID.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
                     description = "Payment retrieved successfully.",
@@ -161,7 +162,7 @@ public interface PaymentApi {
     PaymentDto getPaymentById(@PathVariable Long id);
 
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     @Operation(
             summary = "Update the payment.",
@@ -190,7 +191,7 @@ public interface PaymentApi {
             @RequestBody @Valid NewPaymentDto newPaymentDto);
 
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     @Operation(
             summary = "Delete payment by ID",

@@ -32,7 +32,7 @@ public interface SalesApi {
     @PostMapping()
     @Operation(
             summary = "Add a new sale.",
-            description = "Create a new sale. Admin is allowed.")
+            description = "Create a new sale.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201",
                     description = "Sale created successfully.",
@@ -80,6 +80,7 @@ public interface SalesApi {
             @PageableDefault(size = 10, sort = "salesDate", direction = Sort.Direction.DESC) Pageable pageable);
 
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     @Operation(
             summary = "Get sale by ID",
@@ -159,7 +160,7 @@ public interface SalesApi {
     @PutMapping("/{id}")
     @Operation(
             summary = "Update the sale",
-            description = "Update the sale. Admin is allowed.")
+            description = "Update the sale.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
                     description = "Sale updated successfully.",
@@ -187,7 +188,7 @@ public interface SalesApi {
     @DeleteMapping("/{id}")
     @Operation(
             summary = "Delete sale by ID",
-            description = "Delete an existing sale. Admin is allowed.")
+            description = "Delete an existing sale.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204",
                     description = "Sale deleted successfully."),

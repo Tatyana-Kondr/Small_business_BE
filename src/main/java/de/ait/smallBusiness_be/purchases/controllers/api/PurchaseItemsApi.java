@@ -29,7 +29,7 @@ public interface PurchaseItemsApi {
     @PostMapping("/{purchaseId}")
     @Operation(
             summary = "Add a new purchase item",
-            description = "Create a new purchase item. Admin is allowed.")
+            description = "Create a new purchase item.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201",
                     description = "Purchase item created successfully.",
@@ -77,6 +77,7 @@ public interface PurchaseItemsApi {
     List<PurchaseItemDto> getAllPurchaseItemsByPurchaseId(
             @PathVariable Long purchaseId);
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     @Operation(
             summary = "Get purchase item by ID",
@@ -95,12 +96,11 @@ public interface PurchaseItemsApi {
     PurchaseItemDto getPurchaseItemById(@PathVariable Long id);
 
 
-
     @PreAuthorize("isAuthenticated()")
     @PutMapping("/{id}")
     @Operation(
             summary = "Update the purchase item",
-            description = "Update the purchase item. Admin is allowed.")
+            description = "Update the purchase item.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
                     description = "Purchase item updated successfully.",

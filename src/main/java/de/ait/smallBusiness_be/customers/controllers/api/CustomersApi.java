@@ -36,7 +36,7 @@ public interface CustomersApi {
     @PostMapping
     @Operation(
             summary = "Add a new customer",
-            description = "Create a new customer. Admin is allowed.")
+            description = "Create a new customer.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201",
                     description = "Customer created successfully.",
@@ -111,10 +111,11 @@ public interface CustomersApi {
             @PageableDefault(size = 15) Pageable pageable,
             @RequestParam(defaultValue = "name") String sort);
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     @Operation(
             summary = "Get customer by ID",
-            description = "Retrieve a customer by its ID. Allowed to all users.")
+            description = "Retrieve a customer by its ID.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
                     description = "Customer retrieved successfully.",
@@ -160,7 +161,7 @@ public interface CustomersApi {
             @PathVariable Long id,
             @RequestBody @Valid NewCustomerDto newCustomerDto);
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     @Operation(
             summary = "Delete customer by ID",

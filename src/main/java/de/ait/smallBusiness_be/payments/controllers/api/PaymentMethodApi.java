@@ -23,7 +23,7 @@ import java.util.List;
 @RequestMapping("/api/payment-methods")
 public interface PaymentMethodApi {
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     @Operation(
             summary = "Add a new payment method",
@@ -78,7 +78,7 @@ public interface PaymentMethodApi {
     @GetMapping("/{id}")
     @Operation(
             summary = "Get payment method by ID",
-            description = "Retrieve a payment method by its ID. Allowed to all users.")
+            description = "Retrieve a payment method by its ID.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
                     description = "Payment method retrieved successfully.",
@@ -93,7 +93,7 @@ public interface PaymentMethodApi {
     PaymentMethodDto getPaymentMethodById(@PathVariable Long id);
 
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     @Operation(
             summary = "Update the payment method",
@@ -122,7 +122,7 @@ public interface PaymentMethodApi {
             @RequestBody @Valid NewPaymentMethodDto newPaymentMethodDto);
 
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     @Operation(
             summary = "Delete payment method by ID",

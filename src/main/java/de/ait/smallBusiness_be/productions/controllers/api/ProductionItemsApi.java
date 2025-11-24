@@ -28,7 +28,7 @@ public interface ProductionItemsApi {
     @PostMapping("/{productionId}")
     @Operation(
             summary = "Add a new productionItem",
-            description = "Create a new productionItem. Admin is allowed.")
+            description = "Create a new productionItem.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201",
                     description = "ProductionItem created successfully.",
@@ -53,10 +53,12 @@ public interface ProductionItemsApi {
             @RequestBody @Valid NewProductionItemDto newProductionItemDto,
             @PathVariable Long productionId);
 
+
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     @Operation(
             summary = "Get productionItem by ID",
-            description = "Retrieve a productionItem by its ID. Allowed to all users.")
+            description = "Retrieve a productionItem by its ID.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
                     description = "ProductionItem retrieved successfully.",
@@ -70,11 +72,12 @@ public interface ProductionItemsApi {
     @ResponseStatus(HttpStatus.OK)
     ProductionItemDto getProductionItemById(@PathVariable Long id);
 
+
     @PreAuthorize("isAuthenticated()")
     @PutMapping("/{id}")
     @Operation(
             summary = "Update the productionItem",
-            description = "Update the productionItem. Admin is allowed.")
+            description = "Update the productionItem.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
                     description = "ProductionItem updated successfully.",
@@ -98,11 +101,12 @@ public interface ProductionItemsApi {
             @PathVariable Long id,
             @RequestBody @Valid NewProductionItemDto newProductionItemDto);
 
+
     @PreAuthorize("isAuthenticated()")
     @DeleteMapping("/{id}")
     @Operation(
             summary = "Delete productionItem by ID",
-            description = "Delete an existing productionItem. Admin is allowed.")
+            description = "Delete an existing productionItem.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204",
                     description = "ProductionItem deleted successfully."),

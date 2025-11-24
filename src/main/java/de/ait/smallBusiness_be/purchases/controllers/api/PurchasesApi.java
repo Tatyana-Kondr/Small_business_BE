@@ -28,11 +28,12 @@ import java.time.LocalDate;
 )
 @RequestMapping("/api/purchases")
 public interface PurchasesApi {
+
     @PreAuthorize("isAuthenticated()")
     @PostMapping
     @Operation(
             summary = "Add a new purchase",
-            description = "Create a new purchase. Admin is allowed.")
+            description = "Create a new purchase.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201",
                     description = "Purchase created successfully.",
@@ -80,6 +81,7 @@ public interface PurchasesApi {
             @PageableDefault(size = 15, sort = {"purchasingDate", "documentNumber"},
                     direction = Sort.Direction.DESC) Pageable pageable);
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     @Operation(
             summary = "Get purchase by ID",
@@ -160,7 +162,7 @@ public interface PurchasesApi {
     @PutMapping("/{id}")
     @Operation(
             summary = "Update the purchase",
-            description = "Update the purchase. Admin is allowed.")
+            description = "Update the purchase.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
                     description = "Purchase updated successfully.",
@@ -188,7 +190,7 @@ public interface PurchasesApi {
     @DeleteMapping("/{id}")
     @Operation(
             summary = "Delete purchase by ID",
-            description = "Delete an existing purchase. Admin is allowed.")
+            description = "Delete an existing purchase.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204",
                     description = "Purchase deleted successfully."),

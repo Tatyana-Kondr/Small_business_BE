@@ -75,6 +75,7 @@ public interface UnitOfMeasurementApi {
     List<UnitOfMeasurementDto> getAllUnitOfMeasurements();
 
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     @Operation(
             summary = "Get unit of measurement by ID",

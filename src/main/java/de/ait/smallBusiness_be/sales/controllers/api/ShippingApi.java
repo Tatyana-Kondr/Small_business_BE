@@ -23,11 +23,12 @@ import java.util.List;
 )
 @RequestMapping("/api/shippings")
 public interface ShippingApi {
+
     @PreAuthorize("isAuthenticated()")
     @PostMapping
     @Operation(
             summary = "Add a new shipping",
-            description = "Create a new shipping. Admin is allowed.")
+            description = "Create a new shipping.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201",
                     description = "Shipping created successfully.",
@@ -74,11 +75,11 @@ public interface ShippingApi {
     @ResponseStatus(HttpStatus.OK)
     List<ShippingDto> getAllShippings();
 
-
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     @Operation(
             summary = "Get shipping by ID",
-            description = "Retrieve a shipping by its ID. Admin is allowed.")
+            description = "Retrieve a shipping by its ID.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
                     description = "Shipping retrieved successfully.",
@@ -97,7 +98,7 @@ public interface ShippingApi {
     @PutMapping("/{id}")
     @Operation(
             summary = "Update the shipping",
-            description = "Update the shipping. Admin is allowed.")
+            description = "Update the shipping.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
                     description = "Shipping updated successfully.",
@@ -126,7 +127,7 @@ public interface ShippingApi {
     @DeleteMapping("/{id}")
     @Operation(
             summary = "Delete shipping by ID",
-            description = "Delete an existing shipping. Admin is allowed.")
+            description = "Delete an existing shipping.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204",
                     description = "Shipping deleted successfully."),

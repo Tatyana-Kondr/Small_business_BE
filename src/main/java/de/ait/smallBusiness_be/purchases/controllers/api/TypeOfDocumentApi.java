@@ -27,7 +27,7 @@ public interface TypeOfDocumentApi {
     @PostMapping
     @Operation(
             summary = "Add a new type of document",
-            description = "Create a new unit of measurement.")
+            description = "Create a new type of document.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201",
                     description = "Type of document created successfully.",
@@ -74,7 +74,7 @@ public interface TypeOfDocumentApi {
     @ResponseStatus(HttpStatus.OK)
     List<TypeOfDocumentDto> getAllTypesOfDocument();
 
-
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     @Operation(
             summary = "Get type of document by ID",

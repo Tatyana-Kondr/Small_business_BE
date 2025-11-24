@@ -17,6 +17,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -27,6 +28,7 @@ import java.time.LocalDate;
 @RequestMapping("/api/productions")
 public interface ProductionsApi {
 
+    @PreAuthorize("isAuthenticated()")
     @PostMapping
     @Operation(
             summary = "Add a new production",
@@ -53,6 +55,7 @@ public interface ProductionsApi {
     ProductionDto addProduction(
             @RequestBody @Valid NewProductionDto newProductionDto);
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping
     @Operation(
             summary = "Get all productions",
@@ -75,6 +78,7 @@ public interface ProductionsApi {
     Page<ProductionDto> getAllProductions(
             @PageableDefault(size = 10, sort = "dateOfProduction", direction = Sort.Direction.DESC) Pageable pageable);
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     @Operation(
             summary = "Get production by ID",
@@ -92,6 +96,7 @@ public interface ProductionsApi {
     @ResponseStatus(HttpStatus.OK)
     ProductionDto getProductionById(@PathVariable Long id);
 
+    @PreAuthorize("isAuthenticated()")
     @PutMapping("/{id}")
     @Operation(
             summary = "Update the production",
@@ -119,6 +124,7 @@ public interface ProductionsApi {
             @PathVariable Long id,
             @RequestBody @Valid NewProductionDto newProductionDto);
 
+    @PreAuthorize("isAuthenticated()")
     @DeleteMapping("/{id}")
     @Operation(
             summary = "Delete production by ID",
@@ -142,6 +148,7 @@ public interface ProductionsApi {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void removeProduction(@PathVariable Long id);
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/search/{query}")
     @Operation(summary = "Search productions",
             description = "Search productions by ID, product ID, product name or amount.")
@@ -161,6 +168,7 @@ public interface ProductionsApi {
             @RequestParam(defaultValue = "dateOfProduction") String sort,
             @PathVariable String query);
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/filter")
     @Operation(summary = "Get productions by filter",
             description = "Retrieve productions filtered by start date, end date and search query.")

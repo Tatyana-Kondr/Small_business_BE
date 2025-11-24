@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 )
 @RequestMapping("/api/warehouse")
 public interface WarehouseApi {
+
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/stocks")
     @Operation(

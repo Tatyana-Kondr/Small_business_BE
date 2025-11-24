@@ -27,7 +27,7 @@ public interface SaleItemApi {
     @PostMapping("/{saleId}")
     @Operation(
             summary = "Add a new sale item in sale",
-            description = "Create a new sale item. Admin is allowed.")
+            description = "Create a new sale item.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201",
                     description = "Sale item created successfully.",
@@ -73,6 +73,7 @@ public interface SaleItemApi {
     @ResponseStatus(HttpStatus.OK)
     List<SaleItemDto> getAllSaleItemsBySaleId(@PathVariable Long saleId);
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{saleId}/{saleItemId}")
     @Operation(
             summary = "Get sale item",
@@ -94,7 +95,7 @@ public interface SaleItemApi {
     @PutMapping("/{saleId}/{saleItemId}")
     @Operation(
             summary = "Update the sale item",
-            description = "Update the sale item by sale ID and item ID. Admin is allowed.")
+            description = "Update the sale item by sale ID and item ID.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
                     description = "Sale item updated successfully.",
@@ -123,7 +124,7 @@ public interface SaleItemApi {
     @DeleteMapping("/{saleId}/{saleItemId}")
     @Operation(
             summary = "Delete sale item by sale ID and item ID",
-            description = "Delete an existing sale item. Admin is allowed.")
+            description = "Delete an existing sale item.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204",
                     description = "Sale item deleted successfully."),

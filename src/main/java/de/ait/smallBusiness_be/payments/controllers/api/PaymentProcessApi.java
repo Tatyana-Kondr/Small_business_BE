@@ -27,7 +27,7 @@ public interface PaymentProcessApi {
     @PostMapping
     @Operation(
             summary = "Add a new payment process",
-            description = "Create a new payment process. Admin is allowed.")
+            description = "Create a new payment process.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201",
                     description = "Payment process created successfully.",
@@ -74,7 +74,7 @@ public interface PaymentProcessApi {
     @ResponseStatus(HttpStatus.OK)
     List<PaymentProcessDto> getAllPaymentProcesses();
 
-
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     @Operation(
             summary = "Get payment process by ID",
