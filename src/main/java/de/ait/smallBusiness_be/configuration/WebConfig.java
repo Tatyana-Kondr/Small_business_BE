@@ -10,12 +10,12 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addViewControllers(ViewControllerRegistry registry) {
-        // SPA fallback — все не-API пути перенаправляем на index.html
-        registry.addViewController("/{spring:\\w+}")
+
+        // SPA fallback ONLY for non-API, non-static paths
+        registry.addViewController("/{path:^(?!api|assets|media|uploads|favicon\\.ico$).*$}")
                 .setViewName("forward:/index.html");
-        registry.addViewController("/**/{spring:\\w+}")
-                .setViewName("forward:/index.html");
-        registry.addViewController("/{spring:\\w+}/**{spring:?!(\\.js|\\.css|\\.png|\\.jpg|\\.jpeg|\\.svg|\\.ico)$}")
+
+        registry.addViewController("/**/{path:^(?!api|assets|media|uploads).*$}")
                 .setViewName("forward:/index.html");
     }
 }
