@@ -38,6 +38,17 @@ public class SecurityConfig {
             "/error"
     };
 
+    private static final String[] OPEN_STATIC = {
+            "/", "/index.html",
+            "/assets/**",
+            "/media/**",
+            "/uploads/**",
+            "/favicon.ico",
+            "/vite.svg",
+            "/manifest.webmanifest",
+            "/robots.txt"
+    };
+
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
@@ -50,18 +61,117 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults()) // включаем CORS, Spring будет использовать WebMvcConfigurer
 
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(OPEN_STATIC).permitAll()
                         .requestMatchers(AUTH_WHITELIST).permitAll() // Swagger доступен всем
-                        .requestMatchers( "/", "/index.html", "/assets/**", "/media/**", "/favicon.ico", "/vite.svg", "/manifest.webmanifest", "/robots.txt").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
-                        .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/logout", "/api/auth/refresh").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/product-categories",  "/api/shippings", "/api/companies", "/api/companies/{id}/logo").hasRole("ADMIN")
+                        .requestMatchers("/uploads/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/companies", "/api/companies/{id}/logo", "/api/payment-methods", "/api/auth/register", "/api/product-categories" ).hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET,  "/api/users").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH,  "/api/users/{id}/role", "/api/users/{id}").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/customers/{id}", "/api/product-categories/{id}", "/api/purchases/{id}", "/api/shippings/{id}", "/api/companies/{id}").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/product-categories/{id}", "/api/shippings/{id}" ).hasRole("ADMIN")
-                        .requestMatchers("/api/productions/search/**", "/api/productions/filter").authenticated()
-                        .anyRequest().authenticated()
+                        .requestMatchers(HttpMethod.PUT,  "/api/companies/{id}", "/api/customers/{id}", "/api/payments/{id}", "/api/payment-methods/{id}", "/api/product-categories/{id}").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/customers/{id}", "/api/payments/{id}", "/api/payment-methods/{id}", "/api/product-categories/{id}").hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/customers",
+                                "/api/payments",
+                                "/api/payment-processes",
+                                "/api/productions",
+                                "/api/productionItems/{productionId}",
+                                "/api/products",
+                                "/api/units",
+                                "/api/products/{productId}/files",
+                                "/api/purchases",
+                                "/api/purchaseItems/{purchaseId}",
+                                "/api/document-types",
+                                "/api/sales",
+                                "/api/saleItems/{saleId}",
+                                "/api/shippings").authenticated()
+                        .requestMatchers(HttpMethod.PUT,
+                                "/api/payment-processes/{id}",
+                                "/api/productions/{id}",
+                                "/api/productionItems/{id}",
+                                "/api/products/{id}",
+                                "/api/units/{id}",
+                                "/api/purchases/{id}",
+                                "/api/purchaseItems/{id}",
+                                "/api/document-types/{id}",
+                                "/api/sales/{id}",
+                                "/api/saleItems/{saleId}/{saleItemId}",
+                                "/api/shippings/{id}").authenticated()
+                        .requestMatchers(HttpMethod.DELETE,
+                                "/api/payment-processes/{id}",
+                                "/api/productions/{id}",
+                                "/api/productionItems/{id}",
+                                "/api/products/{id}",
+                                "/api/units/{id}",
+                                "/api/products/photos/{photoId}",
+                                "/api/purchases/{id}",
+                                "/api/purchaseItems/{id}",
+                                "/api/document-types/{id}",
+                                "/api/sales/{id}",
+                                "/api/saleItems/{saleId}/{saleItemId}",
+                                "/api/shippings/{id}").authenticated()
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/companies",
+                                "/api/customers",
+                                "/api/customers/customer-number",
+                                "/api/customers/{id}",
+                                "/api/payments",
+                                "/api/payments/search/{query}",
+                                "/api/payments/filter",
+                                "/api/payments/{id}",
+                                "/api/payments/prefill/sale/{saleId}",
+                                "/api/payments/prefill/purchase/{purchaseId}",
+                                "/api/payments/all-sale-ids",
+                                "/api/payments/all-purchase-ids",
+                                "/api/payment-methods",
+                                "/api/payment-methods/{id}",
+                                "/api/payment-processes",
+                                "/api/payment-processes/{id}",
+                                "/api/productions",
+                                "/api/productions/{id}",
+                                "/api/productions/search/**",
+                                "/api/productions/filter",
+                                "/api/productionItems/{id}",
+                                "/api/products/{id}",
+                                "/api/products",
+                                "/api/products/category/{categoryId}",
+                                "api/product-categories",
+                                "api/product-categories/{id}",
+                                "/api/units",
+                                "/api/units/{id}",
+                                "/api/products/{productId}/photos",
+                                "/api/products/photos",
+                                "/api/purchases",
+                                "/api/purchases/{id}",
+                                "/api/products/photos",
+                                "/api/purchases/search/{query}",
+                                "/api/purchases/filter",
+                                "/api/purchaseItems/purchase/{purchaseId}",
+                                "/api/purchaseItems/{id}",
+                                "/api/document-types",
+                                "/api/document-types/{id}",
+                                "/api/sales",
+                                "/api/sales/{id}",
+                                "/api/sales/search/{query}",
+                                "/api/sales/filter",
+                                "/api/sales/invoices/{year}/{invoiceNumber}.pdf",
+                                "/api/sales/delivery-bill/{year}/{deliveryBillNumber}.pdf",
+                                "/api/saleItems/sale/{saleId}",
+                                "/api/saleItems/{saleId}/{saleItemId}",
+                                "/api/shippings",
+                                "/api/shippings/{id}",
+                                "/api/users/{id}",
+                                "/api/auth/me",
+                                "/api/warehouse/stocks",
+                                "/api/warehouse/product/{productId}/history",
+                                "/api/warehouse/product/{productId}/stock").authenticated()
+                        .requestMatchers(HttpMethod.PATCH,
+                                "/api/purchases/{id}/update-payment-status",
+                                "/api/sales/{id}/update-payment-status",
+                                "/api/users/{id}/change-password").authenticated()
+                        .anyRequest().permitAll()
                 )
 
                 // Stateless, потому что используем JWT
