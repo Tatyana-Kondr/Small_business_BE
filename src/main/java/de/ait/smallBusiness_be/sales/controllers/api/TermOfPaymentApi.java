@@ -1,8 +1,8 @@
-package de.ait.smallBusiness_be.purchases.controllers.api;
+package de.ait.smallBusiness_be.sales.controllers.api;
 
 import de.ait.smallBusiness_be.exceptions.ErrorResponseDto;
-import de.ait.smallBusiness_be.purchases.dto.NewTypeOfDocumentDto;
-import de.ait.smallBusiness_be.purchases.dto.TypeOfDocumentDto;
+import de.ait.smallBusiness_be.sales.dto.NewTermOfPaymentDto;
+import de.ait.smallBusiness_be.sales.dto.TermOfPaymentDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -18,23 +18,23 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @Tags(
-        @Tag(name = "Type Of Document controller")
+        @Tag(name = "Term Of Payment controller")
 )
-@RequestMapping("/api/document-types")
-public interface TypeOfDocumentApi {
+@RequestMapping("/api/payment-terms")
+public interface TermOfPaymentApi {
 
     @PreAuthorize("isAuthenticated()")
     @PostMapping
     @Operation(
-            summary = "Add a new type of document",
-            description = "Create a new type of document.")
+            summary = "Add a new term of payment",
+            description = "Create a new term of payment.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201",
-                    description = "Type of document created successfully.",
+                    description = "Term of payment created successfully.",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = TypeOfDocumentDto.class))),
+                            schema = @Schema(implementation = TermOfPaymentDto.class))),
             @ApiResponse(responseCode = "400",
-                    description = "Invalid type of document data.",
+                    description = "Invalid term of payment data.",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponseDto.class))),
 
@@ -48,22 +48,22 @@ public interface TypeOfDocumentApi {
                             schema = @Schema(type = "string")))
     })
     @ResponseStatus(HttpStatus.CREATED)
-    TypeOfDocumentDto addTypeOfDocument(
-            @RequestBody @Valid NewTypeOfDocumentDto newType);
+    TermOfPaymentDto addTermOfPayment(
+            @RequestBody @Valid NewTermOfPaymentDto newTerm);
 
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping
     @Operation(
-            summary = "Get all types of document.",
-            description = "Retrieve a list of all types of document.")
+            summary = "Get all terms of payment.",
+            description = "Retrieve a list of all terms of payment.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
-                    description = "List of types of document retrieved successfully.",
+                    description = "List of terms of payment retrieved successfully.",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = TypeOfDocumentDto[].class))),
+                            schema = @Schema(implementation = TermOfPaymentDto[].class))),
             @ApiResponse(responseCode = "404",
-                    description = "No types of document found.",
+                    description = "No terms of payment found.",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponseDto.class))),
             @ApiResponse(responseCode = "401",
@@ -72,39 +72,39 @@ public interface TypeOfDocumentApi {
                             schema = @Schema(type = "string")))
     })
     @ResponseStatus(HttpStatus.OK)
-    List<TypeOfDocumentDto> getAllTypesOfDocument();
+    List<TermOfPaymentDto> getAllTermsOfPayment();
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     @Operation(
-            summary = "Get type of document by ID",
-            description = "Retrieve a type of document by its ID.")
+            summary = "Get term of payment by ID",
+            description = "Retrieve a term of payment by its ID.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
-                    description = "Type of document retrieved successfully.",
+                    description = "Term of payment retrieved successfully.",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = TypeOfDocumentDto.class))),
+                            schema = @Schema(implementation = TermOfPaymentDto.class))),
             @ApiResponse(responseCode = "404",
-                    description = "Type of document not found.",
+                    description = "term of payment not found.",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponseDto.class)))
     })
     @ResponseStatus(HttpStatus.OK)
-    TypeOfDocumentDto getTypeOfDocumentById(@PathVariable Long id);
+    TermOfPaymentDto getTermOfPaymentById(@PathVariable Long id);
 
 
     @PreAuthorize("isAuthenticated()")
     @PutMapping("/{id}")
     @Operation(
-            summary = "Update the type of document",
-            description = "Update the type of document.")
+            summary = "Update the term of payment",
+            description = "Update the term of payment.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
-                    description = "Type of document updated successfully.",
+                    description = "Term of payment updated successfully.",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = TypeOfDocumentDto.class))),
+                            schema = @Schema(implementation = TermOfPaymentDto.class))),
             @ApiResponse(responseCode = "400",
-                    description = "Invalid type of document data.",
+                    description = "Invalid term of payment data.",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponseDto.class))),
             @ApiResponse(responseCode = "401",
@@ -117,19 +117,19 @@ public interface TypeOfDocumentApi {
                             schema = @Schema(type = "string")))
     })
     @ResponseStatus(HttpStatus.OK)
-    TypeOfDocumentDto updateTypeOfDocument(
+    TermOfPaymentDto updateTermOfPayment(
             @PathVariable Long id,
-            @RequestBody @Valid NewTypeOfDocumentDto newType);
+            @RequestBody @Valid NewTermOfPaymentDto newTerm);
 
 
     @PreAuthorize("isAuthenticated()")
     @DeleteMapping("/{id}")
     @Operation(
-            summary = "Delete type of document by ID",
-            description = "Delete an existing type of document.")
+            summary = "Delete term of payment by ID",
+            description = "Delete an existing term of payment.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204",
-                    description = "Type of document deleted successfully."),
+                    description = "Term of payment deleted successfully."),
             @ApiResponse(responseCode = "401",
                     description = "User unauthorized.",
                     content = @Content(mediaType = "application/json",
@@ -139,10 +139,10 @@ public interface TypeOfDocumentApi {
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponseDto.class))),
             @ApiResponse(responseCode = "404",
-                    description = "Type of document not found.",
+                    description = "Term of payment not found.",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponseDto.class)))
     })
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    void deleteTypeOfDocument(@PathVariable Long id);
+    void deleteTermOfPayment(@PathVariable Long id);
 }
