@@ -57,9 +57,9 @@ public class Sale {
     @Embedded
     private ShippingDimensions shippingDimensions;
 
-    @Column
-    @Enumerated(EnumType.STRING)
-    private TermsOfPayment termsOfPayment;
+    @ManyToOne
+    @JoinColumn(name = "term_of_payment_id")
+    private TermOfPayment termsOfPayment;
 
     @Column
     @PastOrPresent

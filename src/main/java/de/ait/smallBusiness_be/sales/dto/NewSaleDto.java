@@ -29,7 +29,7 @@ public class NewSaleDto {
 
         @NotNull(message = "{validation.notNull}")
         @Pattern(regexp = "VERKAUF|KUNDENERSTATTUNG")
-        @Schema(description = "Type of operation", example = "VERKAUF",allowableValues = {" VERKAUF, KUNDENERSTATTUNG, EXCHANGE"})
+        @Schema(description = "Type of operation", example = "VERKAUF",allowableValues = {" VERKAUF, KUNDENERSTATTUNG"})
         String typeOfOperation;
 
         @NotNull(message = "{validation.notNull}")
@@ -39,10 +39,8 @@ public class NewSaleDto {
         @Schema(description = "Shipping dimensions (weight, width, height, length)")
         NewShippingDimensionsDto shippingDimensions;
 
-        @Schema(description = "Terms of payment", example = "BETRAG_IM_BAR", allowableValues = {"BETRAG_IM_BAR, ÜBERWEISUNG_7_TAGE_2_PROZENT_14_TAGE_NETTO,\n" +
-                "    ÜBERWEISUNG_7_TAGE, ÜBERWEISUNG_14_TAGE, BETRAG_ERHALTEN_AM"})
-        @Pattern(regexp = "BETRAG_IM_BAR|ÜBERWEISUNG_7_TAGE_2_PROZENT_14_TAGE_NETTO|ÜBERWEISUNG_7_TAGE|ÜBERWEISUNG_14_TAGE|BETRAG_ERHALTEN_AM")
-        String termsOfPayment;
+        @Schema(description = "Terms of payment", example = "Betrag in Bar")
+        Long termsOfPaymentId;
 
         @PastOrPresent(message = "{validation.dateOfLastPurchase.pastOrPresent}")
         @Schema(description = "Date of the sale", example = "2025-02-05")

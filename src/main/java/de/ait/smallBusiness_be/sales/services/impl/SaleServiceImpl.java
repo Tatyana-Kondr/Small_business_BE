@@ -12,6 +12,7 @@ import de.ait.smallBusiness_be.purchases.model.PaymentStatus;
 import de.ait.smallBusiness_be.purchases.model.TypeOfOperation;
 import de.ait.smallBusiness_be.sales.dao.SaleRepository;
 import de.ait.smallBusiness_be.sales.dao.ShippingRepository;
+import de.ait.smallBusiness_be.sales.dao.TermOfPaymentRepository;
 import de.ait.smallBusiness_be.sales.dto.NewSaleDto;
 import de.ait.smallBusiness_be.sales.dto.NewSaleItemDto;
 import de.ait.smallBusiness_be.sales.dto.SaleDto;
@@ -51,6 +52,7 @@ public class SaleServiceImpl implements SaleService {
     private final SaleRepository saleRepository;
     private final PaymentRepository paymentRepository;
     private final ShippingRepository shippingRepository;
+    private final TermOfPaymentRepository termOfPaymentRepository;
     private final CustomerService customerService;
     private final ProductService productService;
     private final DocumentService invoiceService;
@@ -65,6 +67,9 @@ public class SaleServiceImpl implements SaleService {
         Shipping shipping = shippingRepository.findById(newSale.getShippingId())
                 .orElseThrow(() -> new EntityNotFoundException("Shipping not found"));
 
+        TermOfPayment termOfPayment = termOfPaymentRepository.findById(newSale.getTermsOfPaymentId())
+                .orElseThrow(() -> new EntityNotFoundException("Term of payment not found."));
+
         // Генерация invoiceNumber и deliveryBill (если не передано)
         String invoiceNumber = newSale.getInvoiceNumber();
         String deliveryBill = newSale.getDeliveryBill();
@@ -78,6 +83,7 @@ public class SaleServiceImpl implements SaleService {
         Sale sale = modelMapper.map(newSale, Sale.class);
         sale.setCustomer(customer);
         sale.setShipping(shipping);
+        sale.setTermsOfPayment(termOfPayment);
         sale.setInvoiceNumber(invoiceNumber);
         sale.setDeliveryBill(deliveryBill);
         sale.setDefaultTax(newSale.getDefaultTax());
@@ -213,9 +219,12 @@ public class SaleServiceImpl implements SaleService {
         Customer customer = customerService.getCustomerOrThrow(updateSale.getCustomerId());
         Shipping shipping = shippingRepository.findById(updateSale.getShippingId())
                 .orElseThrow(() -> new EntityNotFoundException("Shipping not found"));
+        TermOfPayment termOfPayment = termOfPaymentRepository.findById(updateSale.getTermsOfPaymentId())
+                .orElseThrow(() -> new EntityNotFoundException("Term of payment not found."));
 
         sale.setCustomer(customer);
         sale.setShipping(shipping);
+        sale.setTermsOfPayment(termOfPayment);
         sale.setInvoiceNumber(updateSale.getInvoiceNumber());
         sale.setDeliveryBill(updateSale.getDeliveryBill());
         sale.setAccountObject(updateSale.getAccountObject());
@@ -228,11 +237,7 @@ public class SaleServiceImpl implements SaleService {
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Invalid type of operation: " + updateSale.getTypeOfOperation());
         }
-        try {
-            sale.setTermsOfPayment(TermsOfPayment.valueOf(updateSale.getTermsOfPayment().toUpperCase()));
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid terms of payment: " + updateSale.getTermsOfPayment());
-        }
+
         try {
             sale.setPaymentStatus(PaymentStatus.valueOf(updateSale.getPaymentStatus().toUpperCase()));
         } catch (IllegalArgumentException e) {

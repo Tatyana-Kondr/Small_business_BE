@@ -86,6 +86,7 @@ public class SecurityConfig {
                                 "/api/document-types",
                                 "/api/sales",
                                 "/api/saleItems/{saleId}",
+                                "/api/payment-terms",
                                 "/api/shippings").authenticated()
                         .requestMatchers(HttpMethod.PUT,
                                 "/api/payment-processes/{id}",
@@ -98,6 +99,7 @@ public class SecurityConfig {
                                 "/api/document-types/{id}",
                                 "/api/sales/{id}",
                                 "/api/saleItems/{saleId}/{saleItemId}",
+                                "/api/payment-terms/{id}",
                                 "/api/shippings/{id}").authenticated()
                         .requestMatchers(HttpMethod.DELETE,
                                 "/api/payment-processes/{id}",
@@ -111,6 +113,7 @@ public class SecurityConfig {
                                 "/api/document-types/{id}",
                                 "/api/sales/{id}",
                                 "/api/saleItems/{saleId}/{saleItemId}",
+                                "/api/payment-terms/{id}",
                                 "/api/shippings/{id}").authenticated()
                         .requestMatchers(HttpMethod.GET,
                                 "/api/companies",
@@ -162,6 +165,8 @@ public class SecurityConfig {
                                 "/api/saleItems/{saleId}/{saleItemId}",
                                 "/api/shippings",
                                 "/api/shippings/{id}",
+                                "/api/payment-terms",
+                                "/api/payment-terms/{id}",
                                 "/api/users/{id}",
                                 "/api/auth/me",
                                 "/api/warehouse/stocks",
