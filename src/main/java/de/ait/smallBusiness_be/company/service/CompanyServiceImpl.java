@@ -86,7 +86,7 @@ public class CompanyServiceImpl implements CompanyService {
             Path filePath = logoDir.resolve(filename).normalize().toAbsolutePath();
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-            company.setLogoUrl(baseUrl + "/uploads/logos/" + filename);
+            company.setLogoUrl("/uploads/logos/" + filename);
 
             Company saved = companyRepository.save(company);
             return modelMapper.map(saved, CompanyDto.class);
