@@ -146,5 +146,3 @@ public interface TypeOfDocumentApi {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void deleteTypeOfDocument(@PathVariable Long id);
 }
-
-
