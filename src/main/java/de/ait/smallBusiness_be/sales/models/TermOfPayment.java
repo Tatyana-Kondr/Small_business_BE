@@ -17,6 +17,6 @@ public class TermOfPayment {
     private Long id;
 
     @Column(unique = true, nullable = false)
-    @Size(max = 30, message = "{validation.max.size}")
+    @Size(max = 50, message = "{validation.max.size}")
     private String name;
 }
