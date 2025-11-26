@@ -35,7 +35,7 @@ public class ProductPhotoServiceImpl implements ProductPhotoService {
     private String documentDir;
 
     private static final List<String> PHOTO_TYPES = List.of("jpeg", "jpg", "png");
-    private static final List<String> DOCUMENT_TYPES = List.of("pdf", "docx");
+    private static final List<String> DOCUMENT_TYPES = List.of("pdf", "docx", "xlsx", "xls");
 
     @Override
     public ProductPhoto uploadFile(Long productId, MultipartFile file) {
@@ -70,7 +70,7 @@ public class ProductPhotoServiceImpl implements ProductPhotoService {
             tempPhoto = productPhotoRepository.save(tempPhoto);
 
             // Генерируем уникальное имя файла
-            String uniqueFileName = product.getId() + "_" + tempPhoto.getId() + "." + fileExtension;
+            String uniqueFileName = product.getVendorArticle() + "_" + tempPhoto.getId() + "." + fileExtension;
 
             // Сохраняем файл
             Path filePath = targetDir.resolve(uniqueFileName);
