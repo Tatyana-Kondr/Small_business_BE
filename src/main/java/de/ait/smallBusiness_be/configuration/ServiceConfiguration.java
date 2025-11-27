@@ -130,11 +130,15 @@ public class ServiceConfiguration {
         //  ProductionItem ↔ ProductionItemDto
         modelMapper.createTypeMap(ProductionItem.class, ProductionItemDto.class)
                 .addMapping(src -> src.getProduction().getId(), ProductionItemDto::setProductionId)
-                .addMapping(src -> src.getProduct().getId(), ProductionItemDto::setProductId);
+                .addMapping(src -> src.getProduct().getId(), ProductionItemDto::setProductId)
+                .addMapping(src -> src.getProduct().getArticle(), ProductionItemDto::setProductArticle)
+                .addMapping(src -> src.getProduct().getName(), ProductionItemDto::setProductName);
 
         //  Production ↔ ProductionDto
         modelMapper.createTypeMap(Production.class, ProductionDto.class)
-                .addMapping(src -> src.getProduct().getId(), ProductionDto::setProductId);
+                .addMapping(src -> src.getProduct().getId(), ProductionDto::setProductId)
+                .addMapping(src -> src.getProduct().getArticle(), ProductionDto::setProductArticle)
+                .addMapping(src -> src.getProduct().getName(), ProductionDto::setProductName);
 
         //  User ↔ UserDto
         modelMapper.createTypeMap(User.class, UserDto.class);

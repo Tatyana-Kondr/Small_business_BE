@@ -34,8 +34,10 @@ public class ProductionDto {
     LocalDate dateOfProduction;
     String type;
     Long productId;
+    String productArticle;
+    String productName;
     BigDecimal quantity;
     BigDecimal unitPrice;
     BigDecimal amount;
-    List<ProductionItem> productionItems = new ArrayList<>();
+    List<ProductionItemDto> productionItems = new ArrayList<>();
 }

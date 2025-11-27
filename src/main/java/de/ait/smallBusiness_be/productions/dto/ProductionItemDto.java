@@ -28,6 +28,8 @@ public class ProductionItemDto {
     Long id;
     Long productionId;
     Long productId;
+    String productArticle;
+    String productName;
     String type;
     BigDecimal quantity;
     BigDecimal unitPrice;
