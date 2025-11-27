@@ -137,14 +137,7 @@ public class ProductionServiceImpl implements ProductionService{
             throw new RestApiException(ErrorDescription.LIST_IS_EMPTY, HttpStatus.NOT_FOUND);
         }
 
-        return productions.map(production -> {
-            // Инициализируем ленивую коллекцию productionItems
-            Hibernate.initialize(production.getProductionItems());
-            // Инициализируем вложенные продукты для productionItems
-            production.getProductionItems().forEach(item -> Hibernate.initialize(item.getProduct()));
-
-            return modelMapper.map(production, ProductionDto.class);
-        });
+            return productions.map(production -> modelMapper.map(production, ProductionDto.class));
     }
 
     @Override
@@ -152,8 +145,6 @@ public class ProductionServiceImpl implements ProductionService{
     public ProductionDto getProductionById(Long id) {
         Production production = productionRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Production not found with ID: " + id));
-        Hibernate.initialize(production.getProductionItems());
-        production.getProductionItems().forEach(item -> Hibernate.initialize(item.getProduct()));
         return modelMapper.map(production, ProductionDto.class);
     }
 
