@@ -32,7 +32,6 @@ public class NewSaleDto {
         @Schema(description = "Type of operation", example = "VERKAUF",allowableValues = {" VERKAUF, KUNDENERSTATTUNG"})
         String typeOfOperation;
 
-        @NotNull(message = "{validation.notNull}")
         @Schema(description = "ID of the shipping (e.g., Hermes, Post)", example = "1", required = true)
         Long shippingId;
 
