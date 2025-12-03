@@ -64,8 +64,11 @@ public class SaleServiceImpl implements SaleService {
     public SaleDto createSale(NewSaleDto newSale) {
 
         Customer customer = customerService.getCustomerOrThrow(newSale.getCustomerId());
-        Shipping shipping = shippingRepository.findById(newSale.getShippingId())
-                .orElseThrow(() -> new EntityNotFoundException("Shipping not found"));
+        Shipping shipping = null;
+        if (newSale.getShippingId() != null) {
+            shipping = shippingRepository.findById(newSale.getShippingId())
+                    .orElseThrow(() -> new EntityNotFoundException("Shipping not found"));
+        }
 
         TermOfPayment termOfPayment = termOfPaymentRepository.findById(newSale.getTermsOfPaymentId())
                 .orElseThrow(() -> new EntityNotFoundException("Term of payment not found."));
@@ -90,8 +93,12 @@ public class SaleServiceImpl implements SaleService {
         sale.setDefaultDiscount(newSale.getDefaultDiscount());
 
         // Маппинг габаритов
-        if (newSale.getShippingDimensions() != null) {
-            sale.setShippingDimensions(modelMapper.map(newSale.getShippingDimensions(), ShippingDimensions.class));
+        if (newSale.getShippingId() != null && newSale.getShippingDimensions() != null) {
+            sale.setShippingDimensions(
+                    modelMapper.map(newSale.getShippingDimensions(), ShippingDimensions.class)
+            );
+        } else {
+            sale.setShippingDimensions(null);
         }
 
         // Расчёт сумм
@@ -217,8 +224,11 @@ public class SaleServiceImpl implements SaleService {
         invoiceService.deleteDeliveryBillPdf(sale, "delivery-bill");
 
         Customer customer = customerService.getCustomerOrThrow(updateSale.getCustomerId());
-        Shipping shipping = shippingRepository.findById(updateSale.getShippingId())
-                .orElseThrow(() -> new EntityNotFoundException("Shipping not found"));
+        Shipping shipping = null;
+        if (updateSale.getShippingId() != null) {
+            shipping = shippingRepository.findById(updateSale.getShippingId())
+                    .orElseThrow(() -> new EntityNotFoundException("Shipping not found"));
+        }
         TermOfPayment termOfPayment = termOfPaymentRepository.findById(updateSale.getTermsOfPaymentId())
                 .orElseThrow(() -> new EntityNotFoundException("Term of payment not found."));
 
@@ -229,9 +239,17 @@ public class SaleServiceImpl implements SaleService {
         sale.setDeliveryBill(updateSale.getDeliveryBill());
         sale.setAccountObject(updateSale.getAccountObject());
         sale.setSalesDate(updateSale.getSalesDate());
-        sale.setShippingDimensions(updateSale.getShippingDimensions() != null ?
-                modelMapper.map(updateSale.getShippingDimensions(), ShippingDimensions.class) :
-                null);
+        sale.setDefaultTax(updateSale.getDefaultTax());
+        sale.setDefaultDiscount(updateSale.getDefaultDiscount());
+
+        // --- ГАБАРИТЫ: только если shipping выбран ---
+        if (updateSale.getShippingId() != null && updateSale.getShippingDimensions() != null) {
+            sale.setShippingDimensions(
+                    modelMapper.map(updateSale.getShippingDimensions(), ShippingDimensions.class)
+            );
+        } else {
+            sale.setShippingDimensions(null);
+        }
         try {
             sale.setTypeOfOperation(TypeOfOperation.valueOf(updateSale.getTypeOfOperation().toUpperCase()));
         } catch (IllegalArgumentException e) {
@@ -421,9 +439,9 @@ public class SaleServiceImpl implements SaleService {
         if (lastNumber == null) lastNumber = 0;
 
         int nextNumber = lastNumber + 1;
-        String formattedNumber = String.format("%04d", nextNumber);
+        String formattedNumber = String.format("%03d", nextNumber);
 
-        return "RE-" + year + "-" + formattedNumber;
+        return "RE" + year + formattedNumber;
     }
 
 }

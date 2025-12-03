@@ -11,7 +11,7 @@ public interface SaleRepository extends JpaRepository<Sale, Long>, SaleRepositor
 
         boolean existsByInvoiceNumber(String invoiceNumber);
 
-        @Query("SELECT MAX(CAST(SUBSTRING(s.invoiceNumber, 10, 4) AS int)) FROM Sale s WHERE FUNCTION('YEAR', s.salesDate) = :year")
+        @Query("SELECT MAX(CAST(SUBSTRING(s.invoiceNumber, 7, 3) AS int)) FROM Sale s WHERE FUNCTION('YEAR', s.salesDate) = :year")
         Integer findLastInvoiceSequenceForYear(@Param("year") int year);
 
 }

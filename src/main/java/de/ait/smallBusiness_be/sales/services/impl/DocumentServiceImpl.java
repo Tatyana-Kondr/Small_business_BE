@@ -133,9 +133,8 @@ public class DocumentServiceImpl implements DocumentService {
 
 
     private String extractYearFromInvoiceNumber(String invoiceNumber) {
-        String[] parts = invoiceNumber.split("-");
-        if (parts.length >= 2) {
-            return parts[1];
+        if (invoiceNumber != null && invoiceNumber.length() == 9) {
+            return invoiceNumber.substring(2, 6); // YYYY
         }
         throw new RestApiException("Invalid document number format: " + invoiceNumber, HttpStatus.BAD_REQUEST);
     }
