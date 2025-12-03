@@ -3,173 +3,95 @@
 <head>
     <meta charset="UTF-8"/>
     <style>
-        @page {
-            size: A4;
-            margin: 1cm 1.5cm 1cm 2.5cm;
+        @page { size: A4; margin: 1cm 1.5cm 1cm 2.5cm; }
+
+        body { font-family: Arial, sans-serif; font-size: 12px; color: #000; }
+
+        table { width: 100%; border-collapse: collapse; }
+
+        th, td { text-align: left; padding: 3px; }
+
+        th { border-bottom: 1px solid #7B7C81; }
+
+        thead { display: table-header-group; }
+        tfoot { display: table-footer-group; }
+        .col-desc {
+            max-width: 250px;        /* ограничение ширины */
+            width: 250px;            /* фиксированная ширина, чтобы таблица была ровной */
+            word-wrap: break-word;   /* перенос слов */
+            overflow-wrap: break-word;
+            white-space: normal;     /* разрешить перенос строк */
         }
 
-        body {
-            font-family: Arial, sans-serif;
-            font-size: 12px;
-            color: #000;
-        }
+        .totals { margin-top: 10px; width: 100%; border-collapse: collapse }
+        .totals td { border: none; padding: 4px 6px; }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            page-break-inside: auto;
-        }
-
-        th, td {
-            text-align: left;
-            padding: 3px;
-        }
-
-        th {
-            border-bottom: 1px solid #7B7C81;
-            background-color: #ffffff;
-        }
-
-        thead {
-            display: table-header-group;
-        }
-
-        tfoot {
-            display: table-footer-group;
-        }
-
-        .right {
-            text-align: right;
-        }
-
-        .center {
-            text-align: center;
-        }
-
-        .bold {
-            font-weight: bold;
-        }
-
-        .logo {
-            height: 100px;
-            width: auto;
-        }
-
-        .re {
-            font-size: 18px;
-            font-weight: bold;
-            font-family: "Microsoft Sans Serif", sans-serif;
-            color: #193f6e;
-            border-bottom: 2px solid #193f6e;
-            margin: 0;
-            padding: 0;
-        }
-
-        .totals {
-            margin-top: 10px;
-            width: 100%;
-            border-collapse: collapse
-        }
-
-        .totals td {
-            border: none;
-            padding: 4px 6px;
-        }
-
-        .info-table td {
-            vertical-align: top;
-        }
-
-        .info-left {
-            width: 60%;
-        }
-
-        .info-right {
-            width: 40%;
-        }
-
-        .contact {
-            font-size: 10px;
-            text-align: center;
-            margin: 0;
-            padding: 0;
-        }
-
-        .shipping {
-            font-size: 10px;
-            text-align: left;
-            padding: 0;
-            width: 50%;
-        }
-
-        .thanks {
-            font-size: 12px;
-            text-align: center;
-            margin: 30px 0px 20px 0px;
-            padding: 0;
-        }
-
-        .footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            padding-top: 10px;
-        }
-        .artikel-column {
-            white-space: nowrap;
-        }
+        .right { text-align: right; }
+        .center { text-align: center; }
+        .bold { font-weight: bold; }
+        .logo { height: 100px; }
+        .re { font-size: 18px; font-weight: bold; font-family: "Microsoft Sans Serif", sans-serif; color: #193f6e; border-bottom: 2px solid #193f6e; margin: 0; padding: 0; }
+        .contact { font-size: 10px; text-align: center; margin: 0; padding: 0; }
+        .artikel-column { white-space: nowrap; }
+        .shipping { font-size: 10px; text-align: left; padding: 0;  }
+        .thanks { text-align: center; margin: 30px 0 20px 0; padding: 0; font-size: 12px; }
+        .footer { position: fixed; bottom: 0; left: 0; right: 0; padding-top: 10px; }
     </style>
 </head>
+
 <body>
 
-<!-- Верхняя часть: Логотип и данные -->
-<table style="margin-bottom: 10px;">
-    <tr th:if="${logoPath != null}">
+<!-- LOGO -->
+<table>
+    <tr th:if="${logoPath}">
         <td class="right">
-            <img th:src="${logoPath}" alt="Logo" class="logo"/>
+            <img th:src="${logoPath}" class="logo" alt="Logo"/>
         </td>
     </tr>
 </table>
 
-<!-- Основной блок: левая и правая инфа -->
+<!-- CUSTOMER + HEADER -->
 <table class="info-table">
     <tr>
-        <td class="info-left">
-            <p style="font-size: 10px; margin-bottom: 25px; margin-top: 15px"
-                th:text="${company.name + ' - ' + company.address}">Firma - Adresse</p>
+        <td style="width:60%;">
+            <p style="font-size:10px; margin: 15px 0 25px 0"
+               th:text="${company.name + ' - ' + company.address}"></p>
 
-            <h2 th:text="${sale.customer.name}" style="margin: 0 0 10px 0;">Kunde GmbH</h2>
-            <p style="font-size: 14px; margin: 0 0 5px 0;" th:text="${sale.customer.address.street + ' ' + sale.customer.address.building}">Straße 1</p>
-            <p style="font-size: 14px; margin: 0;" th:text="${sale.customer.address.postalCode + ' ' + sale.customer.address.city}">12345 Stadt</p>
-            <p th:if="${sale.customer.phone}" th:text="|Tel: ${sale.customer.phone}|" style="margin-top: 45px;">+77773333333</p>
+            <h2 style="margin:0 0 10px 0" th:text="${sale.customer.name}"></h2>
+            <p style="margin:0" th:text="${(sale.customer.address != null ? ((sale.customer.address.street != null ? sale.customer.address.street : '') + ' ' +  (sale.customer.address.building != null ? sale.customer.address.building : '')) : '')}"></p>
+            <p style="margin:0" th:text="${(sale.customer.address != null ? ((sale.customer.address.postalCode != null ? sale.customer.address.postalCode : '') + ' ' + (sale.customer.address.city != null ? sale.customer.address.city : '')) : '')}"></p>
+            <p style="margin-top:25px" th:if="${sale.customer.phone != null and !#strings.isEmpty(sale.customer.phone)}" th:text="'Tel: ' + sale.customer.phone"></p>
         </td>
-        <td class="info-right">
+
+        <td style="width:40%;">
             <p class="re">RECHNUNG</p>
+
             <table style="margin-top: 10px;">
-                <tr><td>Rechnungs-Nr:</td><td class="right" th:text="${sale.invoiceNumber}">RE-2025-00015</td></tr>
-                <tr><td>Datum:</td><td class="right" th:text="${sale.salesDate != null ? sale.salesDate.format(T(java.time.format.DateTimeFormatter).ofPattern('dd.MM.yyyy')) : ''}">25.06.2025</td></tr>
-                <tr><td>Kunden-Nr:</td><td class="right" th:text="${sale.customer.customerNumber}">25190</td></tr>
-                <tr><td>Bestell-Nr:</td><td class="right" th:text="${sale.orderNumber}">4502728947</td></tr>
-                <tr><td>Bestellart:</td><td class="right" th:text="${sale.orderType}">Kusiak Robert</td></tr>
-                <tr><td>Sachbearbeiter:</td><td class="right" th:text="'Neufeld'">Neufeld</td></tr>
+                <tr><td>Rechnungs-Nr:</td><td class="right" th:text="${sale.invoiceNumber}"></td></tr>
+                <tr><td>Datum:</td><td class="right"
+                                       th:text="${sale.salesDate != null ? sale.salesDate.format(T(java.time.format.DateTimeFormatter).ofPattern('dd.MM.yyyy')) : ''}"></td></tr>
+                <tr><td>Kunden-Nr:</td><td class="right" th:text="${sale.customer.customerNumber}"></td></tr>
+                <tr><td>Bestell-Nr:</td><td class="right" th:text="${sale.orderNumber}"></td></tr>
+                <tr><td>Bestellart:</td><td class="right" th:text="${sale.orderType}"></td></tr>
+                <tr><td>Sachbearbeiter:</td><td class="right">Neufeld</td></tr>
             </table>
         </td>
     </tr>
 </table>
 
+<!-- ACCOUNT OBJECT -->
 <p style="margin-top: 50px; min-height: 15px;">
     <span th:if="${sale.accountObject != null and !#strings.isEmpty(sale.accountObject)}"
           th:text="|Objekt: ${sale.accountObject}|"></span>
 </p>
 
-<!-- Таблица с позициями -->
-<table style="margin-top: 10px; border-bottom: 1px solid #7B7C81;">
+<!-- ITEMS -->
+<table style="margin-top: 10px; border-bottom:1px solid #7B7C81;">
     <thead>
     <tr>
         <th>Pos</th>
         <th class="artikel-column">Artikel</th>
-        <th>Bezeichnung</th>
+        <th class="col-desc">Bezeichnung</th>
         <th class="center">Menge</th>
         <th class="center">Einheit</th>
         <th class="right">Preis</th>
@@ -177,22 +99,29 @@
         <th class="right">Gesamt</th>
     </tr>
     </thead>
+
     <tbody>
-    <tr th:each="item, stat : ${sale.saleItems}">
-        <td th:text="${item.position}">1</td>
-        <td class="artikel-column" th:text="${item.product.article}">2022801290</td>
-        <td th:text="${item.productName}">FEINSTRAHLEN1</td>
-        <td class="center" th:text="${item.quantity}">17</td>
-        <td class="center" th:text="${item.product.unitOfMeasurement}">ST</td>
-        <td class="right" th:text="${#numbers.formatDecimal(item.unitPrice, 1, 'COMMA', 2, 'POINT')} + ' €'">5,73 €</td>
+    <tr th:each="item : ${sale.saleItems}">
+        <td th:text="${item.position}"></td>
+        <td th:text="${item.product.article}"></td>
+        <td class="col-desc" th:text="${item.productName}"></td>
+        <td class="center" th:text="${item.quantity}"></td>
+        <td class="center"
+            th:text="${item.product.unitOfMeasurement != null ? item.product.unitOfMeasurement.name : ''}"></td>
+
+        <td class="right"
+            th:text="${#numbers.formatDecimal(item.unitPrice, 1, 'COMMA', 2, 'POINT')} + ' €'"></td>
+
         <td class="right" th:if="${sale.defaultDiscount > 0}"
-            th:text="${item.discount > 0} ? ${item.discount} + '%' : ''">
-        </td>
-        <td class="right" th:text="${#numbers.formatDecimal(item.totalPrice, 1, 'COMMA', 2, 'POINT')} + ' €'">115,92 €</td>
+            th:text="${item.discount > 0 ? item.discount + '%' : ''}"></td>
+
+        <td class="right"
+            th:text="${#numbers.formatDecimal(item.totalPrice, 1, 'COMMA', 2, 'POINT')} + ' €'"></td>
     </tr>
     </tbody>
 </table>
 
+<!-- TOTALS -->
 <table class="totals">
     <tr>
         <td style="width: 60%; vertical-align: top; font-size: 10px; padding-top: 20px; min-height: 30px;">
@@ -219,41 +148,29 @@
     </tr>
 </table>
 
-<!-- Футер -->
+<!-- FOOTER -->
 <div class="footer">
     <td class="shipping">
         <table>
             <tr>
                 <td style="font-size: 12px;">Zahlungsbedingungen:</td>
-                <td th:text="${#strings.trim((sale.termsOfPayment != null ? sale.termsOfPayment : '') + ' ' + (sale.paymentDate != null ? sale.paymentDate : ''))}">
-                    ÜBERWEISUNG_14_TAGE
-                </td>
-            </tr>
-            <tr>
-                <td style="font-size: 12px;">Versandart:</td>
-                <td style="font-size: 12px;"
-                    th:with="dim=${sale.shippingDimensions}"
-                    th:text="${
-            (sale.shipping != null ? sale.shipping.name : '') +
-            (dim != null and dim.width != null and dim.height != null and dim.length != null
-                ? ' ' + dim.width + 'x' + dim.height + 'x' + dim.length + ' cm,' : '') +
-            (dim != null and dim.weight != null
-                ? ' ' + dim.weight + ' kg' : '')
-        }">
-                    DHL_PAKET
-                </td>
-            </tr>
-            <tr>
-                <td style="font-size: 12px;">Lieferdatum:</td>
-                <td th:text="${sale.deliveryDate != null ? sale.deliveryDate.format(T(java.time.format.DateTimeFormatter).ofPattern('dd.MM.yyyy')) : ''}">25.06.2025</td>
+                <td th:text="${ (sale.termsOfPayment != null ? sale.termsOfPayment.name : '')  + (sale.paymentDate != null ? ' ' + sale.paymentDate.format(T(java.time.format.DateTimeFormatter).ofPattern('dd.MM.yyyy')) : '') }"></td>
             </tr>
 
+            <tr th:if="${sale.shipping != null}" th:with="dim=${sale.shippingDimensions}">
+                <td style="font-size: 12px;">Versandart:</td>
+                <td th:text="${(sale.shipping != null ? sale.shipping.name : '') + (dim != null and dim.width != null and dim.height != null and dim.length != null ? ' ' + dim.width + 'x' + dim.height + 'x' + dim.length + ' cm' : '') + (dim != null and dim.weight != null ? ', ' + dim.weight + ' kg' : '')}"></td>
+            </tr>
+
+            <tr>
+                <td style="font-size: 12px;">Lieferdatum:</td>
+                <td th:text="${sale.deliveryDate != null ? sale.deliveryDate.format(T(java.time.format.DateTimeFormatter).ofPattern('dd.MM.yyyy')) : ''}"></td>
+            </tr>
         </table>
     </td>
 
-    <div class="thanks bold">
-        BESTEN DANK FÜR IHRE ANFRAGE UND VERTRAUEN!!!
-    </div>
+    <div class="thanks bold">BESTEN DANK FÜR IHRE ANFRAGE UND VERTRAUEN!!!</div>
+
     <div class="contact">
         <p th:text="${company.name + ', ' + company.address + ', Tel.: ' + company.phone + ', ' + company.email}">
             Firma, Adresse, Telefon, Email
