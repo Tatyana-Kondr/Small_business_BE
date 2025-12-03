@@ -32,7 +32,7 @@ public class NewSaleDto {
         @Schema(description = "Type of operation", example = "VERKAUF",allowableValues = {" VERKAUF, KUNDENERSTATTUNG"})
         String typeOfOperation;
 
-        @Schema(description = "ID of the shipping (e.g., Hermes, Post)", example = "1", required = true)
+        @Schema(description = "ID of the shipping (e.g., Hermes, Post)", example = "1")
         Long shippingId;
 
         @Schema(description = "Shipping dimensions (weight, width, height, length)")
@@ -41,7 +41,6 @@ public class NewSaleDto {
         @Schema(description = "Terms of payment", example = "Betrag in Bar")
         Long termsOfPaymentId;
 
-        @PastOrPresent(message = "{validation.dateOfLastPurchase.pastOrPresent}")
         @Schema(description = "Date of the sale", example = "2025-02-05")
         LocalDate salesDate;
 
