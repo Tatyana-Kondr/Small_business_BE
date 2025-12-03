@@ -62,7 +62,6 @@ public class Sale {
     private TermOfPayment termsOfPayment;
 
     @Column
-    @PastOrPresent
     private LocalDate salesDate;
 
     @Column(nullable = false)
