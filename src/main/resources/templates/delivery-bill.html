@@ -146,7 +146,7 @@
 </table>
 
 <p style="margin-top: 50px; min-height: 15px;">
-    <span th:text="|Lieferschein zu der Rechnung ${sale.invoiceNumber} vom ${sale.deliveryDate != null ? sale.deliveryDate.format(T(java.time.format.DateTimeFormatter).ofPattern('dd.MM.yyyy')) : ''}|"></span>
+    <span th:text="|Lieferschein zu der Rechnung ${sale.invoiceNumber} vom ${sale.salesDate != null ? sale.salesDate.format(T(java.time.format.DateTimeFormatter).ofPattern('dd.MM.yyyy')) : ''}|"></span>
 </p>
 
 <!-- Таблица с позициями -->
@@ -166,7 +166,8 @@
         <td class="artikel-column" th:text="${item.product.article}">2022801290</td>
         <td th:text="${item.productName}">FEINSTRAHLEN1</td>
         <td class="center" th:text="${item.quantity}">17</td>
-        <td class="center" th:text="${item.product.unitOfMeasurement}">ST</td>
+        <td class="center"
+            th:text="${item.product.unitOfMeasurement != null ? item.product.unitOfMeasurement.name : ''}"></td>
     </tr>
     </tbody>
 </table>
