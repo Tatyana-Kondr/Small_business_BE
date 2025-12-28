@@ -31,7 +31,9 @@ public class SaleRepositoryCustomImpl implements SaleRepositoryCustom {
 
         List<Predicate> predicates = buildSearchPredicates(cb, root, searchQuery);
         query.where(cb.or(predicates.toArray(new Predicate[0])));
-        query.orderBy(cb.asc(root.get("id")));
+
+        // применяем динамическую сортировку
+        applySorting(pageable, cb, root, query);
 
         TypedQuery<Sale> typedQuery = entityManager.createQuery(query);
         typedQuery.setFirstResult((int) pageable.getOffset());
@@ -56,7 +58,8 @@ public class SaleRepositoryCustomImpl implements SaleRepositoryCustom {
         List<Predicate> predicates = buildFilterPredicates(cb, root, id, customerId, customerName, invoiceNumber, totalAmount, paymentStatus, startDate, endDate, searchQuery);
 
         query.where(cb.and(predicates.toArray(new Predicate[0])));
-        query.orderBy(cb.asc(root.get("id")));
+        // применяем сортировку
+        applySorting(pageable, cb, root, query);
 
         TypedQuery<Sale> typedQuery = entityManager.createQuery(query);
 
@@ -72,6 +75,27 @@ public class SaleRepositoryCustomImpl implements SaleRepositoryCustom {
         Long totalCount = entityManager.createQuery(countQuery).getSingleResult();
 
         return new PageImpl<>(typedQuery.getResultList(), pageable, totalCount);
+    }
+
+    @Override
+    public Page<Sale> findAllWithSorting(Pageable pageable) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Sale> query = cb.createQuery(Sale.class);
+        Root<Sale> root = query.from(Sale.class);
+
+        applySorting(pageable, cb, root, query);
+
+        TypedQuery<Sale> typed = entityManager.createQuery(query);
+        typed.setFirstResult((int) pageable.getOffset());
+        typed.setMaxResults(pageable.getPageSize());
+
+        CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
+        Root<Sale> countRoot = countQuery.from(Sale.class);
+        countQuery.select(cb.count(countRoot));
+
+        Long count = entityManager.createQuery(countQuery).getSingleResult();
+
+        return new PageImpl<>(typed.getResultList(), pageable, count);
     }
 
     // Вспомогательный метод для создания предикатов для поиска
@@ -159,4 +183,37 @@ public class SaleRepositoryCustomImpl implements SaleRepositoryCustom {
 
         return predicates;
     }
+
+    private void applySorting(Pageable pageable, CriteriaBuilder cb, Root<Sale> root, CriteriaQuery<?> query) {
+        List<jakarta.persistence.criteria.Order> orders = new ArrayList<>();
+
+        pageable.getSort().forEach(order -> {
+            String property = order.getProperty();
+
+            // Поддержка сортировки по customerName через JOIN
+            if (property.equals("customerName")) {
+                if (order.getDirection().isAscending()) {
+                    orders.add(cb.asc(root.get("customer").get("name")));
+                } else {
+                    orders.add(cb.desc(root.get("customer").get("name")));
+                }
+            } else {
+                // Обычная сортировка
+                if (order.getDirection().isAscending()) {
+                    orders.add(cb.asc(root.get(property)));
+                } else {
+                    orders.add(cb.desc(root.get(property)));
+                }
+            }
+        });
+
+        // Если сортировки нет — сортируем по умолчанию
+        if (orders.isEmpty()) {
+            orders.add(cb.desc(root.get("salesDate")));
+            orders.add(cb.desc(root.get("invoiceNumber")));
+        }
+
+        query.orderBy(orders);
+    }
+
 }

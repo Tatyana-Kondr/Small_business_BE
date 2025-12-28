@@ -78,8 +78,7 @@ public interface PurchasesApi {
     })
     @ResponseStatus(HttpStatus.OK)
     Page<PurchaseDto> getAllPurchases(
-            @PageableDefault(size = 15, sort = {"purchasingDate", "documentNumber"},
-                    direction = Sort.Direction.DESC) Pageable pageable);
+            @PageableDefault(size = 15, sort = {"purchasingDate", "id"}, direction = Sort.Direction.DESC) Pageable pageable);
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
@@ -120,8 +119,7 @@ public interface PurchasesApi {
     })
     @ResponseStatus(HttpStatus.OK)
     Page<PurchaseDto> searchPurchases(
-            @PageableDefault(size = 15) Pageable pageable,
-            @RequestParam(defaultValue = "purchasingDate") String sort,
+            @PageableDefault(size = 15, sort = {"purchasingDate", "id"}, direction = Sort.Direction.DESC) Pageable pageable,
             @PathVariable String query);
 
     @PreAuthorize("isAuthenticated()")
@@ -145,8 +143,7 @@ public interface PurchasesApi {
     })
     @ResponseStatus(HttpStatus.OK)
     Page<PurchaseDto> getAllPurchasesByFilter(
-            @PageableDefault(size = 15) Pageable pageable,
-            @RequestParam(defaultValue = "purchasingDate") String sort,
+            @PageableDefault(size = 15, sort = {"purchasingDate", "id"}, direction = Sort.Direction.DESC) Pageable pageable,
             @RequestParam(required = false) Long id,
             @RequestParam(required = false) Long vendorId,
             @RequestParam(required = false) String vendorName,

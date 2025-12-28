@@ -21,6 +21,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Tags(
         @Tag(name = "Product controller")
 )
@@ -151,6 +153,29 @@ public interface ProductsApi {
             @ApiResponse(responseCode = "200",
                     description = "List of products retrieved successfully.",
                     content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = Page.class))),
+            @ApiResponse(responseCode = "404",
+                    description = "No products found.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDto.class)))
+    })
+    @ResponseStatus(HttpStatus.OK)
+    Page<ProductDto> getProductsPaged(
+            @Parameter(description = "Search term for filtering products by name, article or vendor article", example = "wasser")
+            @RequestParam(required = false) String search,
+
+            @ParameterObject
+            @PageableDefault(size = 15, sort = "name") Pageable pageable);
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/all")
+    @Operation(
+            summary = "Get or search products",
+            description = "Returns a list of products. If search term is provided, filters by it. Only authorized users are allowed.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200",
+                    description = "List of products retrieved successfully.",
+                    content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ProductDto[].class))),
             @ApiResponse(responseCode = "404",
                     description = "No products found.",
@@ -158,16 +183,33 @@ public interface ProductsApi {
                             schema = @Schema(implementation = ErrorResponseDto.class)))
     })
     @ResponseStatus(HttpStatus.OK)
-    Page<ProductDto> getProducts(
+    List<ProductDto> getAllProducts(
             @Parameter(description = "Search term for filtering products by name, article or vendor article", example = "wasser")
-            @RequestParam(required = false) String search,
-
-            @ParameterObject
-            @PageableDefault(size = 15, sort = "name") Pageable pageable);
+            @RequestParam(required = false) String search);
 
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/category/{categoryId}")
+    @Operation(
+            summary = "Get all products by category",
+            description = "Retrieve a list of all products by category. Only authorized users are allowed.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200",
+                    description = "List of products retrieved successfully.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = Page.class))),
+            @ApiResponse(responseCode = "404",
+                    description = "No products found.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDto.class)))
+    })
+    @ResponseStatus(HttpStatus.OK)
+    Page<ProductDto> getProductsByCategoryPaged(@PathVariable("categoryId") int categoryId,
+                                           @RequestParam(name = "search", required = false) String search,
+                                           @PageableDefault(size = 15, sort = "name") Pageable pageable);
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/category/{categoryId}/all")
     @Operation(
             summary = "Get all products by category",
             description = "Retrieve a list of all products by category. Only authorized users are allowed.")
@@ -182,9 +224,6 @@ public interface ProductsApi {
                             schema = @Schema(implementation = ErrorResponseDto.class)))
     })
     @ResponseStatus(HttpStatus.OK)
-    Page<ProductDto> getProductsByCategory(@PathVariable("categoryId") int categoryId,
-                                           @RequestParam(name = "search", required = false) String search,
-                                           @PageableDefault(size = 15, sort = "name") Pageable pageable);
-
-
+    List<ProductDto> getProductsByCategory(@PathVariable("categoryId") int categoryId,
+                                                @RequestParam(name = "search", required = false) String search);
 }

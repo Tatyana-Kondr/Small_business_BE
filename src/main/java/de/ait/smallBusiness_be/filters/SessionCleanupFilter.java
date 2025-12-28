@@ -26,12 +26,12 @@ public class SessionCleanupFilter implements Filter {
 
                     if (!(value instanceof Serializable)) {
                         session.removeAttribute(name);
-                        System.out.println("⚠️ Removed non-serializable session attribute: " + name);
+                        System.out.println("Removed non-serializable session attribute: " + name);
                     }
 
                     if (name.startsWith("org.springframework")) {
                         session.removeAttribute(name);
-                        System.out.println("🧹 Removed Spring-specific attribute: " + name);
+                        System.out.println("Removed Spring-specific attribute: " + name);
                     }
                 }
             }

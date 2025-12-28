@@ -41,12 +41,12 @@ public class SaleController implements SalesApi {
     }
 
     @Override
-    public Page<SaleDto> searchSales(Pageable pageable, String sort, String query) {
+    public Page<SaleDto> searchSales(Pageable pageable, String query) {
         return saleService.searchSales(pageable, query);
     }
 
     @Override
-    public Page<SaleDto> getAllSalesByFilter(Pageable pageable, String sort, Long id, Long customerId, String customerName, String invoiceNumber, BigDecimal totalAmount, String paymentStatus, LocalDate startDate, LocalDate endDate, String searchQuery) {
+    public Page<SaleDto> getAllSalesByFilter(Pageable pageable, Long id, Long customerId, String customerName, String invoiceNumber, BigDecimal totalAmount, String paymentStatus, LocalDate startDate, LocalDate endDate, String searchQuery) {
         return saleService.getAllSalesByFilter(pageable, id, customerId, customerName, invoiceNumber, totalAmount, paymentStatus, startDate, endDate, searchQuery);
     }
 

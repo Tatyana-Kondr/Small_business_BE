@@ -12,4 +12,6 @@ public interface SaleRepositoryCustom {
 
     Page<Sale> filterSalesByFields(Pageable pageable, Long id, Long customerId, String customerName, String invoiceNumber, BigDecimal totalAmount, String paymentStatus, LocalDate startDate,
                                   LocalDate endDate, String searchQuery);
+
+    Page<Sale> findAllWithSorting(Pageable pageable);
 }

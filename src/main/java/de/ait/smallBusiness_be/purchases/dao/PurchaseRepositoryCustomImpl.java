@@ -35,7 +35,7 @@ public class PurchaseRepositoryCustomImpl implements PurchaseRepositoryCustom {
 
         List<Predicate> predicates = buildSearchPredicates(cb, root, searchQuery);
         query.where(cb.or(predicates.toArray(new Predicate[0])));
-        query.orderBy(cb.asc(root.get("id")));
+        applySorting(pageable, cb, root, query);
 
         TypedQuery<Purchase> typedQuery = entityManager.createQuery(query);
         typedQuery.setFirstResult((int) pageable.getOffset());
@@ -72,7 +72,7 @@ public class PurchaseRepositoryCustomImpl implements PurchaseRepositoryCustom {
         List<Predicate> predicates = buildFilterPredicates(cb, root, id, vendorId, vendorName, documentId, documentNumber, total, paymentStatus, startDate, endDate, searchQuery);
 
         query.where(cb.and(predicates.toArray(new Predicate[0])));
-        query.orderBy(cb.asc(root.get("id")));
+        applySorting(pageable, cb, root, query);
 
         TypedQuery<Purchase> typedQuery = entityManager.createQuery(query);
 
@@ -88,6 +88,27 @@ public class PurchaseRepositoryCustomImpl implements PurchaseRepositoryCustom {
         Long totalCount = entityManager.createQuery(countQuery).getSingleResult();
 
         return new PageImpl<>(typedQuery.getResultList(), pageable, totalCount);
+    }
+
+    @Override
+    public Page<Purchase> findAllWithSorting(Pageable pageable) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Purchase> query = cb.createQuery(Purchase.class);
+        Root<Purchase> root = query.from(Purchase.class);
+
+        applySorting(pageable, cb, root, query);
+
+        TypedQuery<Purchase> typed = entityManager.createQuery(query);
+        typed.setFirstResult((int) pageable.getOffset());
+        typed.setMaxResults(pageable.getPageSize());
+
+        CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
+        Root<Purchase> countRoot = countQuery.from(Purchase.class);
+        countQuery.select(cb.count(countRoot));
+
+        Long count = entityManager.createQuery(countQuery).getSingleResult();
+
+        return new PageImpl<>(typed.getResultList(), pageable, count);
     }
 
     // Вспомогательный метод для создания предикатов для поиска
@@ -182,4 +203,37 @@ public class PurchaseRepositoryCustomImpl implements PurchaseRepositoryCustom {
 
         return predicates;
     }
+
+    private void applySorting(Pageable pageable, CriteriaBuilder cb, Root<Purchase> root, CriteriaQuery<?> query) {
+        List<jakarta.persistence.criteria.Order> orders = new ArrayList<>();
+
+        pageable.getSort().forEach(order -> {
+            String property = order.getProperty();
+
+            // vendorName (через JOIN vendor.name)
+            if (property.equals("vendorName")) {
+                if (order.getDirection().isAscending()) {
+                    orders.add(cb.asc(root.get("vendor").get("name")));
+                } else {
+                    orders.add(cb.desc(root.get("vendor").get("name")));
+                }
+            } else {
+                // обычные поля
+                if (order.getDirection().isAscending()) {
+                    orders.add(cb.asc(root.get(property)));
+                } else {
+                    orders.add(cb.desc(root.get(property)));
+                }
+            }
+        });
+
+        // Если сортировка не указана — ставим по умолчанию purchasingDate DESC → id DESC
+        if (orders.isEmpty()) {
+            orders.add(cb.desc(root.get("purchasingDate")));
+            orders.add(cb.desc(root.get("id")));
+        }
+
+        query.orderBy(orders);
+    }
+
 }
