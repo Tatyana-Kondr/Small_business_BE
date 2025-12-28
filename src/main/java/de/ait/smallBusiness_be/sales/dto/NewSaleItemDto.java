@@ -25,6 +25,11 @@ public class NewSaleItemDto {
         Long productId;
 
         @NotBlank(message = "{validation.notBlank}")
+        @Size(min = 1, max = 255, message = "{validation.name.size}")
+        @Schema(description = "Product article", example = "WB3425")
+        String productArticle;
+
+        @NotBlank(message = "{validation.notBlank}")
         @Size(min = 2, max = 255, message = "{validation.name.size}")
         @Schema(description = "Product name", example = "Weinbox")
         String productName;
