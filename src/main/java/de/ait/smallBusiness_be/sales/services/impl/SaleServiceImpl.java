@@ -24,9 +24,7 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -185,20 +183,7 @@ public class SaleServiceImpl implements SaleService {
     @Override
     @Transactional
     public Page<SaleDto> getAllSales(Pageable pageable) {
-
-        // Проверяем, корректно ли передана сортировка
-        List<String> allowedSortFields = List.of("salesDate", "invoiceNumber", "totalAmount"); // допустимые поля
-        Sort sort = pageable.getSort();
-
-        for (Sort.Order order : sort) {
-            if (!allowedSortFields.contains(order.getProperty())) {
-                // Если поле неверное, заменяем сортировку по умолчанию
-                pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(Sort.Direction.DESC, "salesDate"));
-                break;
-            }
-        }
-
-        Page<Sale> sales = saleRepository.findAll(pageable);
+        Page<Sale> sales = saleRepository.findAllWithSorting(pageable);
 
         if (sales.isEmpty()) {
             throw new RestApiException(ErrorDescription.LIST_IS_EMPTY, HttpStatus.NOT_FOUND);
@@ -206,6 +191,7 @@ public class SaleServiceImpl implements SaleService {
 
         return sales.map(sale -> modelMapper.map(sale, SaleDto.class));
     }
+
 
     @Override
     @Transactional
@@ -398,7 +384,7 @@ public class SaleServiceImpl implements SaleService {
     @Override
     @Transactional
     public Page<SaleDto> searchSales(Pageable pageable, String query) {
-        return saleRepository.searchSales(pageable,query)
+        return saleRepository.searchSales(pageable, query)
                 .map(sale -> modelMapper.map(sale, SaleDto.class));
     }
 

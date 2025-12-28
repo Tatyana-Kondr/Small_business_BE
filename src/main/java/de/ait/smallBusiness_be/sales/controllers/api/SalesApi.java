@@ -77,7 +77,7 @@ public interface SalesApi {
     })
     @ResponseStatus(HttpStatus.OK)
     Page<SaleDto> getAllSales(
-            @PageableDefault(size = 10, sort = "salesDate", direction = Sort.Direction.DESC) Pageable pageable);
+            @PageableDefault(size = 15, sort = {"salesDate", "invoiceNumber"}, direction = Sort.Direction.DESC) Pageable pageable);
 
 
     @PreAuthorize("isAuthenticated()")
@@ -119,8 +119,7 @@ public interface SalesApi {
     })
     @ResponseStatus(HttpStatus.OK)
     Page<SaleDto> searchSales(
-            @PageableDefault(size = 10) Pageable pageable,
-            @RequestParam(defaultValue = "salesDate") String sort,
+            @PageableDefault(size = 15, sort = {"salesDate", "invoiceNumber"}, direction = Sort.Direction.DESC) Pageable pageable,
             @PathVariable String query);
 
     @PreAuthorize("isAuthenticated()")
@@ -144,8 +143,7 @@ public interface SalesApi {
     })
     @ResponseStatus(HttpStatus.OK)
     Page<SaleDto> getAllSalesByFilter(
-            @PageableDefault(size = 10) Pageable pageable,
-            @RequestParam(defaultValue = "salesDate") String sort,
+            @PageableDefault(size = 15, sort = {"salesDate", "invoiceNumber"}, direction = Sort.Direction.DESC) Pageable pageable,
             @RequestParam(required = false) Long id,
             @RequestParam(required = false) Long customerId,
             @RequestParam(required = false) String customerName,
