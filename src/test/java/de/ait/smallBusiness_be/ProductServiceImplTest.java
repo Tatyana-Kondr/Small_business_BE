@@ -157,7 +157,7 @@ class ProductServiceImplTest {
         Page<Product> page = new PageImpl<>(List.of(new Product()));
         Page<ProductDto> dtoPage = new PageImpl<>(List.of(new ProductDto()));
 
-        when(productRepository.searchProducts(anyString(), any(Pageable.class))).thenReturn(page);
+        when(productRepository.searchProductsPage(anyString(), any(Pageable.class))).thenReturn(page);
         when(modelMapper.map(any(Product.class), eq(ProductDto.class))).thenReturn(new ProductDto());
 
         Page<ProductDto> result = service.findProducts("test", Pageable.unpaged());
