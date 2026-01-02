@@ -157,9 +157,6 @@ public class ServiceConfiguration {
                     mapper.map(ProductDto::getUnitOfMeasurement, Product::setUnitOfMeasurement);
                 });
 
-
-
-
         return modelMapper;
     }
 

@@ -167,20 +167,20 @@ public class AuthService {
     private void setRefreshCookie(HttpServletResponse response, String refreshToken) {
         Cookie cookie = new Cookie("refreshToken", refreshToken);
         cookie.setHttpOnly(true);
-        cookie.setSecure(IS_PROD);
+        cookie.setSecure(false);
         cookie.setPath("/");
         cookie.setMaxAge(7 * 24 * 60 * 60); // 7 дней
-        cookie.setAttribute("SameSite", IS_PROD ? "None" : "Lax");
+        cookie.setAttribute("SameSite", "None");
         response.addCookie(cookie);
     }
 
     private void clearRefreshCookie(HttpServletResponse response) {
         Cookie cookie = new Cookie("refreshToken", "");
         cookie.setHttpOnly(true);
-        cookie.setSecure(IS_PROD);
+        cookie.setSecure(false);
         cookie.setPath("/");
         cookie.setMaxAge(0);
-        cookie.setAttribute("SameSite", IS_PROD ? "None" : "Lax");
+        cookie.setAttribute("SameSite", "None");
         response.addCookie(cookie);
     }
 
