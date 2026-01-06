@@ -72,15 +72,15 @@
         ">
             </h2>
 
-            <p style="margin:0"
+            <p style="font-size:14px; margin:0"
                th:text="${(sale.customer.address != null ? ((sale.customer.address.street != null ? sale.customer.address.street : '') + ' ' +  (sale.customer.address.building != null ? sale.customer.address.building : '')) : '')}">
             </p>
 
-            <p style="margin:0"
+            <p style="font-size:14px; margin:0"
                th:text="${(sale.customer.address != null ? ((sale.customer.address.postalCode != null ? sale.customer.address.postalCode : '') + ' ' + (sale.customer.address.city != null ? sale.customer.address.city : '')) : '')}">
             </p>
 
-            <p style="margin-top:25px"
+            <p style="font-size:14px; margin-top:25px"
                th:if="${sale.customer.phone != null and !sale.customer.phone.trim().isEmpty() and sale.customer.address != null and sale.customer.address.country == 'KZ'}"
                th:text="'Tel: ' + ${sale.customer.phone}">
             </p>
