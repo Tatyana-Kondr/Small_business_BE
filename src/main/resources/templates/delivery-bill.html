@@ -122,11 +122,23 @@
 <!-- Основной блок: левая и правая инфа -->
 <table class="info-table">
     <tr>
-        <td class="info-left">
-            <p style="font-size: 10px; margin-bottom: 25px; margin-top: 15px"
-               th:text="${company.name + ' - ' + company.address}">Firma - Adresse</p>
+        <td style="width:7cm; padding-right:10mm;">
+            <p style="font-size:10px; margin: 15px 0 25px 0"
+               th:text="${company.name + ' - ' + company.address}">Company-Adresse</p>
 
-            <h2 th:text="${sale.customer.name}" style="margin: 0 0 10px 0;">Kunde GmbH</h2>
+            <h2
+                    th:text="${sale.customer.name}"
+                    style="
+            margin:0 0 10px 0;
+            width:9cm;
+            max-width:9cm;
+            display:block;
+            line-height:1.2;
+            white-space:normal;
+            word-break:break-word;
+            overflow-wrap:break-word;
+        "> Testering and Testering Abfüllbetrieb GmbH
+            </h2>
             <p style="font-size: 14px; margin: 0 0 5px 0;" th:text="${sale.customer.address.street + ' ' + sale.customer.address.building}">Straße 1</p>
             <p style="font-size: 14px; margin: 0;" th:text="${sale.customer.address.postalCode + ' ' + sale.customer.address.city}">12345 Stadt</p>
         </td>
