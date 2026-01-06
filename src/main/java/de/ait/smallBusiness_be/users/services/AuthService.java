@@ -170,7 +170,7 @@ public class AuthService {
         cookie.setSecure(false);
         cookie.setPath("/");
         cookie.setMaxAge(7 * 24 * 60 * 60); // 7 дней
-        cookie.setAttribute("SameSite", "None");
+        cookie.setAttribute("SameSite", "Lax");
         response.addCookie(cookie);
     }
 
@@ -180,7 +180,7 @@ public class AuthService {
         cookie.setSecure(false);
         cookie.setPath("/");
         cookie.setMaxAge(0);
-        cookie.setAttribute("SameSite", "None");
+        cookie.setAttribute("SameSite", "Lax");
         response.addCookie(cookie);
     }
 
