@@ -129,7 +129,6 @@
             <h2 th:text="${sale.customer.name}" style="margin: 0 0 10px 0;">Kunde GmbH</h2>
             <p style="font-size: 14px; margin: 0 0 5px 0;" th:text="${sale.customer.address.street + ' ' + sale.customer.address.building}">Straße 1</p>
             <p style="font-size: 14px; margin: 0;" th:text="${sale.customer.address.postalCode + ' ' + sale.customer.address.city}">12345 Stadt</p>
-            <p th:if="${sale.customer.phone}" th:text="|Tel: ${sale.customer.phone}|" style="margin-top: 45px;">+77773333333</p>
         </td>
         <td class="info-right">
             <p class="re">Lieferschein</p>
