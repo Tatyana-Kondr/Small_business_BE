@@ -181,6 +181,15 @@ public class SecurityConfig {
                         .anyRequest().permitAll()
                 )
 
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((req, res, e) ->
+                                res.sendError(jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED)
+                        )
+                        .accessDeniedHandler((req, res, e) ->
+                                res.sendError(jakarta.servlet.http.HttpServletResponse.SC_FORBIDDEN)
+                        )
+                )
+
                 // Stateless, потому что используем JWT
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
