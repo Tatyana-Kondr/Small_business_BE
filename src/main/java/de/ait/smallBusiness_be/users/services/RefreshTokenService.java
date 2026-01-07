@@ -54,4 +54,11 @@ public class RefreshTokenService {
     public void delete(RefreshToken token) {
         refreshTokenRepository.delete(token);
     }
+
+    public RefreshToken rotate(RefreshToken token) {
+        token.setToken(UUID.randomUUID().toString());
+        token.setExpiryDate(Instant.now().plusSeconds(60 * 60 * 24 * 7));
+        return refreshTokenRepository.save(token);
+    }
+
 }

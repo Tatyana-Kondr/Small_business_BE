@@ -11,9 +11,6 @@ import de.ait.smallBusiness_be.users.model.RefreshToken;
 import de.ait.smallBusiness_be.users.dto.UserDto;
 import de.ait.smallBusiness_be.users.model.Role;
 import de.ait.smallBusiness_be.users.model.User;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.Cookie;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -21,7 +18,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -29,8 +25,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.security.Principal;
-import java.util.Arrays;
-import java.util.List;
 
 
 /**
@@ -52,7 +46,6 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final ModelMapper modelMapper;
 
-    private static final boolean IS_PROD = false; // true в продакшене
 
     // -------------------- REGISTER --------------------
     public UserDto register(NewUserDto newUser, Principal principal) {
@@ -82,29 +75,27 @@ public class AuthService {
 }
 
     // -------------------- LOGIN --------------------
-    public AuthResponseDto login(AuthRequestDto authRequest, HttpServletResponse response) {
+    public AuthResponseDto login(AuthRequestDto authRequest) {
 
         User user = userRepository.findByUsername(authRequest.getUsername())
                 .orElseThrow(() -> new RestApiException(
                         ErrorDescription.USER_NOT_FOUND,
-                        HttpStatus.UNAUTHORIZED));
+                        HttpStatus.UNAUTHORIZED
+                ));
 
-        // Теперь проверяем пароль
         try {
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(authRequest.getUsername(), authRequest.getPassword())
+                    new UsernamePasswordAuthenticationToken(
+                            authRequest.getUsername(),
+                            authRequest.getPassword()
+                    )
             );
         } catch (BadCredentialsException e) {
             throw new RestApiException(ErrorDescription.INVALID_PASSWORD, HttpStatus.UNAUTHORIZED);
         }
 
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(user.getUsername(), null,  List.of(new SimpleGrantedAuthority(user.getRole().name())))
-        );
-
         String accessToken = jwtUtil.generateAccessToken(user.getUsername(), user.getRole().name());
         RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
-        setRefreshCookie(response, refreshToken.getToken());
 
         return AuthResponseDto.builder()
                 .accessToken(accessToken)
@@ -113,11 +104,12 @@ public class AuthService {
                 .build();
     }
 
-
-
     // -------------------- REFRESH --------------------
-    public AuthResponseDto refreshToken(HttpServletRequest request, HttpServletResponse response) {
-        String token = extractRefreshToken(request);
+    public AuthResponseDto refreshToken(String token) {
+
+        if (token == null || token.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Refresh token missing");
+        }
 
         RefreshToken refreshToken = refreshTokenService.findByToken(token)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Refresh token not found"));
@@ -128,27 +120,31 @@ public class AuthService {
         }
 
         User user = refreshToken.getUser();
+
+        // access token новый
         String newAccessToken = jwtUtil.generateAccessToken(user.getUsername(), user.getRole().name());
 
-        // Можно обновить срок действия refresh-токена в базе, если нужно
-        setRefreshCookie(response, refreshToken.getToken());
+        // ROTATION: refresh token делаем новый (и продлеваем срок)
+        RefreshToken rotated = refreshTokenService.rotate(refreshToken);
 
         return AuthResponseDto.builder()
                 .accessToken(newAccessToken)
-                .refreshToken(refreshToken.getToken())
+                .refreshToken(rotated.getToken())
                 .role(user.getRole().name())
                 .build();
     }
 
+
     // -------------------- LOGOUT --------------------
-    public void logout(HttpServletRequest request, HttpServletResponse response) {
-        String token = extractRefreshToken(request);
-        if (token != null) {
-            refreshTokenService.findByToken(token).ifPresent(refreshTokenService::delete);
+    public void logout(String refreshToken) {
+
+        if (refreshToken != null && !refreshToken.isBlank()) {
+            refreshTokenService.findByToken(refreshToken).ifPresent(refreshTokenService::delete);
         }
-        clearRefreshCookie(response);
+
         SecurityContextHolder.clearContext();
     }
+
 
     // -------------------- GET USER PROFILE --------------------
     public UserDto getUserProfile(String username) {
@@ -164,32 +160,32 @@ public class AuthService {
     }
 
     // -------------------- HELPER METHODS --------------------
-    private void setRefreshCookie(HttpServletResponse response, String refreshToken) {
-        Cookie cookie = new Cookie("refreshToken", refreshToken);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(false);
-        cookie.setPath("/");
-        cookie.setMaxAge(7 * 24 * 60 * 60); // 7 дней
-        cookie.setAttribute("SameSite", "Lax");
-        response.addCookie(cookie);
-    }
-
-    private void clearRefreshCookie(HttpServletResponse response) {
-        Cookie cookie = new Cookie("refreshToken", "");
-        cookie.setHttpOnly(true);
-        cookie.setSecure(false);
-        cookie.setPath("/");
-        cookie.setMaxAge(0);
-        cookie.setAttribute("SameSite", "Lax");
-        response.addCookie(cookie);
-    }
-
-    private String extractRefreshToken(HttpServletRequest request) {
-        if (request.getCookies() == null) return null;
-        return Arrays.stream(request.getCookies())
-                .filter(c -> "refreshToken".equals(c.getName()))
-                .map(Cookie::getValue)
-                .findFirst()
-                .orElse(null);
-    }
+//    private void setRefreshCookie(HttpServletResponse response, String refreshToken) {
+//        Cookie cookie = new Cookie("refreshToken", refreshToken);
+//        cookie.setHttpOnly(true);
+//        cookie.setSecure(false);
+//        cookie.setPath("/");
+//        cookie.setMaxAge(7 * 24 * 60 * 60); // 7 дней
+//        cookie.setAttribute("SameSite", "Lax");
+//        response.addCookie(cookie);
+//    }
+//
+//    private void clearRefreshCookie(HttpServletResponse response) {
+//        Cookie cookie = new Cookie("refreshToken", "");
+//        cookie.setHttpOnly(true);
+//        cookie.setSecure(false);
+//        cookie.setPath("/");
+//        cookie.setMaxAge(0);
+//        cookie.setAttribute("SameSite", "Lax");
+//        response.addCookie(cookie);
+//    }
+//
+//    private String extractRefreshToken(HttpServletRequest request) {
+//        if (request.getCookies() == null) return null;
+//        return Arrays.stream(request.getCookies())
+//                .filter(c -> "refreshToken".equals(c.getName()))
+//                .map(Cookie::getValue)
+//                .findFirst()
+//                .orElse(null);
+//    }
 }

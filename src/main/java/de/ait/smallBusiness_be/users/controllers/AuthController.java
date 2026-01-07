@@ -2,10 +2,7 @@ package de.ait.smallBusiness_be.users.controllers;
 
 import de.ait.smallBusiness_be.exceptions.ErrorResponseDto;
 import de.ait.smallBusiness_be.exceptions.RestApiException;
-import de.ait.smallBusiness_be.users.dto.AuthRequestDto;
-import de.ait.smallBusiness_be.users.dto.AuthResponseDto;
-import de.ait.smallBusiness_be.users.dto.NewUserDto;
-import de.ait.smallBusiness_be.users.dto.UserDto;
+import de.ait.smallBusiness_be.users.dto.*;
 import de.ait.smallBusiness_be.users.services.AuthService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,8 +16,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.security.Principal;
 
@@ -60,10 +55,9 @@ public class AuthController {
                             schema = @Schema(implementation = ErrorResponseDto.class)))
     })
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody @Valid AuthRequestDto authRequest,
-                                   HttpServletResponse response) {
+    public ResponseEntity<?> login(@RequestBody @Valid AuthRequestDto authRequest) {
         try {
-            AuthResponseDto authResponse = authService.login(authRequest, response);
+            AuthResponseDto authResponse = authService.login(authRequest);
             return ResponseEntity.ok(authResponse);
         } catch (RestApiException e) {
             // Кастомные ошибки с понятным message
@@ -84,10 +78,11 @@ public class AuthController {
             @ApiResponse(responseCode = "403", description = "Refresh token invalid or expired")
     })
     @PostMapping("/refresh")
-    public AuthResponseDto refreshToken(HttpServletRequest request, HttpServletResponse response) {
+    public AuthResponseDto refreshToken(@RequestBody RefreshRequestDto dto) {
         log.info("Refresh token requested");
-        return authService.refreshToken(request, response);
+        return authService.refreshToken(dto.getRefreshToken());
     }
+
 
     // -------------------- LOGOUT --------------------
     @Operation(summary = "Logout user and invalidate refresh token")
@@ -95,10 +90,11 @@ public class AuthController {
             @ApiResponse(responseCode = "200", description = "Logout successful")
     })
     @PostMapping("/logout")
-    public void logout(HttpServletRequest request, HttpServletResponse response) {
+    public void logout(@RequestBody RefreshRequestDto dto) {
         log.info("Logout requested");
-        authService.logout(request, response);
+        authService.logout(dto.getRefreshToken());
     }
+
 
     // -------------------- GET USER PROFILE --------------------
     @Operation(summary = "Get current user profile")
