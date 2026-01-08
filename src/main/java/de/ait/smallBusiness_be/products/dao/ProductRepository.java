@@ -1,5 +1,6 @@
 package de.ait.smallBusiness_be.products.dao;
 
+import de.ait.smallBusiness_be.products.dto.ProductPickDto;
 import de.ait.smallBusiness_be.products.model.Product;
 import de.ait.smallBusiness_be.products.model.ProductCategory;
 import org.springframework.data.domain.Page;
@@ -90,5 +91,38 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     """)
     List<Product> searchProductsByCategory(@Param("categoryId") int categoryId,
                                            @Param("searchTerm") String searchTerm);
+
+    @Query("""
+   SELECT new de.ait.smallBusiness_be.products.dto.ProductPickDto(
+         p.id,
+         p.name,
+         p.article,
+         p.vendorArticle,
+         p.purchasingPrice,
+         p.sellingPrice,
+         p.productCategory.id
+     )
+    FROM Product p
+    WHERE
+        NOT (
+            (:searchTerm IS NULL OR :searchTerm = '')
+            AND :categoryId IS NULL
+        )
+        AND
+        (:categoryId IS NULL OR p.productCategory.id = :categoryId)
+        AND (
+            :searchTerm IS NULL OR :searchTerm = '' OR
+            LOWER(p.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR
+            LOWER(p.article) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR
+            LOWER(p.vendorArticle) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
+        )
+    ORDER BY p.name
+""")
+    List<ProductPickDto> pickProducts(
+            @Param("searchTerm") String searchTerm,
+            @Param("categoryId") Long categoryId,
+            Pageable pageable
+    );
+
 
 }

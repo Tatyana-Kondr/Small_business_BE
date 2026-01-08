@@ -2,6 +2,7 @@ package de.ait.smallBusiness_be.products.controller;
 
 import de.ait.smallBusiness_be.products.controller.api.ProductsApi;
 import de.ait.smallBusiness_be.products.dto.NewProductDto;
+import de.ait.smallBusiness_be.products.dto.ProductPickDto;
 import de.ait.smallBusiness_be.products.dto.UpdateProductDto;
 import de.ait.smallBusiness_be.products.dto.ProductDto;
 import de.ait.smallBusiness_be.products.service.ProductService;
@@ -53,6 +54,11 @@ public class ProductController implements ProductsApi {
     @Override
     public List<ProductDto> getProductsByCategory(int categoryId, String search) {
         return productService.getAllProductsByCategoryId(categoryId, search);
+    }
+
+    @Override
+    public List<ProductPickDto> pickProducts(String search, Long categoryId, Integer limit) {
+        return productService.pick(search, categoryId, limit);
     }
 
     @Override

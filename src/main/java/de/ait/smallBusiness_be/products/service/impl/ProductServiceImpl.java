@@ -4,10 +4,7 @@ import de.ait.smallBusiness_be.exceptions.ErrorDescription;
 import de.ait.smallBusiness_be.exceptions.RestApiException;
 import de.ait.smallBusiness_be.products.dao.ProductRepository;
 import de.ait.smallBusiness_be.products.dao.UnitOfMeasurementRepository;
-import de.ait.smallBusiness_be.products.dto.NewDimensionsDto;
-import de.ait.smallBusiness_be.products.dto.NewProductDto;
-import de.ait.smallBusiness_be.products.dto.UpdateProductDto;
-import de.ait.smallBusiness_be.products.dto.ProductDto;
+import de.ait.smallBusiness_be.products.dto.*;
 import de.ait.smallBusiness_be.products.model.Dimensions;
 import de.ait.smallBusiness_be.products.model.Product;
 import de.ait.smallBusiness_be.products.model.UnitOfMeasurement;
@@ -17,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -231,6 +229,20 @@ public class ProductServiceImpl implements ProductService {
             throw new RestApiException(ErrorDescription.LIST_PRODUCTS_IS_EMPTY, HttpStatus.NOT_FOUND);
         }
         return mapToProductDtoList(products);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProductPickDto> pick(String searchTerm, Long categoryId, Integer limit) {
+        String q = (searchTerm == null) ? "" : searchTerm.trim();
+        int safeLimit = (limit == null) ? 50 : Math.min(Math.max(limit, 10), 100);
+
+        // Если нет категории и строка меньше 2 символов — не ищем
+        if (categoryId == null && q.length() < 2) {
+            return List.of();
+        }
+
+        return productRepository.pickProducts(q, categoryId, PageRequest.of(0, safeLimit));
     }
 
     public Product getProductOrThrow(Long id) {
