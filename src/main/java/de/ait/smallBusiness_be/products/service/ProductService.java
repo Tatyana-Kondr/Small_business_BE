@@ -2,6 +2,7 @@ package de.ait.smallBusiness_be.products.service;
 
 
 import de.ait.smallBusiness_be.products.dto.NewProductDto;
+import de.ait.smallBusiness_be.products.dto.ProductPickDto;
 import de.ait.smallBusiness_be.products.dto.UpdateProductDto;
 import de.ait.smallBusiness_be.products.dto.ProductDto;
 import de.ait.smallBusiness_be.products.model.Product;
@@ -31,4 +32,5 @@ public interface ProductService {
     ProductDto findProductByArticle(String article);
     List<ProductDto> findProductsByVendorArticle(String vendorArticle);
     List<ProductDto> findProductsByName(String name);
+    List<ProductPickDto> pick(String searchTerm, Long categoryId, Integer limit);
 }

@@ -70,19 +70,19 @@ class ProductCategoryServiceImplTest {
     void getProductCategoryById_success() {
         ProductCategory entity = new ProductCategory();
         ProductCategoryDto dto = new ProductCategoryDto();
-        when(repository.findById(1)).thenReturn(Optional.of(entity));
+        when(repository.findById(1L)).thenReturn(Optional.of(entity));
         when(modelMapper.map(entity, ProductCategoryDto.class)).thenReturn(dto);
 
-        ProductCategoryDto result = service.getProductCategoryById(1);
+        ProductCategoryDto result = service.getProductCategoryById(1L);
 
         assertThat(result).isNotNull();
     }
 
     @Test
     void getProductCategoryById_notFound_throws() {
-        when(repository.findById(1)).thenReturn(Optional.empty());
+        when(repository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.getProductCategoryById(1))
+        assertThatThrownBy(() -> service.getProductCategoryById(1L))
                 .isInstanceOf(RestApiException.class)
                 .hasMessageContaining("Category not found");
     }
@@ -91,9 +91,9 @@ class ProductCategoryServiceImplTest {
     @Test
     void deleteProductCategoryById_success() {
         ProductCategory entity = new ProductCategory();
-        when(repository.findById(1)).thenReturn(Optional.of(entity));
+        when(repository.findById(1L)).thenReturn(Optional.of(entity));
 
-        service.deleteProductCategoryById(1);
+        service.deleteProductCategoryById(1L);
 
         verify(repository).delete(entity);
         verify(repository).flush();
@@ -102,10 +102,10 @@ class ProductCategoryServiceImplTest {
     @Test
     void deleteProductCategoryById_dataIntegrityViolation_throws() {
         ProductCategory entity = new ProductCategory();
-        when(repository.findById(1)).thenReturn(Optional.of(entity));
+        when(repository.findById(1L)).thenReturn(Optional.of(entity));
         doThrow(DataIntegrityViolationException.class).when(repository).delete(entity);
 
-        assertThatThrownBy(() -> service.deleteProductCategoryById(1))
+        assertThatThrownBy(() -> service.deleteProductCategoryById(1L))
                 .isInstanceOf(RestApiException.class)
                 .hasMessageContaining("Category cannot be deleted because it is used in other records");
     }
@@ -115,15 +115,15 @@ class ProductCategoryServiceImplTest {
     void updateProductCategory_success() {
         NewProductCategoryDto newDto = new NewProductCategoryDto("Books", "BKS");
         ProductCategory entity = new ProductCategory();
-        entity.setId(1);
+        entity.setId(1L);
         ProductCategoryDto dto = new ProductCategoryDto();
 
-        when(repository.findById(1)).thenReturn(Optional.of(entity));
+        when(repository.findById(1L)).thenReturn(Optional.of(entity));
         when(repository.findByNameIgnoreCaseOrArtNameIgnoreCase("BOOKS", "BKS")).thenReturn(Collections.emptyList());
         when(repository.save(entity)).thenReturn(entity);
         when(modelMapper.map(entity, ProductCategoryDto.class)).thenReturn(dto);
 
-        ProductCategoryDto result = service.updateProductCategory(1, newDto);
+        ProductCategoryDto result = service.updateProductCategory(1L, newDto);
 
         assertThat(result).isNotNull();
         verify(repository).save(entity);
@@ -133,14 +133,14 @@ class ProductCategoryServiceImplTest {
     void updateProductCategory_duplicate_throws() {
         NewProductCategoryDto newDto = new NewProductCategoryDto("Books", "BKS");
         ProductCategory entity = new ProductCategory();
-        entity.setId(1);
+        entity.setId(1L);
         ProductCategory other = new ProductCategory();
-        other.setId(2);
+        other.setId(2L);
 
-        when(repository.findById(1)).thenReturn(Optional.of(entity));
+        when(repository.findById(1L)).thenReturn(Optional.of(entity));
         when(repository.findByNameIgnoreCaseOrArtNameIgnoreCase("BOOKS", "BKS")).thenReturn(List.of(other));
 
-        assertThatThrownBy(() -> service.updateProductCategory(1, newDto))
+        assertThatThrownBy(() -> service.updateProductCategory(1L, newDto))
                 .isInstanceOf(RestApiException.class)
                 .hasMessageContaining("Category already exists");
     }

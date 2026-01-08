@@ -140,6 +140,7 @@ public class SecurityConfig {
                                 "/api/products/{id}",
                                 "/api/products",
                                 "/api/products/all",
+                                "/api/products/pick",
                                 "/api/products/category/{categoryId}",
                                 "/api/products/category/{categoryId}/all",
                                 "/api/product-categories",
@@ -178,7 +179,8 @@ public class SecurityConfig {
                                 "/api/purchases/{id}/update-payment-status",
                                 "/api/sales/{id}/update-payment-status",
                                 "/api/users/{id}/change-password").authenticated()
-                        .anyRequest().permitAll()
+                        .anyRequest().authenticated()
+
                 )
 
                 .exceptionHandling(ex -> ex

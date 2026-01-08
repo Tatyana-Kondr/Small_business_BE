@@ -33,17 +33,17 @@ public class ProductCategoryController implements ProductCategoryApi {
     }
 
     @Override
-    public ProductCategoryDto getProductCategoryById(int id) {
+    public ProductCategoryDto getProductCategoryById(Long id) {
         return productCategoryService.getProductCategoryById(id);
     }
 
     @Override
-    public ProductCategoryDto updateProductCategoryById(int id, NewProductCategoryDto updatedCategory) {
+    public ProductCategoryDto updateProductCategoryById(Long id, NewProductCategoryDto updatedCategory) {
         return productCategoryService.updateProductCategory(id, updatedCategory);
     }
 
     @Override
-    public void removeProductCategoryById(int id) {
+    public void removeProductCategoryById(Long id) {
         productCategoryService.deleteProductCategoryById(id);
     }
 }

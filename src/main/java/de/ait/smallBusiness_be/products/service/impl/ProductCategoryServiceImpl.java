@@ -58,7 +58,7 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
     }
 
     @Override
-    public ProductCategoryDto getProductCategoryById(Integer id) {
+    public ProductCategoryDto getProductCategoryById(Long id) {
         ProductCategory productCategory = getProductCategoryOrThrow(id);
 
         return modelMapper.map(productCategory, ProductCategoryDto.class);
@@ -66,7 +66,7 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
 
     @Override
     @Transactional
-    public void deleteProductCategoryById(Integer id) {
+    public void deleteProductCategoryById(Long id) {
         ProductCategory productCategory = getProductCategoryOrThrow(id);
 
         try {
@@ -79,7 +79,7 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
 
     @Override
     @Transactional
-    public ProductCategoryDto updateProductCategory(Integer id, NewProductCategoryDto newProductCategoryDto) {
+    public ProductCategoryDto updateProductCategory(Long id, NewProductCategoryDto newProductCategoryDto) {
         ProductCategory productCategory = getProductCategoryOrThrow(id);
 
         // Приводим к верхнему регистру
@@ -118,7 +118,7 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
                 .collect(Collectors.toList());
     }
 
-    private ProductCategory getProductCategoryOrThrow(Integer id) {
+    private ProductCategory getProductCategoryOrThrow(Long id) {
         return productCategoryRepository
                 .findById(id)
                 .orElseThrow(() -> new RestApiException(ErrorDescription.CATEGORY_NOT_FOUND, HttpStatus.NOT_FOUND));

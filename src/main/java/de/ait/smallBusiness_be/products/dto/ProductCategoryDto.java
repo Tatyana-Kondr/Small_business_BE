@@ -21,7 +21,7 @@ import lombok.Setter;
 @Schema(description = "Product Category")
 public class ProductCategoryDto{
         @Schema(description = "ID of the product category", example = "1")
-        Integer id;
+        Long id;
 
         @Schema(description = "Name of the product category", example = "Electronics")
         String name;
