@@ -88,7 +88,7 @@ public interface ProductCategoryApi {
                             schema = @Schema(type = "string")))
     })
     @ResponseStatus(HttpStatus.OK)
-    ProductCategoryDto getProductCategoryById(@PathVariable int id);
+    ProductCategoryDto getProductCategoryById(@PathVariable Long id);
 
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -119,7 +119,7 @@ public interface ProductCategoryApi {
                             schema = @Schema(type = "string")))
     })
     @ResponseStatus(HttpStatus.OK)
-    ProductCategoryDto updateProductCategoryById(@PathVariable int id,
+    ProductCategoryDto updateProductCategoryById(@PathVariable Long id,
                                                  @RequestBody @Valid NewProductCategoryDto updatedCategory);
 
 
@@ -145,5 +145,5 @@ public interface ProductCategoryApi {
                             schema = @Schema(type = "string")))
     })
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    void removeProductCategoryById(@PathVariable int id);
+    void removeProductCategoryById(@PathVariable Long id);
 }
