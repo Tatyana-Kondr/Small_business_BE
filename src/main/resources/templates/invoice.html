@@ -7,9 +7,9 @@
 
         body { font-family: Arial, sans-serif; font-size: 12px; color: #000; }
 
-        table { width: 100%; border-collapse: collapse; }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 
-        th, td { text-align: left; padding: 3px; }
+        th, td { text-align: left; padding: 3px; vertical-align: top; }
 
         th { border-bottom: 1px solid #7B7C81; }
 
@@ -19,8 +19,9 @@
             max-width: 250px;        /* ограничение ширины */
             width: 250px;            /* фиксированная ширина, чтобы таблица была ровной */
             word-wrap: break-word;   /* перенос слов */
-            overflow-wrap: break-word;
-            white-space: normal;     /* разрешить перенос строк */
+            white-space: normal !important;     /* разрешить перенос строк */
+            overflow-wrap: anywhere;     /* современный вариант */
+            line-height: 1.25;
         }
 
         .totals { margin-top: 10px; width: 100%; border-collapse: collapse }
@@ -32,7 +33,6 @@
         .logo { height: 100px; }
         .re { font-size: 18px; font-weight: bold; font-family: "Microsoft Sans Serif", sans-serif; color: #193f6e; border-bottom: 2px solid #193f6e; margin: 0; padding: 0; }
         .contact { font-size: 10px; text-align: center; margin: 0; padding: 0; }
-        .artikel-column { white-space: nowrap; }
         .shipping { font-size: 10px; text-align: left; padding: 0;  }
         .thanks { text-align: center; margin: 30px 0 20px 0; padding: 0; font-size: 12px; }
         .footer { position: fixed; bottom: 0; left: 0; right: 0; padding-top: 10px; }
@@ -126,7 +126,8 @@
     <tr th:each="item : ${sale.saleItems}">
         <td th:text="${item.position}"></td>
         <td th:text="${item.product.article}"></td>
-        <td class="col-desc" th:text="${item.productName}"></td>
+        <td class="col-desc"
+            th:utext="${#strings.replace(item.productName, '\n', '<br/>')}"></td>
         <td class="center" th:text="${item.quantity}"></td>
         <td class="center"
             th:text="${item.product.unitOfMeasurement != null ? item.product.unitOfMeasurement.name : ''}"></td>
