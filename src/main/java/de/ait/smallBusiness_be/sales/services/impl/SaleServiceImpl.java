@@ -110,6 +110,7 @@ public class SaleServiceImpl implements SaleService {
                     .map(newSaleItemDto -> {
                         Product product = productService.getProductOrThrow(newSaleItemDto.getProductId());
                         SaleItem saleItem = modelMapper.map(newSaleItemDto, SaleItem.class);
+                        saleItem.setProductName(normalizeNewlines(saleItem.getProductName()));
                         saleItem.setProduct(product);
                         saleItem.setSale(sale);
 
@@ -267,7 +268,7 @@ public class SaleServiceImpl implements SaleService {
             SaleItem item = new SaleItem();
             item.setSale(sale);
             item.setProduct(product);
-            item.setProductName(itemDto.getProductName());
+            item.setProductName(normalizeNewlines(itemDto.getProductName()));
             item.setQuantity(itemDto.getQuantity());
             item.setUnitPrice(itemDto.getUnitPrice());
             item.setDiscount(itemDto.getDiscount());
@@ -431,5 +432,11 @@ public class SaleServiceImpl implements SaleService {
 
         return "RE" + year + formattedNumber;
     }
+
+    private String normalizeNewlines(String s) {
+        if (s == null) return null;
+        return s.replace("\r\n", "\n").replace("\r", "\n");
+    }
+
 
 }

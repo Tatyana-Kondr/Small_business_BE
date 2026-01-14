@@ -16,11 +16,11 @@
         thead { display: table-header-group; }
         tfoot { display: table-footer-group; }
         .col-desc {
-            max-width: 250px;        /* ограничение ширины */
-            width: 250px;            /* фиксированная ширина, чтобы таблица была ровной */
-            word-wrap: break-word;   /* перенос слов */
-            white-space: normal !important;     /* разрешить перенос строк */
-            overflow-wrap: anywhere;     /* современный вариант */
+            max-width: 250px;
+            width: 250px;
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow-wrap: anywhere;
             line-height: 1.25;
         }
 
@@ -126,8 +126,7 @@
     <tr th:each="item : ${sale.saleItems}">
         <td th:text="${item.position}"></td>
         <td th:text="${item.product.article}"></td>
-        <td class="col-desc"
-            th:utext="${#strings.replace(item.productName, '\n', '<br/>')}"></td>
+        <td class="col-desc" th:text="${item.productName}"></td>
         <td class="center" th:text="${item.quantity}"></td>
         <td class="center"
             th:text="${item.product.unitOfMeasurement != null ? item.product.unitOfMeasurement.name : ''}"></td>
