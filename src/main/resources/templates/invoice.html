@@ -23,7 +23,9 @@
             overflow-wrap: anywhere;
             line-height: 1.25;
         }
-
+        .artikel-column {
+            white-space: nowrap;
+        }
         .totals { margin-top: 10px; width: 100%; border-collapse: collapse }
         .totals td { border: none; padding: 4px 6px; }
 
@@ -125,7 +127,7 @@
     <tbody>
     <tr th:each="item : ${sale.saleItems}">
         <td th:text="${item.position}"></td>
-        <td th:text="${item.product.article}"></td>
+        <td class="artikel-column" th:text="${item.product.article}"></td>
         <td class="col-desc" th:text="${item.productName}"></td>
         <td class="center" th:text="${item.quantity}"></td>
         <td class="center"
