@@ -187,7 +187,6 @@
     </tbody>
 </table>
 
-
 <!-- TOTALS -->
 <table class="totals">
     <tr>
@@ -217,7 +216,7 @@
 
 <!-- FOOTER -->
 <div class="footer">
-    <td class="shipping">
+    <div class="shipping">
         <table>
             <tr>
                 <td style="font-size: 12px;">Zahlungsbedingungen:</td>
@@ -234,7 +233,7 @@
                 <td th:text="${sale.deliveryDate != null ? sale.deliveryDate.format(T(java.time.format.DateTimeFormatter).ofPattern('dd.MM.yyyy')) : ''}"></td>
             </tr>
         </table>
-    </td>
+    </div>
 
     <div class="thanks bold">BESTEN DANK FÜR IHRE ANFRAGE UND VERTRAUEN!!!</div>
 
