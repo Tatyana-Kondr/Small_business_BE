@@ -6,6 +6,7 @@ import de.ait.smallBusiness_be.company.model.Company;
 import de.ait.smallBusiness_be.exceptions.ErrorDescription;
 import de.ait.smallBusiness_be.exceptions.RestApiException;
 import de.ait.smallBusiness_be.sales.models.Sale;
+import de.ait.smallBusiness_be.sales.models.SaleItem;
 import de.ait.smallBusiness_be.sales.services.DocumentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,6 +19,8 @@ import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
+import java.util.Set;
 
 
 @Service
@@ -26,6 +29,8 @@ public class DocumentServiceImpl implements DocumentService {
 
     private final SpringTemplateEngine templateEngine;
     private final CompanyRepository companyRepository;
+
+    private static final Set<Long> EXCLUDED_CATEGORY_IDS = Set.of(5L, 11L, 12L);
 
     @Override
     public void generateInvoicePdf(Sale sale, String baseFolder) {
@@ -78,6 +83,12 @@ public class DocumentServiceImpl implements DocumentService {
         context.setVariable("sale", sale);
         context.setVariable("company", company);
         context.setVariable("logoPath", logoPath);
+        if ("delivery-bill".equals(templateName)) {
+            context.setVariable("items", printableDeliveryItems(sale));
+        } else {
+            context.setVariable("items", sale.getSaleItems());
+        }
+
 
         String htmlContent = templateEngine.process(templateName, context);
 
@@ -137,5 +148,18 @@ public class DocumentServiceImpl implements DocumentService {
             return invoiceNumber.substring(2, 6); // YYYY
         }
         throw new RestApiException("Invalid document number format: " + invoiceNumber, HttpStatus.BAD_REQUEST);
+    }
+
+    private List<SaleItem> printableDeliveryItems(Sale sale) {
+        if (sale.getSaleItems() == null) return List.of();
+
+        return sale.getSaleItems().stream()
+                .filter(i -> i.getProduct() != null)
+                .filter(i -> i.getProduct().getProductCategory() != null)
+                .filter(i -> {
+                    Long catId = i.getProduct().getProductCategory().getId();
+                    return catId == null || !EXCLUDED_CATEGORY_IDS.contains(catId);
+                })
+                .toList();
     }
 }
