@@ -17,6 +17,8 @@ import org.thymeleaf.spring6.SpringTemplateEngine;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -89,8 +91,16 @@ public class DocumentServiceImpl implements DocumentService {
             context.setVariable("items", sale.getSaleItems());
         }
 
-
         String htmlContent = templateEngine.process(templateName, context);
+
+        try {
+            Path debugPath = Paths.get(yearFolderPath, documentNumber + ".html");
+            Files.writeString(debugPath, htmlContent, StandardCharsets.UTF_8);
+            System.out.println("DEBUG HTML saved to: " + debugPath.toAbsolutePath());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
 
         // Генерируем PDF
         try (OutputStream outputStream = new FileOutputStream(outputFile)) {
