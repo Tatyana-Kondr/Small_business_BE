@@ -172,8 +172,8 @@
     </tr>
     </thead>
     <tbody>
-    <tr th:each="item, stat : ${sale.saleItems}"  th:if="${item.product.productCategory.id != 2}">
-        <td th:text="${item.position}">1</td>
+    <tr th:each="item, stat : ${items}">
+        <td class="pos" th:text="${stat.count}">1</td>
         <td class="artikel-column" th:text="${item.product.article}">2022801290</td>
         <td th:text="${item.productName}">FEINSTRAHLEN1</td>
         <td class="center" th:text="${item.quantity}">17</td>
