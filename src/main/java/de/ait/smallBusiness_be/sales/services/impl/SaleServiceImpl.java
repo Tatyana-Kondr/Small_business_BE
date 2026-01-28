@@ -228,6 +228,7 @@ public class SaleServiceImpl implements SaleService {
         sale.setOrderNumber(updateSale.getOrderNumber());
         sale.setOrderType(updateSale.getOrderType());
         sale.setSalesDate(updateSale.getSalesDate());
+        sale.setDeliveryDate(updateSale.getDeliveryDate());
         sale.setDefaultTax(updateSale.getDefaultTax());
         sale.setDefaultDiscount(updateSale.getDefaultDiscount());
 
