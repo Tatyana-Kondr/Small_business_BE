@@ -15,52 +15,15 @@
 
         thead { display: table-header-group; }
         tfoot { display: table-footer-group; }
-        table.items{
-            width:100%;
-            border-collapse:collapse;
-            table-layout:fixed;
-            margin-top:10px;
-            border-bottom:1px solid #7B7C81;
+        .col-desc {
+            max-width: 250px;        /* ограничение ширины */
+            width: 250px;            /* фиксированная ширина, чтобы таблица была ровной */
+            word-wrap: break-word;   /* перенос слов */
+            white-space: normal !important;     /* разрешить перенос строк */
+            overflow-wrap: anywhere;     /* современный вариант */
+            line-height: 1.25;
         }
 
-        table.items th, table.items td{
-            padding:3px 6px;
-            vertical-align:top;
-        }
-
-        table.items th{ border-bottom:1px solid #7B7C81; }
-
-        /* ширины (оптимально под Artikel<=15) */
-        table.items col.c-pos  { width: 6%;  }  /* было слишком широко */
-        table.items col.c-art  { width: 16%; }  /* хватает на 15 символов */
-        table.items col.c-desc { width: 36%; }  /* максимум для названия */
-        table.items col.c-qty  { width: 8%;  }
-        table.items col.c-unit { width: 10%; }
-        table.items col.c-price{ width: 10%; }
-        table.items col.c-disc { width: 6%;  }  /* Rabatt узкий */
-        table.items col.c-sum  { width: 8%;  }
-
-        /* поведение контента */
-        th.pos, td.pos{ white-space:nowrap; }
-        th.art, td.art{
-            white-space:nowrap;
-            overflow:hidden;              /* ключ: не лезем в Bezeichnung */
-        }
-        th.desc, td.desc{
-            white-space:normal;
-            overflow-wrap:anywhere;
-            word-break:break-word;
-            line-height:1.25;
-        }
-
-        /* Если Rabatt выключен — схлопываем его колонку полностью */
-        table.items.no-discount col.c-disc { width: 0; }
-        table.items.no-discount th.disc,
-        table.items.no-discount td.disc{
-            display:none;
-            padding:0;
-            border:0;
-        }
         .totals { margin-top: 10px; width: 100%; border-collapse: collapse }
         .totals td { border: none; padding: 4px 6px; }
 
@@ -145,44 +108,38 @@
 </p>
 
 <!-- ITEMS -->
-<table class="items" th:classappend="${sale.defaultDiscount > 0} ? '' : ' no-discount'">
-    <colgroup>
-        <col class="c-pos">
-        <col class="c-art">
-        <col class="c-desc">
-        <col class="c-qty">
-        <col class="c-unit">
-        <col class="c-price">
-        <col class="c-disc">
-        <col class="c-sum">
-    </colgroup>
-
+<table style="margin-top: 10px; border-bottom:1px solid #7B7C81;">
     <thead>
     <tr>
-        <th class="pos">Pos</th>
-        <th class="art">Artikel</th>
-        <th class="desc">Bezeichnung</th>
+        <th>Pos</th>
+        <th class="artikel-column">Artikel</th>
+        <th class="col-desc">Bezeichnung</th>
         <th class="center">Menge</th>
         <th class="center">Einheit</th>
         <th class="right">Preis</th>
-        <th class="right disc" th:if="${sale.defaultDiscount > 0}">Rabatt</th>
+        <th class="right" th:if="${sale.defaultDiscount > 0}">Rabatt</th>
         <th class="right">Gesamt</th>
     </tr>
     </thead>
 
     <tbody>
     <tr th:each="item : ${sale.saleItems}">
-        <td class="pos" th:text="${item.position}">1</td>
-        <td class="art" th:text="${item.product.article}">2022801290</td>
-        <td class="desc" th:text="${item.productName}">FEINSTRAHLEN1</td>
-        <td class="center" th:text="${item.quantity}">12</td>
-        <td class="center" th:text="${item.product.unitOfMeasurement != null ? item.product.unitOfMeasurement.name : ''}">st</td>
-        <td class="right" th:text="${#numbers.formatDecimal(item.unitPrice, 1, 'COMMA', 2, 'POINT')} + ' €'">16,30</td>
+        <td th:text="${item.position}"></td>
+        <td th:text="${item.product.article}"></td>
+        <td class="col-desc"
+            th:utext="${#strings.replace(item.productName, '\n', '<br/>')}"></td>
+        <td class="center" th:text="${item.quantity}"></td>
+        <td class="center"
+            th:text="${item.product.unitOfMeasurement != null ? item.product.unitOfMeasurement.name : ''}"></td>
 
-        <td class="right disc" th:if="${sale.defaultDiscount > 0}"
+        <td class="right"
+            th:text="${#numbers.formatDecimal(item.unitPrice, 1, 'COMMA', 2, 'POINT')} + ' €'"></td>
+
+        <td class="right" th:if="${sale.defaultDiscount > 0}"
             th:text="${item.discount > 0 ? item.discount + '%' : ''}"></td>
 
-        <td class="right" th:text="${#numbers.formatDecimal(item.totalPrice, 1, 'COMMA', 2, 'POINT')} + ' €'">195,60</td>
+        <td class="right"
+            th:text="${#numbers.formatDecimal(item.totalPrice, 1, 'COMMA', 2, 'POINT')} + ' €'"></td>
     </tr>
     </tbody>
 </table>
@@ -199,7 +156,7 @@
             <table style="width: 100%; border-collapse: collapse;">
                 <tr>
                     <td class="right bold" style="text-align: left; padding-right: 10px;">Gesamt Netto:</td>
-                    <td class="right" style="text-align: right;" th:text="${#numbers.formatDecimal(sale.totalPrice, 1, 'COMMA', 2, 'POINT')} + ' €'">195,60 €</td>
+                    <td class="right" style="text-align: right;" th:text="${#numbers.formatDecimal(sale.totalPrice, 1, 'COMMA', 2, 'POINT')} + ' €'">97,41 €</td>
                 </tr>
                 <tr>
                     <td class="right bold" style="text-align: left;" th:text="'zzgl. MwSt (' + ${sale.defaultTax} + '%):'">zzgl. MwSt (19%):</td>
@@ -216,7 +173,7 @@
 
 <!-- FOOTER -->
 <div class="footer">
-    <div class="shipping">
+    <td class="shipping">
         <table>
             <tr>
                 <td style="font-size: 12px;">Zahlungsbedingungen:</td>
@@ -233,7 +190,7 @@
                 <td th:text="${sale.deliveryDate != null ? sale.deliveryDate.format(T(java.time.format.DateTimeFormatter).ofPattern('dd.MM.yyyy')) : ''}"></td>
             </tr>
         </table>
-    </div>
+    </td>
 
     <div class="thanks bold">BESTEN DANK FÜR IHRE ANFRAGE UND VERTRAUEN!!!</div>
 
