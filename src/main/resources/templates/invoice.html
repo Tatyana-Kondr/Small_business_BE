@@ -21,6 +21,7 @@
             white-space: normal !important;     /* разрешить перенос строк */
             overflow-wrap: anywhere;     /* современный вариант */
             line-height: 1.25;
+            margin-left: 5px;
         }
 
         .totals { margin-top: 10px; width: 100%; border-collapse: collapse }
@@ -112,7 +113,7 @@
     <thead>
     <tr>
         <th style="width: 0.8cm;">Pos</th>
-        <th >Artikel</th>
+        <th class="center">Artikel</th>
         <th class="col-desc">Bezeichnung</th>
         <th class="center">Menge</th>
         <th class="center">Einheit</th>
@@ -176,17 +177,17 @@
     <td class="shipping">
         <table>
             <tr>
-                <td style="font-size: 12px;">Zahlungsbedingungen:</td>
+                <td style="font-size: 12px; width: 3.5cm;">Zahlungsbedingungen:</td>
                 <td th:text="${ (sale.termsOfPayment != null ? sale.termsOfPayment.name : '')  + (sale.paymentDate != null ? ' ' + sale.paymentDate.format(T(java.time.format.DateTimeFormatter).ofPattern('dd.MM.yyyy')) : '') }"></td>
             </tr>
 
             <tr th:if="${sale.shipping != null}" th:with="dim=${sale.shippingDimensions}">
-                <td style="font-size: 12px;">Versandart:</td>
+                <td style="font-size: 12px; width: 3.5cm;">Versandart:</td>
                 <td th:text="${(sale.shipping != null ? sale.shipping.name : '') + (dim != null and dim.width != null and dim.height != null and dim.length != null ? ' ' + dim.width + 'x' + dim.height + 'x' + dim.length + ' cm' : '') + (dim != null and dim.weight != null ? ', ' + dim.weight + ' kg' : '')}"></td>
             </tr>
 
             <tr>
-                <td style="font-size: 12px;">Lieferdatum:</td>
+                <td style="font-size: 12px; width: 3.5cm;">Lieferdatum:</td>
                 <td th:text="${sale.deliveryDate != null ? sale.deliveryDate.format(T(java.time.format.DateTimeFormatter).ofPattern('dd.MM.yyyy')) : ''}"></td>
             </tr>
         </table>
