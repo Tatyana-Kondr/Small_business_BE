@@ -113,7 +113,7 @@
     <thead>
     <tr>
         <th style="width: 1cm;">Pos</th>
-        <th class="center">Artikel</th>
+        <th >Artikel</th>
         <th class="col-desc">Bezeichnung</th>
         <th class="center">Menge</th>
         <th class="center">Einheit</th>
@@ -126,7 +126,7 @@
     <tbody>
     <tr th:each="item : ${sale.saleItems}">
         <td th:text="${item.position}">1</td>
-        <td class="center artikel-column" th:text="${item.product.article}">3606011300</td>
+        <td class="artikel-column" th:text="${item.product.article}">3606011300</td>
         <td class="col-desc"
             th:utext="${#strings.replace(item.productName, '\n', '<br/>')}">Verfaerbungen runterpolieren</td>
         <td class="center" th:text="${item.quantity}">36</td>
