@@ -36,6 +36,7 @@
         .shipping { font-size: 10px; text-align: left; padding: 0;  }
         .thanks { text-align: center; margin: 30px 0 20px 0; padding: 0; font-size: 12px; }
         .footer { position: fixed; bottom: 0; left: 0; right: 0; padding-top: 10px; }
+        .artikel-column {white-space: nowrap;}
     </style>
 </head>
 
@@ -56,7 +57,7 @@
     <tr>
         <td style="width:7cm; padding-right:10mm;">
             <p style="font-size:10px; margin: 15px 0 25px 0"
-               th:text="${company.name + ' - ' + company.address}"></p>
+               th:text="${company.name + ' - ' + company.address}">Company-Adresse</p>
 
             <h2
                     th:text="${sale.customer.name}"
@@ -68,7 +69,7 @@
             line-height:1.15;
             white-space:normal;
             word-wrap: normal;
-        ">
+        ">Testering and Testering Abfüllbetrieb GmbH
             </h2>
 
             <p style="font-size:14px; margin: 0 0 5px 0;"
@@ -111,8 +112,8 @@
 <table style="margin-top: 10px; border-bottom:1px solid #7B7C81;">
     <thead>
     <tr>
-        <th>Pos</th>
-        <th class="artikel-column">Artikel</th>
+        <th style="width: 1cm;">Pos</th>
+        <th class="center">Artikel</th>
         <th class="col-desc">Bezeichnung</th>
         <th class="center">Menge</th>
         <th class="center">Einheit</th>
@@ -124,22 +125,22 @@
 
     <tbody>
     <tr th:each="item : ${sale.saleItems}">
-        <td th:text="${item.position}"></td>
-        <td th:text="${item.product.article}"></td>
+        <td th:text="${item.position}">1</td>
+        <td class="center artikel-column" th:text="${item.product.article}">3606011300</td>
         <td class="col-desc"
-            th:utext="${#strings.replace(item.productName, '\n', '<br/>')}"></td>
-        <td class="center" th:text="${item.quantity}"></td>
+            th:utext="${#strings.replace(item.productName, '\n', '<br/>')}">Verfaerbungen runterpolieren</td>
+        <td class="center" th:text="${item.quantity}">36</td>
         <td class="center"
-            th:text="${item.product.unitOfMeasurement != null ? item.product.unitOfMeasurement.name : ''}"></td>
+            th:text="${item.product.unitOfMeasurement != null ? item.product.unitOfMeasurement.name : ''}">st</td>
 
         <td class="right"
-            th:text="${#numbers.formatDecimal(item.unitPrice, 1, 'COMMA', 2, 'POINT')} + ' €'"></td>
+            th:text="${#numbers.formatDecimal(item.unitPrice, 1, 'COMMA', 2, 'POINT')} + ' €'">16,30 €</td>
 
         <td class="right" th:if="${sale.defaultDiscount > 0}"
             th:text="${item.discount > 0 ? item.discount + '%' : ''}"></td>
 
         <td class="right"
-            th:text="${#numbers.formatDecimal(item.totalPrice, 1, 'COMMA', 2, 'POINT')} + ' €'"></td>
+            th:text="${#numbers.formatDecimal(item.totalPrice, 1, 'COMMA', 2, 'POINT')} + ' €'">586,80 €</td>
     </tr>
     </tbody>
 </table>
@@ -156,15 +157,15 @@
             <table style="width: 100%; border-collapse: collapse;">
                 <tr>
                     <td class="right bold" style="text-align: left; padding-right: 10px;">Gesamt Netto:</td>
-                    <td class="right" style="text-align: right;" th:text="${#numbers.formatDecimal(sale.totalPrice, 1, 'COMMA', 2, 'POINT')} + ' €'">97,41 €</td>
+                    <td class="right" style="text-align: right;" th:text="${#numbers.formatDecimal(sale.totalPrice, 1, 'COMMA', 2, 'POINT')} + ' €'">586,80 €</td>
                 </tr>
                 <tr>
                     <td class="right bold" style="text-align: left;" th:text="'zzgl. MwSt (' + ${sale.defaultTax} + '%):'">zzgl. MwSt (19%):</td>
-                    <td class="right" style="text-align: right;" th:text="${#numbers.formatDecimal(sale.taxAmount, 1, 'COMMA', 2, 'POINT')} + ' €'">18,51 €</td>
+                    <td class="right" style="text-align: right;" th:text="${#numbers.formatDecimal(sale.taxAmount, 1, 'COMMA', 2, 'POINT')} + ' €'">111,49 €</td>
                 </tr>
                 <tr>
                     <td class="right bold" style="text-align: left;">Rechnungsbetrag:</td>
-                    <td class="right bold" style="text-align: right;" th:text="${#numbers.formatDecimal(sale.totalAmount, 1, 'COMMA', 2, 'POINT')} + ' €'">115,92 €</td>
+                    <td class="right bold" style="text-align: right;" th:text="${#numbers.formatDecimal(sale.totalAmount, 1, 'COMMA', 2, 'POINT')} + ' €'">698,29 €</td>
                 </tr>
             </table>
         </td>
