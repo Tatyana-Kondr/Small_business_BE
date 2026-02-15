@@ -2,6 +2,7 @@ package de.ait.smallBusiness_be.customers.controllers;
 
 import de.ait.smallBusiness_be.customers.controllers.api.CustomersApi;
 import de.ait.smallBusiness_be.customers.dto.CustomerDto;
+import de.ait.smallBusiness_be.customers.dto.CustomerPickDto;
 import de.ait.smallBusiness_be.customers.dto.NewCustomerDto;
 import de.ait.smallBusiness_be.customers.services.CustomerService;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 /**
  * @author Kondratyeva
@@ -32,8 +35,18 @@ public class CustomerController implements CustomersApi {
     }
 
     @Override
+    public List<CustomerPickDto> getCustomers() {
+        return customerService.getCustomers();
+    }
+
+    @Override
     public Page<CustomerDto> getAllCustomersWithCustomerNumber(Pageable pageable, String sort) {
         return customerService.getAllCustomersWithCustomerNumber(pageable);
+    }
+
+    @Override
+    public List<CustomerPickDto> getCustomersWithCustomerNumber() {
+        return customerService.getCustomersWithCustomerNumber();
     }
 
     @Override

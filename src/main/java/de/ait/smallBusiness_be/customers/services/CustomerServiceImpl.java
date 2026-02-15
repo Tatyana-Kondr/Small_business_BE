@@ -3,6 +3,7 @@ package de.ait.smallBusiness_be.customers.services;
 import de.ait.smallBusiness_be.customers.dao.CustomerRepository;
 import de.ait.smallBusiness_be.customers.dto.AddressDto;
 import de.ait.smallBusiness_be.customers.dto.CustomerDto;
+import de.ait.smallBusiness_be.customers.dto.CustomerPickDto;
 import de.ait.smallBusiness_be.customers.dto.NewCustomerDto;
 import de.ait.smallBusiness_be.customers.model.Address;
 import de.ait.smallBusiness_be.customers.model.Customer;
@@ -17,6 +18,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static de.ait.smallBusiness_be.exceptions.ErrorDescription.CUSTOMER_ALREADY_EXISTS;
 import static de.ait.smallBusiness_be.exceptions.ErrorDescription.CUSTOMER_NUMBER_ALREADY_EXISTS;
@@ -61,6 +65,18 @@ public class CustomerServiceImpl implements  CustomerService{
     public Page<CustomerDto> getAllCustomersWithCustomerNumber(Pageable pageable) {
         Page <Customer> customers = customerRepository.findAllByCustomerNumberIsNotNullAndCustomerNumberNot(pageable, "");
         return customers.map(customer -> modelMapper.map(customer, CustomerDto.class));
+    }
+
+    @Override
+    public List<CustomerPickDto> getCustomers() {
+        List<Customer> customers = customerRepository.findAll();
+        return customers.stream().map(customer -> modelMapper.map(customer, CustomerPickDto.class)).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<CustomerPickDto> getCustomersWithCustomerNumber() {
+        List<Customer> customers = customerRepository.findAllByCustomerNumberIsNotNull();
+        return customers.stream().map(customer -> modelMapper.map(customer, CustomerPickDto.class)).collect(Collectors.toList());
     }
 
     @Override
