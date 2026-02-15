@@ -1,6 +1,7 @@
 package de.ait.smallBusiness_be.customers.controllers.api;
 
 import de.ait.smallBusiness_be.customers.dto.CustomerDto;
+import de.ait.smallBusiness_be.customers.dto.CustomerPickDto;
 import de.ait.smallBusiness_be.customers.dto.NewCustomerDto;
 import de.ait.smallBusiness_be.exceptions.ErrorResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
@@ -20,6 +21,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * @author admin
@@ -88,6 +91,28 @@ public interface CustomersApi {
             @RequestParam(defaultValue = "name") String sort);
 
     @PreAuthorize("isAuthenticated()")
+    @GetMapping("/pick")
+    @Operation(
+            summary = "Get all customers",
+            description = "Retrieve a list of all customers.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200",
+                    description = "List of Customers retrieved successfully.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = CustomerDto[].class))),
+            @ApiResponse(responseCode = "404",
+                    description = "No customers found.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDto.class))),
+            @ApiResponse(responseCode = "401",
+                    description = "User unauthorized.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(type = "string")))
+    })
+    @ResponseStatus(HttpStatus.OK)
+    List<CustomerPickDto> getCustomers();
+
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/customer-number")
     @Operation(
             summary = "Get all customers with customer number",
@@ -110,6 +135,28 @@ public interface CustomersApi {
     Page<CustomerDto> getAllCustomersWithCustomerNumber(
             @PageableDefault(size = 15) Pageable pageable,
             @RequestParam(defaultValue = "name") String sort);
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/customer-number/pick")
+    @Operation(
+            summary = "Get all customers with customer number",
+            description = "Retrieve a list of all customers.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200",
+                    description = "List of Customers retrieved successfully.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = CustomerDto[].class))),
+            @ApiResponse(responseCode = "404",
+                    description = "No customers found.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDto.class))),
+            @ApiResponse(responseCode = "401",
+                    description = "User unauthorized.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(type = "string")))
+    })
+    @ResponseStatus(HttpStatus.OK)
+    List<CustomerPickDto> getCustomersWithCustomerNumber();
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
