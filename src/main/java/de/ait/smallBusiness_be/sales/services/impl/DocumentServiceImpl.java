@@ -93,15 +93,6 @@ public class DocumentServiceImpl implements DocumentService {
 
         String htmlContent = templateEngine.process(templateName, context);
 
-        try {
-            Path debugPath = Paths.get(yearFolderPath, documentNumber + ".html");
-            Files.writeString(debugPath, htmlContent, StandardCharsets.UTF_8);
-            System.out.println("DEBUG HTML saved to: " + debugPath.toAbsolutePath());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-
         // Генерируем PDF
         try (OutputStream outputStream = new FileOutputStream(outputFile)) {
             PdfRendererBuilder builder = new PdfRendererBuilder();
