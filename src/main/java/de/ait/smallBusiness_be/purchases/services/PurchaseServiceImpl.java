@@ -152,8 +152,6 @@ public class PurchaseServiceImpl implements PurchaseService {
             throw new IllegalArgumentException("Invalid payment status: " + newPurchaseDto.getPaymentStatus());
         }
 
-        // Удаляем все старые позиции
-        purchase.getPurchaseItems().clear();
         calculatePurchaseAmounts(purchase, newPurchaseDto);
 
         Purchase updatedPurchase = purchaseRepository.save(purchase);
@@ -214,11 +212,19 @@ public class PurchaseServiceImpl implements PurchaseService {
         AtomicReference<BigDecimal> taxSum = new AtomicReference<>(BigDecimal.ZERO);
         AtomicReference<BigDecimal> total = new AtomicReference<>(BigDecimal.ZERO);
 
-        List<PurchaseItem> purchaseItems = newPurchaseDto.getPurchaseItems().stream()
-                .map(dto -> createPurchaseItem(purchase, dto, subtotal, taxSum, total, newPurchaseDto.getPurchasingDate()))
-                .toList();
+        purchase.getPurchaseItems().clear();
 
-        purchase.setPurchaseItems(purchaseItems);
+        newPurchaseDto.getPurchaseItems().stream()
+                .map(dto -> createPurchaseItem(
+                        purchase,
+                        dto,
+                        subtotal,
+                        taxSum,
+                        total,
+                        newPurchaseDto.getPurchasingDate()
+                ))
+                .forEach(purchase.getPurchaseItems()::add);
+
         purchase.setSubtotal(subtotal.get());
         purchase.setTaxSum(taxSum.get());
         purchase.setTotal(total.get());
