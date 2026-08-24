@@ -52,7 +52,7 @@ public class ProductController implements ProductsApi {
     }
 
     @Override
-    public List<ProductDto> getProductsByCategory(int categoryId, String search) {
+    public List<ProductDto> getProductsByCategory(Long categoryId, String search) {
         return productService.getAllProductsByCategoryId(categoryId, search);
     }
 
@@ -67,7 +67,7 @@ public class ProductController implements ProductsApi {
     }
 
     @Override
-    public Page<ProductDto> getProductsByCategoryPaged(int categoryId, String search, Pageable pageable) {
+    public Page<ProductDto> getProductsByCategoryPaged(Long categoryId, String search, Pageable pageable) {
         return productService.findProductsByCategoryId(categoryId, search, pageable);
     }
 

@@ -26,8 +26,8 @@ public interface ProductService {
     ProductDto updateProduct(Long id, UpdateProductDto updateProductDto);
     Page<ProductDto> findProducts(String searchTerm, Pageable pageable);
     List<ProductDto> getAllProducts(String searchTerm);
-    Page<ProductDto> findProductsByCategoryId(int categoryId, String searchTerm, Pageable pageable);
-    List<ProductDto> getAllProductsByCategoryId(int categoryId, String searchTerm);
+    Page<ProductDto> findProductsByCategoryId(Long categoryId, String searchTerm, Pageable pageable);
+    List<ProductDto> getAllProductsByCategoryId(Long categoryId, String searchTerm);
     Product getProductOrThrow(Long id);
     ProductDto findProductByArticle(String article);
     List<ProductDto> findProductsByVendorArticle(String vendorArticle);
