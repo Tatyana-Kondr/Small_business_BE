@@ -40,6 +40,7 @@ public enum ErrorDescription {
 
     CATEGORY_NOT_FOUND("Category not found"),
     CATEGORY_ALREADY_EXISTS("Category already exists"),
+    CATEGORY_ARTNAME_ALREADY_EXISTS("Category article name already exists"),
     CATEGORY_DELETE_FAILED("Category cannot be deleted because it is used in other records."),
 
     PRODUCT_NOT_FOUND("Product not found"),
