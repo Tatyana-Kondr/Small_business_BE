@@ -1,5 +1,7 @@
 package de.ait.smallBusiness_be.exceptions;
 
+import de.ait.smallBusiness_be.validation.dto.ValidationErrorDto;
+import de.ait.smallBusiness_be.validation.dto.ValidationErrorsDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -7,6 +9,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.List;
 
 @RestControllerAdvice
 @Slf4j
@@ -45,8 +49,44 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<String> handleValidationException(MethodArgumentNotValidException ex) {
-        return ResponseEntity.badRequest().body("Error validation: " + ex.getMessage());
+    public ResponseEntity<ValidationErrorsDto> handleValidationException(
+            MethodArgumentNotValidException ex
+    ) {
+        List<ValidationErrorDto> validationErrors = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(fieldError -> ValidationErrorDto.builder()
+                        .field(fieldError.getField())
+                        .rejectedValue(
+                                fieldError.getRejectedValue() == null
+                                        ? null
+                                        : fieldError.getRejectedValue().toString()
+                        )
+                        .message(fieldError.getDefaultMessage())
+                        .build()
+                )
+                .toList();
+
+        log.warn("Validation errors: {}", validationErrors);
+
+        return ResponseEntity
+                .badRequest()
+                .body(ValidationErrorsDto.builder()
+                        .errors(validationErrors)
+                        .build());
+    }
+
+    @ExceptionHandler(FieldValidationException.class)
+    public ResponseEntity<ValidationErrorsDto> handleFieldValidationException(
+            FieldValidationException ex
+    ) {
+        log.warn("Field validation errors: {}", ex.getErrors());
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ValidationErrorsDto.builder()
+                        .errors(ex.getErrors())
+                        .build());
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
