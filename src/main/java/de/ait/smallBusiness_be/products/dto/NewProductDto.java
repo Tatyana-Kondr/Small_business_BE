@@ -2,7 +2,6 @@ package de.ait.smallBusiness_be.products.dto;
 
 import de.ait.smallBusiness_be.products.model.ProductCategory;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -24,7 +23,7 @@ import java.math.BigDecimal;
 public class NewProductDto{
 
     @NotBlank(message = "{validation.notBlank}")
-    @Size(min = 3, max = 100, message = "{validation.name.size}")
+    @Size(min = 3, max = 150, message = "{validation.name.size}")
     @Schema(description = "Product's name", example = "Lampe")
     String name;
 

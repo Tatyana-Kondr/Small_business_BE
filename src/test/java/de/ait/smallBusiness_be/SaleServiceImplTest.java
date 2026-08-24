@@ -11,6 +11,7 @@ import de.ait.smallBusiness_be.payments.model.Payment;
 import de.ait.smallBusiness_be.products.model.Product;
 import de.ait.smallBusiness_be.products.service.ProductService;
 import de.ait.smallBusiness_be.purchases.model.PaymentStatus;
+import de.ait.smallBusiness_be.purchases.model.TypeOfOperation;
 import de.ait.smallBusiness_be.sales.dao.SaleRepository;
 import de.ait.smallBusiness_be.sales.dao.ShippingRepository;
 import de.ait.smallBusiness_be.sales.dao.TermOfPaymentRepository;
@@ -18,15 +19,11 @@ import de.ait.smallBusiness_be.sales.dto.NewSaleDto;
 import de.ait.smallBusiness_be.sales.dto.NewSaleItemDto;
 import de.ait.smallBusiness_be.sales.dto.SaleDto;
 import de.ait.smallBusiness_be.sales.models.Sale;
-import de.ait.smallBusiness_be.sales.models.SaleItem;
 import de.ait.smallBusiness_be.sales.models.Shipping;
 import de.ait.smallBusiness_be.sales.models.TermOfPayment;
 import de.ait.smallBusiness_be.sales.services.DocumentService;
-import de.ait.smallBusiness_be.sales.services.ShippingService;
-import de.ait.smallBusiness_be.sales.services.TermOfPaymentService;
 import de.ait.smallBusiness_be.sales.services.impl.SaleServiceImpl;
 import de.ait.smallBusiness_be.warehouse.services.WarehouseService;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,6 +38,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.nio.file.Path;
 
 import static org.mockito.Mockito.lenient;
 
@@ -80,7 +78,7 @@ class SaleServiceImplTest {
 
         termOfPayment = new TermOfPayment();
         termOfPayment.setId(1L);
-        termOfPayment.setName("Betrag im Bar");
+        termOfPayment.setName("Betrag in Bar");
 
         product = new Product();
         product.setId(1L);
@@ -101,56 +99,43 @@ class SaleServiceImplTest {
         sale.setCustomer(customer);
         sale.setShipping(shipping);
         sale.setTermsOfPayment(termOfPayment);
-        sale.setTotalAmount(BigDecimal.valueOf(100));
-        sale.setPaymentStatus(PaymentStatus.AUSSTEHEND);
-        sale.setSaleItems(new ArrayList<>());
+        sale.setInvoiceNumber("RE2026001");
+        sale.setDeliveryBill("LF2026001");
+        sale.setTypeOfOperation(TypeOfOperation.VERKAUF);
+        sale.setPaymentStatus(PaymentStatus.OFFEN);
         sale.setSalesDate(LocalDate.now());
+        sale.setDeliveryDate(LocalDate.now());
+        sale.setDefaultTax(BigDecimal.valueOf(19));
+        sale.setDefaultDiscount(BigDecimal.ZERO);
+        sale.setTotalAmount(BigDecimal.valueOf(100));
+        sale.setSaleItems(new ArrayList<>());
 
         newSaleDto = new NewSaleDto();
         newSaleDto.setCustomerId(customer.getId());
         newSaleDto.setShippingId(shipping.getId());
         newSaleDto.setTermsOfPaymentId(termOfPayment.getId());
+        newSaleDto.setTypeOfOperation(TypeOfOperation.VERKAUF);
+        newSaleDto.setPaymentStatus(PaymentStatus.OFFEN);
+        newSaleDto.setSalesDate(LocalDate.now());
+        newSaleDto.setDeliveryDate(LocalDate.now());
+        newSaleDto.setDefaultTax(BigDecimal.valueOf(19));
+        newSaleDto.setDefaultDiscount(BigDecimal.ZERO);
         newSaleDto.setSalesItems(List.of(itemDto));
-        newSaleDto.setDefaultTax(BigDecimal.valueOf(10));
-        newSaleDto.setDefaultDiscount(BigDecimal.valueOf(5));
-        newSaleDto.setTypeOfOperation("VERKAUF"); // чтобы typeOfOperation не был null
 
-        // ModelMapper mocks
-
-        // map(NewSaleDto -> Sale)
-        lenient().when(modelMapper.map(any(NewSaleDto.class), eq(Sale.class)))
+        lenient()
+                .when(modelMapper.map(any(Sale.class), eq(SaleDto.class)))
                 .thenAnswer(invocation -> {
-                    Sale s = new Sale();
-                    s.setSaleItems(new ArrayList<>());
-                    s.setSalesDate(LocalDate.now());
-                    return s;
-                });
+                    Sale mappedSale = invocation.getArgument(0);
 
-        // map(Sale -> SaleDto)
-        lenient().when(modelMapper.map(any(Sale.class), eq(SaleDto.class)))
-                .thenAnswer(invocation -> {
-                    Sale sale = invocation.getArgument(0);
                     SaleDto dto = new SaleDto();
-                    dto.setInvoiceNumber(sale.getInvoiceNumber());
-                    dto.setDeliveryBill(sale.getDeliveryBill());
-                    dto.setTotalAmount(sale.getTotalAmount());
+                    dto.setInvoiceNumber(mappedSale.getInvoiceNumber());
+                    dto.setDeliveryBill(mappedSale.getDeliveryBill());
+                    dto.setTotalAmount(mappedSale.getTotalAmount());
+
                     return dto;
                 });
-
-        // map(NewSaleItemDto -> SaleItem) для createSale
-        lenient().when(modelMapper.map(any(NewSaleItemDto.class), eq(SaleItem.class)))
-                .thenAnswer(invocation -> {
-                    NewSaleItemDto dto = invocation.getArgument(0);
-                    SaleItem saleItem = new SaleItem();
-                    saleItem.setProductName(dto.getProductName());
-                    saleItem.setUnitPrice(dto.getUnitPrice());
-                    saleItem.setQuantity(dto.getQuantity());
-                    saleItem.setDiscount(dto.getDiscount());
-                    saleItem.setTax(dto.getTax());
-                    saleItem.setPosition(dto.getPosition());
-                    return saleItem;
-                });
     }
+
 
     // ---------------------------------------
     // createSale
@@ -158,23 +143,43 @@ class SaleServiceImplTest {
 
     @Test
     void createSale_success() {
-        when(customerService.getCustomerOrThrow(customer.getId())).thenReturn(customer);
-        when(shippingRepository.findById(shipping.getId())).thenReturn(Optional.of(shipping));
-        when(termOfPaymentRepository.findById(termOfPayment.getId())).thenReturn(Optional.of(termOfPayment));
-        when(productService.getProductOrThrow(product.getId())).thenReturn(product);
+        Path invoiceTemp = Path.of("invoice-temp.pdf");
+        Path deliveryTemp = Path.of("delivery-temp.pdf");
 
-        // генерация уникального номера
-        when(saleRepository.findLastInvoiceSequenceForYear(anyInt())).thenReturn(0);
-        when(saleRepository.existsByInvoiceNumber(anyString())).thenReturn(false);
+        when(customerService.getCustomerOrThrow(customer.getId()))
+                .thenReturn(customer);
 
-        when(saleRepository.save(any(Sale.class))).thenAnswer(invocation -> {
-            Sale s = invocation.getArgument(0);
-            s.setId(1L);
-            return s;
-        });
+        when(shippingRepository.findById(shipping.getId()))
+                .thenReturn(Optional.of(shipping));
 
-        doNothing().when(invoiceService).generateInvoicePdf(any(Sale.class), anyString());
-        doNothing().when(invoiceService).generateDeliveryBillPdf(any(Sale.class), anyString());
+        when(termOfPaymentRepository.findById(termOfPayment.getId()))
+                .thenReturn(Optional.of(termOfPayment));
+
+        when(productService.getProductOrThrow(product.getId()))
+                .thenReturn(product);
+
+        when(saleRepository.findLastInvoiceSequenceForYear(anyInt()))
+                .thenReturn(0);
+
+        when(saleRepository.existsByInvoiceNumber(anyString()))
+                .thenReturn(false);
+
+        when(saleRepository.saveAndFlush(any(Sale.class)))
+                .thenAnswer(invocation -> {
+                    Sale savedSale = invocation.getArgument(0);
+                    savedSale.setId(1L);
+                    return savedSale;
+                });
+
+        when(invoiceService.generateInvoiceTempPdf(
+                any(Sale.class),
+                eq("invoices")
+        )).thenReturn(invoiceTemp);
+
+        when(invoiceService.generateDeliveryBillTempPdf(
+                any(Sale.class),
+                eq("delivery-bill")
+        )).thenReturn(deliveryTemp);
 
         SaleDto result = saleService.createSale(newSaleDto);
 
@@ -182,66 +187,155 @@ class SaleServiceImplTest {
         assertNotNull(result.getInvoiceNumber());
         assertNotNull(result.getDeliveryBill());
 
-        verify(saleRepository).save(any(Sale.class));
-        verify(invoiceService).generateInvoicePdf(any(Sale.class), eq("invoices"));
-        verify(invoiceService).generateDeliveryBillPdf(any(Sale.class), eq("delivery-bill"));
+        verify(saleRepository).saveAndFlush(any(Sale.class));
 
-        // проверим, что склад обновился по кол-ву позиций
-        verify(warehouseService, atLeastOnce())
-                .recordOperation(any(), any(), any(), anyLong(), any(), any());
+        verify(invoiceService).generateInvoiceTempPdf(
+                any(Sale.class),
+                eq("invoices")
+        );
+
+        verify(invoiceService).generateDeliveryBillTempPdf(
+                any(Sale.class),
+                eq("delivery-bill")
+        );
+
+        verify(invoiceService).replaceInvoicePdf(
+                any(Sale.class),
+                eq("invoices"),
+                eq(invoiceTemp)
+        );
+
+        verify(invoiceService).replaceDeliveryBillPdf(
+                any(Sale.class),
+                eq("delivery-bill"),
+                eq(deliveryTemp)
+        );
+
+        verify(warehouseService).recordOperation(
+                eq(product),
+                eq(TypeOfOperation.VERKAUF),
+                eq(itemDto.getQuantity()),
+                eq(1L),
+                eq(customer),
+                eq(newSaleDto.getSalesDate())
+        );
     }
 
     @Test
     void createSale_generatesInvoiceNumberAndDeliveryBill() {
-        when(customerService.getCustomerOrThrow(customer.getId())).thenReturn(customer);
-        when(shippingRepository.findById(shipping.getId())).thenReturn(Optional.of(shipping));
-        when(termOfPaymentRepository.findById(termOfPayment.getId())).thenReturn(Optional.of(termOfPayment));
-        when(productService.getProductOrThrow(itemDto.getProductId())).thenReturn(product);
+        Path invoiceTemp = Path.of("invoice-temp.pdf");
+        Path deliveryTemp = Path.of("delivery-temp.pdf");
 
-        when(saleRepository.findLastInvoiceSequenceForYear(anyInt())).thenReturn(0);
-        when(saleRepository.existsByInvoiceNumber(anyString())).thenReturn(false);
-        when(saleRepository.save(any(Sale.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(customerService.getCustomerOrThrow(customer.getId()))
+                .thenReturn(customer);
+
+        when(shippingRepository.findById(shipping.getId()))
+                .thenReturn(Optional.of(shipping));
+
+        when(termOfPaymentRepository.findById(termOfPayment.getId()))
+                .thenReturn(Optional.of(termOfPayment));
+
+        when(productService.getProductOrThrow(itemDto.getProductId()))
+                .thenReturn(product);
+
+        when(saleRepository.findLastInvoiceSequenceForYear(anyInt()))
+                .thenReturn(0);
+
+        when(saleRepository.existsByInvoiceNumber(anyString()))
+                .thenReturn(false);
+
+        when(saleRepository.saveAndFlush(any(Sale.class)))
+                .thenAnswer(invocation -> {
+                    Sale savedSale = invocation.getArgument(0);
+                    savedSale.setId(1L);
+                    return savedSale;
+                });
+
+        when(invoiceService.generateInvoiceTempPdf(
+                any(Sale.class),
+                eq("invoices")
+        )).thenReturn(invoiceTemp);
+
+        when(invoiceService.generateDeliveryBillTempPdf(
+                any(Sale.class),
+                eq("delivery-bill")
+        )).thenReturn(deliveryTemp);
 
         SaleDto result = saleService.createSale(newSaleDto);
 
         assertNotNull(result);
         assertNotNull(result.getInvoiceNumber());
         assertNotNull(result.getDeliveryBill());
+
+        assertTrue(result.getInvoiceNumber().startsWith("RE"));
         assertTrue(result.getDeliveryBill().startsWith("LF"));
 
-        verify(saleRepository).save(any(Sale.class));
-        verify(invoiceService).generateInvoicePdf(any(Sale.class), eq("invoices"));
-        verify(invoiceService).generateDeliveryBillPdf(any(Sale.class), eq("delivery-bill"));
+        verify(saleRepository).saveAndFlush(any(Sale.class));
+
+        verify(invoiceService).replaceInvoicePdf(
+                any(Sale.class),
+                eq("invoices"),
+                eq(invoiceTemp)
+        );
+
+        verify(invoiceService).replaceDeliveryBillPdf(
+                any(Sale.class),
+                eq("delivery-bill"),
+                eq(deliveryTemp)
+        );
     }
 
     @Test
     void createSale_throwsWhenCannotGenerateUniqueInvoiceNumber() {
         NewSaleDto dto = new NewSaleDto();
+
         dto.setCustomerId(customer.getId());
         dto.setShippingId(shipping.getId());
         dto.setTermsOfPaymentId(termOfPayment.getId());
+
+        dto.setTypeOfOperation(TypeOfOperation.VERKAUF);
+        dto.setPaymentStatus(PaymentStatus.OFFEN);
+
+        dto.setSalesDate(LocalDate.now());
+        dto.setDeliveryDate(LocalDate.now());
+
+        dto.setDefaultTax(BigDecimal.valueOf(19));
+        dto.setDefaultDiscount(BigDecimal.ZERO);
+
         dto.setSalesItems(List.of(itemDto));
-        dto.setTypeOfOperation("VERKAUF");
 
-        // 🔥 ВАЖНО: эти поля обязательные, иначе createSale упадёт РАНЬШЕ.
-        dto.setDefaultTax(BigDecimal.valueOf(10));
-        dto.setDefaultDiscount(BigDecimal.valueOf(5));
+        when(customerService.getCustomerOrThrow(customer.getId()))
+                .thenReturn(customer);
 
-        when(customerService.getCustomerOrThrow(customer.getId())).thenReturn(customer);
-        when(shippingRepository.findById(shipping.getId())).thenReturn(Optional.of(shipping));
-        when(termOfPaymentRepository.findById(termOfPayment.getId())).thenReturn(Optional.of(termOfPayment));
+        when(shippingRepository.findById(shipping.getId()))
+                .thenReturn(Optional.of(shipping));
 
-        when(saleRepository.findLastInvoiceSequenceForYear(anyInt())).thenReturn(0);
+        when(termOfPaymentRepository.findById(termOfPayment.getId()))
+                .thenReturn(Optional.of(termOfPayment));
 
-        // 5 раз подряд — уже существует
+        when(saleRepository.findLastInvoiceSequenceForYear(anyInt()))
+                .thenReturn(0);
+
         when(saleRepository.existsByInvoiceNumber(anyString()))
                 .thenReturn(true, true, true, true, true);
 
-        RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> saleService.createSale(dto));
+        RuntimeException exception = assertThrows(
+                RuntimeException.class,
+                () -> saleService.createSale(dto)
+        );
 
-        assertEquals("Failed to generate a unique invoice number", ex.getMessage());
-        verify(saleRepository, times(5)).existsByInvoiceNumber(anyString());
+        assertEquals(
+                "Failed to generate a unique invoice number",
+                exception.getMessage()
+        );
+
+        verify(saleRepository, times(5))
+                .existsByInvoiceNumber(anyString());
+
+        verify(saleRepository, never())
+                .saveAndFlush(any(Sale.class));
+
+        verifyNoInteractions(invoiceService);
     }
 
     // ---------------------------------------
@@ -250,39 +344,184 @@ class SaleServiceImplTest {
 
     @Test
     void updateSale_success() {
+        Path invoiceTemp = Path.of("invoice-update-temp.pdf");
+        Path deliveryTemp = Path.of("delivery-update-temp.pdf");
+
+        LocalDate existingPaymentDate = LocalDate.now().minusDays(2);
+        sale.setPaymentDate(existingPaymentDate);
+
         NewSaleDto updateDto = new NewSaleDto();
         updateDto.setCustomerId(customer.getId());
         updateDto.setShippingId(shipping.getId());
         updateDto.setTermsOfPaymentId(termOfPayment.getId());
-        updateDto.setInvoiceNumber("RE-2025-0002");
-        updateDto.setDeliveryBill("LF-2025-0002");
-        updateDto.setSalesItems(List.of(itemDto));
-        updateDto.setTypeOfOperation("VERKAUF");
-        updateDto.setPaymentStatus("AUSSTEHEND");
+
+        updateDto.setInvoiceNumber("RE2026002");
+        updateDto.setDeliveryBill("LF2026002");
+
+        updateDto.setTypeOfOperation(TypeOfOperation.VERKAUF);
+        updateDto.setPaymentStatus(PaymentStatus.OFFEN);
+
         updateDto.setSalesDate(LocalDate.now());
+        updateDto.setDeliveryDate(LocalDate.now().plusDays(2));
 
-        sale.setSaleItems(new ArrayList<>()); // чтобы clear() не дал NPE
+        updateDto.setDefaultTax(BigDecimal.valueOf(19));
+        updateDto.setDefaultDiscount(BigDecimal.ZERO);
 
-        when(saleRepository.findById(1L)).thenReturn(Optional.of(sale));
-        when(customerService.getCustomerOrThrow(customer.getId())).thenReturn(customer);
-        when(shippingRepository.findById(shipping.getId())).thenReturn(Optional.of(shipping));
-        when(termOfPaymentRepository.findById(termOfPayment.getId())).thenReturn(Optional.of(termOfPayment));
-        when(productService.getProductOrThrow(product.getId())).thenReturn(product);
-        when(saleRepository.save(any(Sale.class))).thenReturn(sale);
+        updateDto.setSalesItems(List.of(itemDto));
 
-        doNothing().when(invoiceService).deleteInvoicePdf(any(Sale.class), anyString());
-        doNothing().when(invoiceService).deleteDeliveryBillPdf(any(Sale.class), anyString());
-        doNothing().when(invoiceService).generateInvoicePdf(any(Sale.class), anyString());
-        doNothing().when(invoiceService).generateDeliveryBillPdf(any(Sale.class), anyString());
+        /*
+         * Даже если DTO содержит другую paymentDate,
+         * updateSale не должен её применять.
+         */
+        updateDto.setPaymentDate(LocalDate.now());
+
+        sale.setSaleItems(new ArrayList<>());
+
+        when(saleRepository.findById(1L))
+                .thenReturn(Optional.of(sale));
+
+        when(customerService.getCustomerOrThrow(customer.getId()))
+                .thenReturn(customer);
+
+        when(shippingRepository.findById(shipping.getId()))
+                .thenReturn(Optional.of(shipping));
+
+        when(termOfPaymentRepository.findById(termOfPayment.getId()))
+                .thenReturn(Optional.of(termOfPayment));
+
+        when(productService.getProductOrThrow(product.getId()))
+                .thenReturn(product);
+
+        when(saleRepository.saveAndFlush(any(Sale.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        when(invoiceService.generateInvoiceTempPdf(
+                any(Sale.class),
+                eq("invoices")
+        )).thenReturn(invoiceTemp);
+
+        when(invoiceService.generateDeliveryBillTempPdf(
+                any(Sale.class),
+                eq("delivery-bill")
+        )).thenReturn(deliveryTemp);
 
         SaleDto result = saleService.updateSale(1L, updateDto);
 
         assertNotNull(result);
-        verify(invoiceService).deleteInvoicePdf(sale, "invoices");
-        verify(invoiceService).deleteDeliveryBillPdf(sale, "delivery-bill");
-        verify(saleRepository).save(any(Sale.class));
+
+        // paymentDate не должна изменяться при updateSale
+        assertEquals(existingPaymentDate, sale.getPaymentDate());
+
+        assertEquals(TypeOfOperation.VERKAUF, sale.getTypeOfOperation());
+        assertEquals(PaymentStatus.OFFEN, sale.getPaymentStatus());
+
+        assertEquals(BigDecimal.valueOf(19), sale.getDefaultTax());
+        assertEquals(BigDecimal.ZERO, sale.getDefaultDiscount());
+
+        assertEquals(1, sale.getSaleItems().size());
+        assertEquals(product, sale.getSaleItems().get(0).getProduct());
+
+        verify(saleRepository).saveAndFlush(sale);
+
+        verify(invoiceService).generateInvoiceTempPdf(
+                sale,
+                "invoices"
+        );
+
+        verify(invoiceService).generateDeliveryBillTempPdf(
+                sale,
+                "delivery-bill"
+        );
+
+        verify(invoiceService).replaceInvoicePdf(
+                sale,
+                "invoices",
+                invoiceTemp
+        );
+
+        verify(invoiceService).replaceDeliveryBillPdf(
+                sale,
+                "delivery-bill",
+                deliveryTemp
+        );
+
+        verify(invoiceService, never())
+                .deleteInvoicePdf(any(Sale.class), anyString());
+
+        verify(invoiceService, never())
+                .deleteDeliveryBillPdf(any(Sale.class), anyString());
+
         verify(warehouseService).syncDocument(
-                any(), eq(1L), eq(customer), any(LocalDate.class), anyList());
+                eq(TypeOfOperation.VERKAUF),
+                eq(1L),
+                eq(customer),
+                eq(updateDto.getSalesDate()),
+                anyList()
+        );
+    }
+
+    @Test
+    void createSale_whenDeliveryPdfGenerationFails_deletesInvoiceTemp() {
+        Path invoiceTemp = Path.of("invoice-temp.pdf");
+
+        when(customerService.getCustomerOrThrow(customer.getId()))
+                .thenReturn(customer);
+
+        when(shippingRepository.findById(shipping.getId()))
+                .thenReturn(Optional.of(shipping));
+
+        when(termOfPaymentRepository.findById(termOfPayment.getId()))
+                .thenReturn(Optional.of(termOfPayment));
+
+        when(productService.getProductOrThrow(product.getId()))
+                .thenReturn(product);
+
+        when(saleRepository.findLastInvoiceSequenceForYear(anyInt()))
+                .thenReturn(0);
+
+        when(saleRepository.existsByInvoiceNumber(anyString()))
+                .thenReturn(false);
+
+        when(saleRepository.saveAndFlush(any(Sale.class)))
+                .thenAnswer(invocation -> {
+                    Sale savedSale = invocation.getArgument(0);
+                    savedSale.setId(1L);
+                    return savedSale;
+                });
+
+        when(invoiceService.generateInvoiceTempPdf(
+                any(Sale.class),
+                eq("invoices")
+        )).thenReturn(invoiceTemp);
+
+        when(invoiceService.generateDeliveryBillTempPdf(
+                any(Sale.class),
+                eq("delivery-bill")
+        )).thenThrow(new RestApiException(
+                "Delivery PDF generation failed",
+                org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
+        ));
+
+        assertThrows(
+                RestApiException.class,
+                () -> saleService.createSale(newSaleDto)
+        );
+
+        verify(invoiceService).deleteTempFile(invoiceTemp);
+
+        verify(invoiceService, never()).replaceInvoicePdf(
+                any(),
+                anyString(),
+                any()
+        );
+
+        verify(invoiceService, never()).replaceDeliveryBillPdf(
+                any(),
+                anyString(),
+                any()
+        );
+
+        verifyNoInteractions(warehouseService);
     }
 
     // ---------------------------------------
@@ -292,7 +531,7 @@ class SaleServiceImplTest {
     @Test
     void updatePaymentStatus_fullPaid_setsBEZAHLT_andPaymentDate() {
         sale.setTotalAmount(BigDecimal.valueOf(100));
-        sale.setPaymentStatus(PaymentStatus.AUSSTEHEND);
+        sale.setPaymentStatus(PaymentStatus.OFFEN);
 
         Payment payment = new Payment();
         payment.setAmount(BigDecimal.valueOf(100));
@@ -312,19 +551,18 @@ class SaleServiceImplTest {
     }
 
     @Test
-    void updatePaymentStatus_noPayments_setsAUSSTEHEND() {
+    void updatePaymentStatus_noPayments_setsOFFEN() {
         sale.setTotalAmount(BigDecimal.valueOf(100));
         sale.setPaymentStatus(PaymentStatus.BEZAHLT); // было оплачено
 
         when(saleRepository.findById(1L)).thenReturn(Optional.of(sale));
         when(paymentRepository.findBySaleId(1L)).thenReturn(List.of());
 
-        // так как статус не поменяется (с BEZAHLT на AUSSTEHEND логика не меняет)
+        // так как статус не поменяется (с BEZAHLT на OFFEN логика не меняет)
         SaleDto result = saleService.updatePaymentStatus(1L);
 
         assertNotNull(result);
-        // Статус не изменится, т.к. логика меняет только если newStatus != current
-        assertEquals(PaymentStatus.AUSSTEHEND, sale.getPaymentStatus());
+        assertEquals(PaymentStatus.OFFEN, sale.getPaymentStatus());
         verify(saleRepository).save(any(Sale.class));
 
     }
@@ -335,25 +573,48 @@ class SaleServiceImplTest {
 
     @Test
     void getAllSales_returnsPage() {
-        Pageable pageable = PageRequest.of(0, 10, Sort.by("salesDate").descending());
-        Page<Sale> salesPage = new PageImpl<>(List.of(sale));
+        Pageable pageable =
+                PageRequest.of(
+                        0,
+                        10,
+                        Sort.by("salesDate").descending()
+                );
 
-        when(saleRepository.findAll(pageable)).thenReturn(salesPage);
+        Page<Sale> salesPage =
+                new PageImpl<>(List.of(sale));
 
-        Page<SaleDto> result = saleService.getAllSales(pageable);
+        when(saleRepository.findAllWithSorting(pageable))
+                .thenReturn(salesPage);
+
+        Page<SaleDto> result =
+                saleService.getAllSales(pageable);
 
         assertNotNull(result);
         assertEquals(1, result.getContent().size());
-        verify(saleRepository).findAll(pageable);
+
+        verify(saleRepository)
+                .findAllWithSorting(pageable);
     }
 
     @Test
     void getAllSales_empty_throwsRestApiException() {
-        Pageable pageable = PageRequest.of(0, 10, Sort.by("salesDate").descending());
+        Pageable pageable =
+                PageRequest.of(
+                        0,
+                        10,
+                        Sort.by("salesDate").descending()
+                );
 
-        when(saleRepository.findAll(any(Pageable.class))).thenReturn(Page.empty());
+        when(saleRepository.findAllWithSorting(pageable))
+                .thenReturn(Page.empty());
 
-        assertThrows(RestApiException.class, () -> saleService.getAllSales(pageable));
+        assertThrows(
+                RestApiException.class,
+                () -> saleService.getAllSales(pageable)
+        );
+
+        verify(saleRepository)
+                .findAllWithSorting(pageable);
     }
 
     // ---------------------------------------

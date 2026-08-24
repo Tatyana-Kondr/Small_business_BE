@@ -21,6 +21,7 @@ public class NewSaleItemDto {
         Integer position;
 
         @NotNull(message = "{validation.notNull}")
+        @Positive(message = "{validation.positive}")
         @Schema(description = "Product ID", example = "16")
         Long productId;
 
@@ -30,22 +31,25 @@ public class NewSaleItemDto {
         String productArticle;
 
         @NotBlank(message = "{validation.notBlank}")
-        @Size(min = 2, max = 255, message = "{validation.name.size}")
+        @Size(min = 3, max = 150, message = "{validation.name.size}")
         @Schema(description = "Product name", example = "Weinbox")
         String productName;
 
         @NotNull(message = "{validation.notNull}")
-        @DecimalMin(value = "0.0", message = "{validation.price.min}")
-        @Digits(integer = 6, fraction = 3, message = "{validation.price.digits}")
+        @DecimalMin(value = "0.01", message = "{validation.price.min}")
+        @Digits(integer = 10, fraction = 3, message = "{validation.quantity.digits}")
         @Schema(description = "Quantity of the product", example = "2")
         BigDecimal quantity;
 
-        @DecimalMin(value = "0.0", message = "{validation.price.min}")
-        @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
+        @NotNull(message = "{validation.notNull}")
+        @DecimalMin(value = "0.0", inclusive = true, message = "{validation.price.min}")
+        @Digits(integer = 10, fraction = 2, message = "{validation.price.digits}")
         @Schema(description = "Unit price of the product", example = "17.99")
         BigDecimal unitPrice;
 
-        @DecimalMin(value = "0", message = "{validation.tax.min}")
+        @NotNull(message = "{validation.notNull}")
+        @DecimalMin(value = "0.0", message = "{validation.percentage.min}")
+        @DecimalMax(value = "100.0", message = "{validation.percentage.max}")
         @Schema(description = "Discount percentage", example = "10")
         BigDecimal discount;
 
@@ -59,7 +63,8 @@ public class NewSaleItemDto {
         BigDecimal totalPrice;
 
         @NotNull(message = "{validation.notNull}")
-        @DecimalMin(value = "0", message = "{validation.tax.min}")
+        @DecimalMin(value = "0.0", message = "{validation.percentage.min}")
+        @DecimalMax(value = "100.0", message = "{validation.percentage.max}")
         @Schema(description = "Tax percentage", example = "19")
         BigDecimal tax;
 
