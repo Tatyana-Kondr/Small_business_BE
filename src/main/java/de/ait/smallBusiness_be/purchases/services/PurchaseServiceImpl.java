@@ -192,7 +192,7 @@ public class PurchaseServiceImpl implements PurchaseService {
         PaymentStatus newStatus;
 
         if (totalPaid.compareTo(BigDecimal.ZERO) == 0) {
-            newStatus = PaymentStatus.AUSSTEHEND;
+            newStatus = PaymentStatus.OFFEN;
         } else if (totalPaid.compareTo(purchase.getTotal()) >= 0) {
             newStatus = PaymentStatus.BEZAHLT;
         } else {
