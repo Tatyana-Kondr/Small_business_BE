@@ -2,19 +2,23 @@ package de.ait.smallBusiness_be.products.service.impl;
 
 
 import de.ait.smallBusiness_be.exceptions.ErrorDescription;
+import de.ait.smallBusiness_be.exceptions.FieldValidationException;
 import de.ait.smallBusiness_be.exceptions.RestApiException;
 import de.ait.smallBusiness_be.products.dao.ProductCategoryRepository;
 import de.ait.smallBusiness_be.products.dto.NewProductCategoryDto;
 import de.ait.smallBusiness_be.products.dto.ProductCategoryDto;
 import de.ait.smallBusiness_be.products.model.ProductCategory;
 import de.ait.smallBusiness_be.products.service.ProductCategoryService;
+import de.ait.smallBusiness_be.validation.dto.ValidationErrorDto;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Sort;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -35,19 +39,31 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
     @Override
     @Transactional
     public ProductCategoryDto addProductCategory(NewProductCategoryDto newProductCategoryDto) {
-        // Приводим к верхнему регистру
-        String nameToUpperCase = newProductCategoryDto.getName().toUpperCase();
-        String artNameToUpperCase = newProductCategoryDto.getArtName().toUpperCase();
+        String nameToUpperCase = newProductCategoryDto.getName().trim().toUpperCase();
+        String artNameToUpperCase = newProductCategoryDto.getArtName().trim().toUpperCase();
 
-        // Проверяем, есть ли уже категория с таким же именем или артикулом
-        List<ProductCategory> existingCategories = productCategoryRepository
-                .findByNameIgnoreCaseOrArtNameIgnoreCase(nameToUpperCase, artNameToUpperCase);
+        List<ValidationErrorDto> errors = new ArrayList<>();
 
-        if (!existingCategories.isEmpty()) {
-            throw new RestApiException(ErrorDescription.CATEGORY_ALREADY_EXISTS, HttpStatus.CONFLICT);
+        if (productCategoryRepository.existsByNameIgnoreCase(nameToUpperCase)) {
+            errors.add(ValidationErrorDto.builder()
+                    .field("name")
+                    .rejectedValue(nameToUpperCase)
+                    .message("Kategorie existiert bereits.")
+                    .build());
         }
 
-        // Создаем новую категорию и сохраняем
+        if (productCategoryRepository.existsByArtNameIgnoreCase(artNameToUpperCase)) {
+            errors.add(ValidationErrorDto.builder()
+                    .field("artName")
+                    .rejectedValue(artNameToUpperCase)
+                    .message("ArtName existiert bereits.")
+                    .build());
+        }
+
+        if (!errors.isEmpty()) {
+            throw new FieldValidationException(errors);
+        }
+
         ProductCategory productCategory = new ProductCategory();
         productCategory.setName(nameToUpperCase);
         productCategory.setArtName(artNameToUpperCase);
@@ -79,39 +95,48 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
 
     @Override
     @Transactional
-    public ProductCategoryDto updateProductCategory(Long id, NewProductCategoryDto newProductCategoryDto) {
+    public ProductCategoryDto updateProductCategory(
+            Long id,
+            NewProductCategoryDto newProductCategoryDto
+    ) {
         ProductCategory productCategory = getProductCategoryOrThrow(id);
 
-        // Приводим к верхнему регистру
-        String nameToUpperCase = newProductCategoryDto.getName().toUpperCase();
-        String artNameToUpperCase = newProductCategoryDto.getArtName().toUpperCase();
+        String nameToUpperCase = newProductCategoryDto.getName().trim().toUpperCase();
+        String artNameToUpperCase = newProductCategoryDto.getArtName().trim().toUpperCase();
 
-        // Получаем список всех категорий с таким же name или artName
-        List<ProductCategory> existingCategories = productCategoryRepository
-                .findByNameIgnoreCaseOrArtNameIgnoreCase(nameToUpperCase, artNameToUpperCase);
+        List<ValidationErrorDto> errors = new ArrayList<>();
 
-        // Проверяем, есть ли в этом списке категории с другим id
-        boolean hasDuplicate = existingCategories.stream()
-                .anyMatch(cat -> !cat.getId().equals(id));
-
-        if (hasDuplicate) {
-            throw new RestApiException(ErrorDescription.CATEGORY_ALREADY_EXISTS, HttpStatus.CONFLICT);
+        if (productCategoryRepository.existsByNameIgnoreCaseAndIdNot(nameToUpperCase, id)) {
+            errors.add(ValidationErrorDto.builder()
+                    .field("name")
+                    .rejectedValue(nameToUpperCase)
+                    .message("Kategorie existiert bereits.")
+                    .build());
         }
 
-        // Обновляем поля
+        if (productCategoryRepository.existsByArtNameIgnoreCaseAndIdNot(artNameToUpperCase, id)) {
+            errors.add(ValidationErrorDto.builder()
+                    .field("artName")
+                    .rejectedValue(artNameToUpperCase)
+                    .message("ArtName existiert bereits.")
+                    .build());
+        }
+
+        if (!errors.isEmpty()) {
+            throw new FieldValidationException(errors);
+        }
+
         productCategory.setName(nameToUpperCase);
         productCategory.setArtName(artNameToUpperCase);
 
-        // Сохраняем обновленную категорию
         ProductCategory updatedCategory = productCategoryRepository.save(productCategory);
 
         return modelMapper.map(updatedCategory, ProductCategoryDto.class);
     }
 
-
     @Override
     public List<ProductCategoryDto> findAllProductCategories() {
-        List<ProductCategory> categories = productCategoryRepository.findAll();
+        List<ProductCategory> categories = productCategoryRepository.findAll(Sort.by(Sort.Direction.ASC, "name"));
 
         return categories.stream()
                 .map(category -> modelMapper.map(category, ProductCategoryDto.class))

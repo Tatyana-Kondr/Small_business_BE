@@ -9,25 +9,30 @@
         }
 
         body {
-            font-family: Arial, sans-serif;
+            font-family: "Noto Sans", sans-serif;
             font-size: 12px;
+            line-height: 1.15;
             color: #000;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
+            table-layout: fixed;
             page-break-inside: auto;
         }
 
         th, td {
             text-align: left;
             padding: 3px;
+            line-height: 1.15;
+            vertical-align: top;
         }
 
         th {
             border-bottom: 1px solid #7B7C81;
             background-color: #ffffff;
+            font-size: 10px;
         }
 
         thead {
@@ -58,7 +63,8 @@
         .re {
             font-size: 18px;
             font-weight: bold;
-            font-family: "Microsoft Sans Serif", sans-serif;
+            font-family: "Noto Sans", sans-serif;
+            line-height: 1.15;
             color: #193f6e;
             border-bottom: 2px solid #193f6e;
             margin: 0;
@@ -68,29 +74,28 @@
         .totals td {
             border: none;
             padding: 4px 6px;
+            line-height: 1.15;
         }
 
         .info-table td {
             vertical-align: top;
         }
 
-        .info-left {
-            width: 60%;
-        }
-
         .info-right {
-            width: 40%;
+            width: 30%;
         }
 
         .contact {
             font-size: 10px;
             text-align: center;
+            line-height: 1.2;
             margin: 0;
             padding: 0;
         }
 
         .thanks {
             font-size: 12px;
+            line-height: 1.15;
             text-align: center;
             margin: 30px 0px 20px 0px;
             padding: 0;
@@ -103,6 +108,14 @@
             right: 0;
             padding-top: 10px;
         }
+
+        .col-desc {
+            width: 55%;
+            white-space: normal;
+            word-wrap: break-word;
+            line-height: 1.15;
+        }
+
         .artikel-column {
             white-space: nowrap;
         }
@@ -130,17 +143,16 @@
                     th:text="${sale.customer.name}"
                     style="
             margin:0 0 10px 0;
-            width:9cm;
-            max-width:9cm;
+            width:8cm;
+            max-width:8cm;
             display:block;
-            line-height:1.2;
+            line-height:1.15;
             white-space:normal;
-            word-break:break-word;
-            overflow-wrap:break-word;
+            word-wrap: break-word;
         "> Testering and Testering Abfüllbetrieb GmbH
             </h2>
-            <p style="font-size: 14px; margin: 0 0 5px 0;" th:text="${sale.customer.address.street + ' ' + sale.customer.address.building}">Straße 1</p>
-            <p style="font-size: 16px; margin: 0;" th:text="${sale.customer.address.postalCode + ' ' + sale.customer.address.city}">12345 Stadt</p>
+            <p style="font-size: 12px; margin: 0 0 5px 0;" th:text="${sale.customer.address.street + ' ' + sale.customer.address.building}">Straße 1</p>
+            <p style="font-size: 12px; margin: 0;" th:text="${sale.customer.address.postalCode + ' ' + sale.customer.address.city}">12345 Stadt</p>
         </td>
         <td class="info-right">
             <p class="re">Lieferschein</p>
@@ -156,7 +168,7 @@
     </tr>
 </table>
 
-<p style="margin-top: 50px; min-height: 15px;">
+<p style="margin-top: 60px; min-height: 15px;">
     <span th:text="|Lieferschein zu der Rechnung ${sale.invoiceNumber} vom ${sale.salesDate != null ? sale.salesDate.format(T(java.time.format.DateTimeFormatter).ofPattern('dd.MM.yyyy')) : ''}|"></span>
 </p>
 
@@ -166,7 +178,7 @@
     <tr>
         <th>Pos</th>
         <th class="artikel-column">Artikel</th>
-        <th>Bezeichnung</th>
+        <th class="col-desc">Bezeichnung</th>
         <th class="center">Menge</th>
         <th class="center">Einheit</th>
     </tr>
@@ -175,7 +187,7 @@
     <tr th:each="item, stat : ${items}">
         <td class="pos" th:text="${stat.count}">1</td>
         <td class="artikel-column" th:text="${item.product.article}">2022801290</td>
-        <td th:text="${item.productName}">FEINSTRAHLEN1</td>
+        <td class="col-desc" th:text="${item.productName}">FEINSTRAHLEN1</td>
         <td class="center" th:text="${item.quantity}">17</td>
         <td class="center"
             th:text="${item.product.unitOfMeasurement != null ? item.product.unitOfMeasurement.name : ''}"></td>

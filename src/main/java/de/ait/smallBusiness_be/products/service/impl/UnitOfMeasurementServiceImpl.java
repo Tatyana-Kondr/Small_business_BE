@@ -10,6 +10,7 @@ import de.ait.smallBusiness_be.products.service.UnitOfMeasurementService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -38,7 +39,7 @@ public class UnitOfMeasurementServiceImpl implements UnitOfMeasurementService {
 
     @Override
     public List<UnitOfMeasurementDto> findAllUnitsOfMeasurement() {
-        List<UnitOfMeasurement> units = unitOfMeasurementRepository.findAll();
+        List<UnitOfMeasurement> units = unitOfMeasurementRepository.findAll(Sort.by(Sort.Direction.ASC, "name"));
         if (units.isEmpty()) {throw new RestApiException(ErrorDescription.LIST_IS_EMPTY, HttpStatus.NOT_FOUND);}
         return units.stream().map(unit -> modelMapper.map(unit, UnitOfMeasurementDto.class)).collect(Collectors.toList());
     }

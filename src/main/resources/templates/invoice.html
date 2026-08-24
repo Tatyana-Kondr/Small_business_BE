@@ -5,36 +5,35 @@
     <style>
         @page { size: A4; margin: 1cm 1.5cm 1cm 2cm; }
 
-        body { font-family: Arial, sans-serif; font-size: 12px; color: #000; }
+        body { font-family: "Noto Sans", sans-serif; font-size: 12px; line-height: 1.15; color: #000; }
 
         table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 
-        th, td { text-align: left; padding: 3px; vertical-align: top; }
+        th, td { text-align: left; padding: 3px; vertical-align: top; line-height: 1.15; }
 
-        th { border-bottom: 1px solid #7B7C81; }
+        th { border-bottom: 1px solid #7B7C81; font-size: 10px; }
 
         thead { display: table-header-group; }
         tfoot { display: table-footer-group; }
         .col-desc {
             width: 250px;        /* ограничение ширины */
             word-wrap: break-word;   /* перенос слов */
-            white-space: normal !important;     /* разрешить перенос строк */
-            overflow-wrap: anywhere;     /* современный вариант */
-            line-height: 1.25;
-            margin-left: 5px;
+            white-space: pre-line;     /* разрешить перенос строк */
+            line-height: 1.15;
+            padding-left: 5px;
         }
 
-        .totals { margin-top: 10px; width: 100%; border-collapse: collapse }
-        .totals td { border: none; padding: 4px 6px; }
+        .totals { margin-top: 6px; width: 100%; border-collapse: collapse }
+        .totals td { border: none; padding: 4px 6px; line-height: 1.15; }
 
         .right { text-align: right; }
         .center { text-align: center; }
-        .bold { font-weight: bold; }
+        .bold { font-weight: 700; }
         .logo { height: 100px; }
-        .re { font-size: 18px; font-weight: bold; font-family: "Microsoft Sans Serif", sans-serif; color: #193f6e; border-bottom: 2px solid #193f6e; margin: 0; padding: 0; }
-        .contact { font-size: 10px; text-align: center; margin: 0; padding: 0; }
-        .shipping { font-size: 10px; text-align: left; padding: 0;  }
-        .thanks { text-align: center; margin: 30px 0 20px 0; padding: 0; font-size: 12px; }
+        .re { font-size: 18px; font-weight: bold; font-family: "Noto Sans", sans-serif; line-height: 1.15; color: #193f6e; border-bottom: 2px solid #193f6e; margin: 0; padding: 0; }
+        .contact { font-size: 10px; line-height: 1.2; text-align: center; margin: 0; padding: 0; }
+        .shipping { font-size: 10px; line-height: 1.15; text-align: left; padding: 0;  }
+        .thanks { text-align: center; margin: 30px 0 20px 0; padding: 0; font-size: 12px; line-height: 1.15; }
         .footer { position: fixed; bottom: 0; left: 0; right: 0; padding-top: 10px; }
         .artikel-column {white-space: nowrap;}
     </style>
@@ -63,30 +62,30 @@
                     th:text="${sale.customer.name}"
                     style="
             margin:0 0 10px 0;
-            width:7cm;
-            max-width:7cm;
+            width:8cm;
+            max-width:8cm;
             display:block;
             line-height:1.15;
             white-space:normal;
-            word-wrap: normal;
+            word-wrap: break-word;
         ">Testering and Testering Abfüllbetrieb GmbH
             </h2>
 
-            <p style="font-size:14px; margin: 0 0 5px 0;"
+            <p style="font-size:12px; margin: 0 0 5px 0;"
                th:text="${(sale.customer.address != null ? ((sale.customer.address.street != null ? sale.customer.address.street : '') + ' ' +  (sale.customer.address.building != null ? sale.customer.address.building : '')) : '')}">
             </p>
 
-            <p style="font-size:16px; margin:0"
+            <p style="font-size:12px; margin:0"
                th:text="${(sale.customer.address != null ? ((sale.customer.address.postalCode != null ? sale.customer.address.postalCode : '') + ' ' + (sale.customer.address.city != null ? sale.customer.address.city : '')) : '')}">
             </p>
 
-            <p style="font-size:16px; margin-top:25px"
+            <p style="font-size:12px; margin-top:25px"
                th:if="${sale.customer.phone != null and !sale.customer.phone.trim().isEmpty() and sale.customer.address != null and sale.customer.address.country == 'KZ'}"
                th:text="'Tel: ' + ${sale.customer.phone}">
             </p>
         </td>
 
-        <td style="width:40%;">
+        <td style="width:30%;">
             <p class="re">RECHNUNG</p>
 
             <table style="margin-top: 10px;">
@@ -103,17 +102,17 @@
 </table>
 
 <!-- ACCOUNT OBJECT -->
-<p style="margin-top: 50px; min-height: 15px;">
+<p style="margin-top: 60px; min-height: 15px;">
     <span th:if="${sale.accountObject != null and !#strings.isEmpty(sale.accountObject)}"
           th:text="|Objekt: ${sale.accountObject}|"></span>
 </p>
 
 <!-- ITEMS -->
-<table style="margin-top: 10px; border-bottom:1px solid #7B7C81;">
+<table style="margin-top: 12px; border-bottom:1px solid #7B7C81;">
     <thead>
     <tr>
         <th style="width: 0.8cm;">Pos</th>
-        <th class="center" style="width: 2cm;">Artikel</th>
+        <th style="width: 2cm;">Artikel</th>
         <th class="col-desc">Bezeichnung</th>
         <th class="center">Menge</th>
         <th class="center">Einheit</th>
@@ -126,9 +125,9 @@
     <tbody>
     <tr th:each="item : ${sale.saleItems}">
         <td th:text="${item.position}">1</td>
-        <td class="artikel-column" th:text="${item.product.article}">3606011300</td>
+        <td class="artikel-column"  th:text="${item.product.article}">3606011300</td>
         <td class="col-desc"
-            th:utext="${#strings.replace(item.productName, '\n', '<br/>')}">Verfaerbungen runterpolieren</td>
+            th:text="${item.productName}">Verfaerbungen runterpolieren</td>
         <td class="center" th:text="${item.quantity}">36</td>
         <td class="center"
             th:text="${item.product.unitOfMeasurement != null ? item.product.unitOfMeasurement.name : ''}">st</td>
@@ -174,24 +173,24 @@
 
 <!-- FOOTER -->
 <div class="footer">
-    <td class="shipping">
+    <div class="shipping">
         <table>
             <tr>
-                <td style="font-size: 12px; width: 3.5cm;">Zahlungsbedingungen:</td>
+                <td style="font-size: 10px; width: 3.5cm;">Zahlungsbedingungen:</td>
                 <td th:text="${ (sale.termsOfPayment != null ? sale.termsOfPayment.name : '')  + (sale.paymentDate != null ? ' ' + sale.paymentDate.format(T(java.time.format.DateTimeFormatter).ofPattern('dd.MM.yyyy')) : '') }"></td>
             </tr>
 
             <tr th:if="${sale.shipping != null}" th:with="dim=${sale.shippingDimensions}">
-                <td style="font-size: 12px; width: 3.5cm;">Versandart:</td>
+                <td style="font-size: 10px; width: 3.5cm;">Versandart:</td>
                 <td th:text="${(sale.shipping != null ? sale.shipping.name : '') + (dim != null and dim.width != null and dim.height != null and dim.length != null ? ' ' + dim.width + 'x' + dim.height + 'x' + dim.length + ' cm' : '') + (dim != null and dim.weight != null ? ', ' + dim.weight + ' kg' : '')}"></td>
             </tr>
 
             <tr>
-                <td style="font-size: 12px; width: 3.5cm;">Lieferdatum:</td>
+                <td style="font-size: 10px; width: 3.5cm;">Lieferdatum:</td>
                 <td th:text="${sale.deliveryDate != null ? sale.deliveryDate.format(T(java.time.format.DateTimeFormatter).ofPattern('dd.MM.yyyy')) : ''}"></td>
             </tr>
         </table>
-    </td>
+    </div>
 
     <div class="thanks bold">BESTEN DANK FÜR IHRE ANFRAGE UND VERTRAUEN!!!</div>
 

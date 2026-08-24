@@ -53,7 +53,7 @@ public interface SalesApi {
     })
     @ResponseStatus(HttpStatus.CREATED)
     SaleDto addSale(
-            @RequestBody @Valid NewSaleDto newSaleDto);
+            @Valid @RequestBody NewSaleDto newSaleDto);
 
 
     @PreAuthorize("isAuthenticated()")

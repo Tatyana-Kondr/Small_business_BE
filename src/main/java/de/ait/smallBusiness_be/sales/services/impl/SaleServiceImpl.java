@@ -9,12 +9,12 @@ import de.ait.smallBusiness_be.payments.model.Payment;
 import de.ait.smallBusiness_be.products.model.Product;
 import de.ait.smallBusiness_be.products.service.ProductService;
 import de.ait.smallBusiness_be.purchases.model.PaymentStatus;
-import de.ait.smallBusiness_be.purchases.model.TypeOfOperation;
 import de.ait.smallBusiness_be.sales.dao.SaleRepository;
 import de.ait.smallBusiness_be.sales.dao.ShippingRepository;
 import de.ait.smallBusiness_be.sales.dao.TermOfPaymentRepository;
 import de.ait.smallBusiness_be.sales.dto.NewSaleDto;
 import de.ait.smallBusiness_be.sales.dto.NewSaleItemDto;
+import de.ait.smallBusiness_be.sales.dto.NewShippingDimensionsDto;
 import de.ait.smallBusiness_be.sales.dto.SaleDto;
 import de.ait.smallBusiness_be.sales.models.*;
 import de.ait.smallBusiness_be.sales.services.DocumentService;
@@ -31,11 +31,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
+
 
 /**
  * 2/5/2025
@@ -43,6 +44,8 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  * @author Chechkina (AIT TR)
  */
+
+
 @RequiredArgsConstructor
 @Service
 public class SaleServiceImpl implements SaleService {
@@ -62,18 +65,14 @@ public class SaleServiceImpl implements SaleService {
     public SaleDto createSale(NewSaleDto newSale) {
 
         Customer customer = customerService.getCustomerOrThrow(newSale.getCustomerId());
-        Shipping shipping = null;
-        if (newSale.getShippingId() != null) {
-            shipping = shippingRepository.findById(newSale.getShippingId())
-                    .orElseThrow(() -> new EntityNotFoundException("Shipping not found"));
-        }
+        Shipping shipping = resolveShipping(newSale.getShippingId());
 
         TermOfPayment termOfPayment = termOfPaymentRepository.findById(newSale.getTermsOfPaymentId())
                 .orElseThrow(() -> new EntityNotFoundException("Term of payment not found."));
 
         // Генерация invoiceNumber и deliveryBill (если не передано)
-        String invoiceNumber = newSale.getInvoiceNumber();
-        String deliveryBill = newSale.getDeliveryBill();
+        String invoiceNumber = trimToNull(newSale.getInvoiceNumber());
+        String deliveryBill = trimToNull(newSale.getDeliveryBill());
 
         if (invoiceNumber == null || invoiceNumber.isBlank()) {
             invoiceNumber = generateUniqueInvoiceNumber();
@@ -81,90 +80,127 @@ public class SaleServiceImpl implements SaleService {
         }
 
         // Маппинг в сущность + установка обязательных полей
-        Sale sale = modelMapper.map(newSale, Sale.class);
+        Sale sale = new Sale();
+
         sale.setCustomer(customer);
         sale.setShipping(shipping);
+        sale.setSalesDate(LocalDate.now());
+        sale.setDeliveryDate(LocalDate.now());
         sale.setTermsOfPayment(termOfPayment);
         sale.setInvoiceNumber(invoiceNumber);
         sale.setDeliveryBill(deliveryBill);
+        sale.setAccountObject(trimToNull(newSale.getAccountObject()));
+        sale.setOrderNumber(trimToNull(newSale.getOrderNumber()));
+        sale.setOrderType(trimToNull(newSale.getOrderType()));
         sale.setDefaultTax(newSale.getDefaultTax());
         sale.setDefaultDiscount(newSale.getDefaultDiscount());
+        sale.setTypeOfOperation(newSale.getTypeOfOperation());
+        sale.setPaymentStatus(newSale.getPaymentStatus());
 
         // Маппинг габаритов
-        if (newSale.getShippingId() != null && newSale.getShippingDimensions() != null) {
-            sale.setShippingDimensions(
-                    modelMapper.map(newSale.getShippingDimensions(), ShippingDimensions.class)
-            );
-        } else {
-            sale.setShippingDimensions(null);
-        }
+        sale.setShippingDimensions(
+                resolveShippingDimensions(newSale.getShippingId(), newSale.getShippingDimensions()));
 
         // Расчёт сумм
-        AtomicReference<BigDecimal> discountSum = new AtomicReference<>(BigDecimal.ZERO);
-        AtomicReference<BigDecimal> subtotal = new AtomicReference<>(BigDecimal.ZERO);
-        AtomicReference<BigDecimal> taxSum = new AtomicReference<>(BigDecimal.ZERO);
-        AtomicReference<BigDecimal> total = new AtomicReference<>(BigDecimal.ZERO);
+//        AtomicReference<BigDecimal> discountSum = new AtomicReference<>(BigDecimal.ZERO);
+//        AtomicReference<BigDecimal> subtotal = new AtomicReference<>(BigDecimal.ZERO);
+//        AtomicReference<BigDecimal> taxSum = new AtomicReference<>(BigDecimal.ZERO);
+//        AtomicReference<BigDecimal> total = new AtomicReference<>(BigDecimal.ZERO);
+//
+//        if (newSale.getSalesItems() != null && !newSale.getSalesItems().isEmpty()) {
+//            List<SaleItem> saleItems = newSale.getSalesItems().stream()
+//                    .map(newSaleItemDto -> {
+//                        Product product = productService.getProductOrThrow(newSaleItemDto.getProductId());
+//                        SaleItem saleItem = modelMapper.map(newSaleItemDto, SaleItem.class);
+//                        saleItem.setProductName(normalizeNewlines(saleItem.getProductName()));
+//                        saleItem.setProduct(product);
+//                        saleItem.setSale(sale);
+//
+//                        BigDecimal unitPrice = saleItem.getUnitPrice();
+//                        BigDecimal quantity = saleItem.getQuantity();
+//
+//                        BigDecimal taxPercent = saleItem.getTax();
+//                        // 👇 Если налог в позиции отсутствует — берём из defaultTax
+//                        if (taxPercent == null) {
+//                            taxPercent = sale.getDefaultTax();
+//                            saleItem.setTax(taxPercent);
+//                        }
+//
+//                        BigDecimal discountPercent = saleItem.getDiscount();
+//                        // 👇 Если скидка в позиции отсутствует — берём из defaultDiscount
+//                        if (discountPercent == null) {
+//                            discountPercent = sale.getDefaultDiscount();
+//                            saleItem.setDiscount(discountPercent);
+//                        }
+//
+//                        BigDecimal totalPriceWithoutDiscount = unitPrice.multiply(quantity);
+//                        BigDecimal discountAmount = totalPriceWithoutDiscount
+//                                .multiply(saleItem.getDiscount().movePointLeft(2))
+//                                .setScale(2, RoundingMode.HALF_UP);
+//                        BigDecimal totalPrice = totalPriceWithoutDiscount.subtract(discountAmount);
+//                        BigDecimal taxAmount = totalPrice
+//                                .multiply(saleItem.getTax().movePointLeft(2))
+//                                .setScale(2, RoundingMode.HALF_UP);
+//                        BigDecimal totalAmount = totalPrice.add(taxAmount);
+//
+//                        saleItem.setDiscountAmount(discountAmount);
+//                        saleItem.setTotalPrice(totalPrice);
+//                        saleItem.setTaxAmount(taxAmount);
+//                        saleItem.setTotalAmount(totalAmount);
+//
+//                        discountSum.updateAndGet(val -> val.add(discountAmount));
+//                        subtotal.updateAndGet(val -> val.add(totalPrice));
+//                        taxSum.updateAndGet(val -> val.add(taxAmount));
+//                        total.updateAndGet(val -> val.add(totalAmount));
+//
+//                        return saleItem;
+//                    }).toList();
+//
+//            sale.setSaleItems(saleItems);
+//        }
+//
+//        sale.setDiscountAmount(discountSum.get());
+//        sale.setTotalPrice(subtotal.get());
+//        sale.setTaxAmount(taxSum.get());
+//        sale.setTotalAmount(total.get());
 
-        if (newSale.getSalesItems() != null && !newSale.getSalesItems().isEmpty()) {
-            List<SaleItem> saleItems = newSale.getSalesItems().stream()
-                    .map(newSaleItemDto -> {
-                        Product product = productService.getProductOrThrow(newSaleItemDto.getProductId());
-                        SaleItem saleItem = modelMapper.map(newSaleItemDto, SaleItem.class);
-                        saleItem.setProductName(normalizeNewlines(saleItem.getProductName()));
-                        saleItem.setProduct(product);
-                        saleItem.setSale(sale);
+        SaleCalculationResult calculation = buildSaleItems(sale, newSale.getSalesItems());
 
-                        BigDecimal unitPrice = saleItem.getUnitPrice();
-                        BigDecimal quantity = saleItem.getQuantity();
+        sale.setSaleItems(calculation.items());
+        sale.setDiscountAmount(calculation.discountAmount());
+        sale.setTotalPrice(calculation.totalPrice());
+        sale.setTaxAmount(calculation.taxAmount());
+        sale.setTotalAmount(calculation.totalAmount());
 
-                        BigDecimal taxPercent = saleItem.getTax();
-                        // 👇 Если налог в позиции отсутствует — берём из defaultTax
-                        if (taxPercent == null) {
-                            taxPercent = sale.getDefaultTax();
-                            saleItem.setTax(taxPercent);
-                        }
 
-                        BigDecimal discountPercent = saleItem.getDiscount();
-                        // 👇 Если скидка в позиции отсутствует — берём из defaultDiscount
-                        if (discountPercent == null) {
-                            discountPercent = sale.getDefaultDiscount();
-                            saleItem.setDiscount(discountPercent);
-                        }
+        Sale savedSale = saleRepository.saveAndFlush(sale);
 
-                        BigDecimal totalPriceWithoutDiscount = unitPrice.multiply(quantity);
-                        BigDecimal discountAmount = totalPriceWithoutDiscount
-                                .multiply(saleItem.getDiscount().movePointLeft(2))
-                                .setScale(2, RoundingMode.HALF_UP);
-                        BigDecimal totalPrice = totalPriceWithoutDiscount.subtract(discountAmount);
-                        BigDecimal taxAmount = totalPrice
-                                .multiply(saleItem.getTax().movePointLeft(2))
-                                .setScale(2, RoundingMode.HALF_UP);
-                        BigDecimal totalAmount = totalPrice.add(taxAmount);
+        Path invoiceTemp = null;
+        Path deliveryBillTemp = null;
 
-                        saleItem.setDiscountAmount(discountAmount);
-                        saleItem.setTotalPrice(totalPrice);
-                        saleItem.setTaxAmount(taxAmount);
-                        saleItem.setTotalAmount(totalAmount);
+        try {
+            /*
+             * Сначала генерируем оба PDF.
+             * Если генерация второго упадёт, первый временный файл
+             * будет удалён в finally, а постоянные файлы ещё не созданы.
+             */
+            invoiceTemp = invoiceService.generateInvoiceTempPdf(savedSale, "invoices");
+            deliveryBillTemp = invoiceService.generateDeliveryBillTempPdf(savedSale, "delivery-bill");
 
-                        discountSum.updateAndGet(val -> val.add(discountAmount));
-                        subtotal.updateAndGet(val -> val.add(totalPrice));
-                        taxSum.updateAndGet(val -> val.add(taxAmount));
-                        total.updateAndGet(val -> val.add(totalAmount));
+            /*
+             * Только после успешной генерации обоих документов
+             * перемещаем их в постоянные пути.
+             */
+            invoiceService.replaceInvoicePdf(savedSale, "invoices", invoiceTemp);
+            invoiceTemp = null;
 
-                        return saleItem;
-                    }).toList();
+            invoiceService.replaceDeliveryBillPdf(savedSale, "delivery-bill", deliveryBillTemp);
+            deliveryBillTemp = null;
 
-            sale.setSaleItems(saleItems);
+        } finally {
+            invoiceService.deleteTempFile(invoiceTemp);
+            invoiceService.deleteTempFile(deliveryBillTemp);
         }
-
-        sale.setDiscountAmount(discountSum.get());
-        sale.setTotalPrice(subtotal.get());
-        sale.setTaxAmount(taxSum.get());
-        sale.setTotalAmount(total.get());
-
-        Sale savedSale = saleRepository.save(sale);
-        invoiceService.generateInvoicePdf(savedSale, "invoices");
-        invoiceService.generateDeliveryBillPdf(savedSale, "delivery-bill");
 
         // Обновляем склад
         savedSale.getSaleItems().forEach(item -> {
@@ -207,117 +243,150 @@ public class SaleServiceImpl implements SaleService {
         Sale sale = getSaleOrThrow(saleId);
 
         // --- удаляем старые PDF ---
-        invoiceService.deleteInvoicePdf(sale, "invoices");
-        invoiceService.deleteDeliveryBillPdf(sale, "delivery-bill");
+        //invoiceService.deleteInvoicePdf(sale, "invoices");
+       // invoiceService.deleteDeliveryBillPdf(sale, "delivery-bill");
 
         Customer customer = customerService.getCustomerOrThrow(updateSale.getCustomerId());
-        Shipping shipping = null;
-        if (updateSale.getShippingId() != null) {
-            shipping = shippingRepository.findById(updateSale.getShippingId())
-                    .orElseThrow(() -> new EntityNotFoundException("Shipping not found"));
-        }
+        Shipping shipping = resolveShipping(updateSale.getShippingId());
+
         TermOfPayment termOfPayment = termOfPaymentRepository.findById(updateSale.getTermsOfPaymentId())
                 .orElseThrow(() -> new EntityNotFoundException("Term of payment not found."));
 
         sale.setCustomer(customer);
         sale.setShipping(shipping);
         sale.setTermsOfPayment(termOfPayment);
-        sale.setInvoiceNumber(updateSale.getInvoiceNumber());
-        sale.setDeliveryBill(updateSale.getDeliveryBill());
+      //  sale.setInvoiceNumber(updateSale.getInvoiceNumber());
+      //  sale.setDeliveryBill(updateSale.getDeliveryBill());
         sale.setAccountObject(updateSale.getAccountObject());
         sale.setOrderNumber(updateSale.getOrderNumber());
         sale.setOrderType(updateSale.getOrderType());
         sale.setSalesDate(updateSale.getSalesDate());
         sale.setDeliveryDate(updateSale.getDeliveryDate());
-        sale.setDefaultTax(updateSale.getDefaultTax());
-        sale.setDefaultDiscount(updateSale.getDefaultDiscount());
+        sale.setDefaultTax(defaultValue(updateSale.getDefaultTax(),BigDecimal.ZERO));
+        sale.setDefaultDiscount(defaultValue(updateSale.getDefaultDiscount(),BigDecimal.ZERO));
 
-        // --- ГАБАРИТЫ: только если shipping выбран ---
-        if (updateSale.getShippingId() != null && updateSale.getShippingDimensions() != null) {
-            sale.setShippingDimensions(
-                    modelMapper.map(updateSale.getShippingDimensions(), ShippingDimensions.class)
-            );
-        } else {
-            sale.setShippingDimensions(null);
-        }
-        try {
-            sale.setTypeOfOperation(TypeOfOperation.valueOf(updateSale.getTypeOfOperation().toUpperCase()));
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid type of operation: " + updateSale.getTypeOfOperation());
-        }
+        sale.setShippingDimensions(resolveShippingDimensions(updateSale.getShippingId(), updateSale.getShippingDimensions()));
 
-        try {
-            sale.setPaymentStatus(PaymentStatus.valueOf(updateSale.getPaymentStatus().toUpperCase()));
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid payment status: " + updateSale.getPaymentStatus());
-        }
+        sale.setTypeOfOperation(updateSale.getTypeOfOperation());
+        sale.setPaymentStatus(updateSale.getPaymentStatus());
+
+        SaleCalculationResult calculation = buildSaleItems(sale, updateSale.getSalesItems());
 
         // Удаляем все старые позиции
         sale.getSaleItems().clear();
+        sale.getSaleItems().addAll(calculation.items());
         // Пересчет сумм
-        AtomicReference<BigDecimal> discountAmount = new AtomicReference<>(BigDecimal.ZERO);
-        AtomicReference<BigDecimal> totalPrice = new AtomicReference<>(BigDecimal.ZERO);
-        AtomicReference<BigDecimal> taxAmount = new AtomicReference<>(BigDecimal.ZERO);
-        AtomicReference<BigDecimal> totalAmount = new AtomicReference<>(BigDecimal.ZERO);
+       // AtomicReference<BigDecimal> discountAmount = new AtomicReference<>(BigDecimal.ZERO);
+       //AtomicReference<BigDecimal> totalPrice = new AtomicReference<>(BigDecimal.ZERO);
+       // AtomicReference<BigDecimal> taxAmount = new AtomicReference<>(BigDecimal.ZERO);
+       // AtomicReference<BigDecimal> totalAmount = new AtomicReference<>(BigDecimal.ZERO);
 
-        List<SaleItem> newItems = new ArrayList<>();
-        int position = 1;
+//        List<SaleItem> newItems = new ArrayList<>();
+//        int position = 1;
+//
+//        for (NewSaleItemDto itemDto : updateSale.getSalesItems()) {
+//            Product product = productService.getProductOrThrow(itemDto.getProductId());
+//
+//            SaleItem item = new SaleItem();
+//            item.setSale(sale);
+//            item.setProduct(product);
+//            item.setProductName(normalizeNewlines(itemDto.getProductName()));
+//            item.setQuantity(itemDto.getQuantity());
+//            item.setUnitPrice(itemDto.getUnitPrice());
+//            item.setDiscount(itemDto.getDiscount());
+//            item.setTax(itemDto.getTax());
+//            item.setPosition(position++);
+//
+//            // Расчёты
+//            BigDecimal unitPrice = item.getUnitPrice();
+//            BigDecimal quantity = item.getQuantity();
+//
+//            BigDecimal totalPriceWithoutDiscount = unitPrice.multiply(quantity); //стоимость без скидки (цена * количество)
+//            BigDecimal discountSum = totalPriceWithoutDiscount
+//                    .multiply(item.getDiscount().movePointLeft(2)) // Это эквивалентно делению на 100.
+//                    .setScale(2, RoundingMode.HALF_UP); // сумма скидки
+//            BigDecimal totalPriceWithDiscount = totalPriceWithoutDiscount.subtract(discountSum); // сумма с учетом скидки (стоимость - скидка)
+//            BigDecimal taxSum = totalPriceWithDiscount
+//                    .multiply(item.getTax().movePointLeft(2)) // Это эквивалентно делению на 100
+//                    .setScale(2, RoundingMode.HALF_UP); // сумма налога
+//            BigDecimal totalSum = totalPriceWithDiscount.add(taxSum); // итоговая сумма с учетом скидки и налога (сумма с учетом скидки + налог)
 
-        for (NewSaleItemDto itemDto : updateSale.getSalesItems()) {
-            Product product = productService.getProductOrThrow(itemDto.getProductId());
+//            item.setDiscountAmount(discountSum);
+//            item.setTotalPrice(totalPriceWithDiscount);
+//            item.setTaxAmount(taxSum);
+//            item.setTotalAmount(totalSum);
+//
+//            discountAmount.updateAndGet(v -> v.add(item.getDiscountAmount()));
+//            totalPrice.updateAndGet(v -> v.add(item.getTotalPrice()));
+//            taxAmount.updateAndGet(v -> v.add(item.getTaxAmount()));
+//            totalAmount.updateAndGet(v -> v.add(item.getTotalAmount()));
+//
+//            newItems.add(item);
+//        }
+//
+//        // Добавляем новые позиции
+//        sale.getSaleItems().addAll(newItems);
+//
+//        // Обновляем итоги
+//        sale.setSalesDate(updateSale.getSalesDate());
+//        sale.setTotalPrice(totalPrice.get());
+//        sale.setTaxAmount(taxAmount.get());
+//        sale.setTotalAmount(totalAmount.get());
 
-            SaleItem item = new SaleItem();
-            item.setSale(sale);
-            item.setProduct(product);
-            item.setProductName(normalizeNewlines(itemDto.getProductName()));
-            item.setQuantity(itemDto.getQuantity());
-            item.setUnitPrice(itemDto.getUnitPrice());
-            item.setDiscount(itemDto.getDiscount());
-            item.setTax(itemDto.getTax());
-            item.setPosition(position++);
+        sale.setDiscountAmount(calculation.discountAmount());
+        sale.setTotalPrice(calculation.totalPrice());
+        sale.setTaxAmount(calculation.taxAmount());
+        sale.setTotalAmount(calculation.totalAmount());
 
-            // Расчёты
-            BigDecimal unitPrice = item.getUnitPrice();
-            BigDecimal quantity = item.getQuantity();
-
-            BigDecimal totalPriceWithoutDiscount = unitPrice.multiply(quantity); //стоимость без скидки (цена * количество)
-            BigDecimal discountSum = totalPriceWithoutDiscount
-                    .multiply(item.getDiscount().movePointLeft(2)) // Это эквивалентно делению на 100.
-                    .setScale(2, RoundingMode.HALF_UP); // сумма скидки
-            BigDecimal totalPriceWithDiscount = totalPriceWithoutDiscount.subtract(discountSum); // сумма с учетом скидки (стоимость - скидка)
-            BigDecimal taxSum = totalPriceWithDiscount
-                    .multiply(item.getTax().movePointLeft(2)) // Это эквивалентно делению на 100
-                    .setScale(2, RoundingMode.HALF_UP); // сумма налога
-            BigDecimal totalSum = totalPriceWithDiscount.add(taxSum); // итоговая сумма с учетом скидки и налога (сумма с учетом скидки + налог)
-
-            item.setDiscountAmount(discountSum);
-            item.setTotalPrice(totalPriceWithDiscount);
-            item.setTaxAmount(taxSum);
-            item.setTotalAmount(totalSum);
-
-            discountAmount.updateAndGet(v -> v.add(item.getDiscountAmount()));
-            totalPrice.updateAndGet(v -> v.add(item.getTotalPrice()));
-            taxAmount.updateAndGet(v -> v.add(item.getTaxAmount()));
-            totalAmount.updateAndGet(v -> v.add(item.getTotalAmount()));
-
-            newItems.add(item);
-        }
-
-        // Добавляем новые позиции
-        sale.getSaleItems().addAll(newItems);
-
-        // Обновляем итоги
-        sale.setSalesDate(updateSale.getSalesDate());
-        sale.setTotalPrice(totalPrice.get());
-        sale.setTaxAmount(taxAmount.get());
-        sale.setTotalAmount(totalAmount.get());
 
         // Сохраняем
-        Sale updatedSale = saleRepository.save(sale);
-        invoiceService.generateInvoicePdf(updatedSale, "invoices");
-        invoiceService.generateDeliveryBillPdf(updatedSale, "delivery-bill");
+        Sale updatedSale = saleRepository.saveAndFlush(sale);
+        //invoiceService.generateInvoicePdf(updatedSale, "invoices");
+        //invoiceService.generateDeliveryBillPdf(updatedSale, "delivery-bill");
 
-        // Синхронизируем документ со складом
+        Path invoiceTemp = null;
+        Path deliveryBillTemp = null;
+
+        try {
+            /*
+             * Сначала генерируются оба новых документа.
+             * Пока оба не созданы, старые PDF не затрагиваются.
+             */
+            invoiceTemp = invoiceService.generateInvoiceTempPdf(
+                    updatedSale,
+                    "invoices"
+            );
+
+            deliveryBillTemp = invoiceService.generateDeliveryBillTempPdf(
+                    updatedSale,
+                    "delivery-bill"
+            );
+
+            /*
+             * Только после успешной генерации обоих файлов
+             * заменяем действующие документы.
+             */
+            invoiceService.replaceInvoicePdf(
+                    updatedSale,
+                    "invoices",
+                    invoiceTemp
+            );
+            invoiceTemp = null;
+
+            invoiceService.replaceDeliveryBillPdf(
+                    updatedSale,
+                    "delivery-bill",
+                    deliveryBillTemp
+            );
+
+            deliveryBillTemp = null;
+
+        } finally {
+            invoiceService.deleteTempFile(invoiceTemp);
+            invoiceService.deleteTempFile(deliveryBillTemp);
+        }
+
+            // Синхронизируем документ со складом
         warehouseService.syncDocument(
                 updatedSale.getTypeOfOperation(),
                 updatedSale.getId(),
@@ -359,7 +428,7 @@ public class SaleServiceImpl implements SaleService {
 
         PaymentStatus newStatus;
         if (totalPaid.compareTo(BigDecimal.ZERO) == 0) {
-            newStatus = PaymentStatus.AUSSTEHEND;
+            newStatus = PaymentStatus.OFFEN;
         } else if (totalPaid.compareTo(sale.getTotalAmount()) >= 0) {
             newStatus = PaymentStatus.BEZAHLT;
         } else {
@@ -439,5 +508,144 @@ public class SaleServiceImpl implements SaleService {
         return s.replace("\r\n", "\n").replace("\r", "\n");
     }
 
+    private Shipping resolveShipping(Long shippingId) {
+        if (shippingId == null) {
+            return null;
+        }
+
+        return shippingRepository.findById(shippingId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Shipping not found."
+                ));
+    }
+
+    private ShippingDimensions resolveShippingDimensions(
+            Long shippingId,
+            NewShippingDimensionsDto dimensionsDto
+    ) {
+        if (shippingId == null || dimensionsDto == null) {
+            return null;
+        }
+
+        return modelMapper.map(
+                dimensionsDto,
+                ShippingDimensions.class
+        );
+    }
+
+
+    private BigDecimal defaultValue(
+            BigDecimal value,
+            BigDecimal defaultValue
+    ) {
+        return value != null ? value : defaultValue;
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private SaleCalculationResult buildSaleItems(
+            Sale sale,
+            List<NewSaleItemDto> itemDtos
+    ) {
+        if (itemDtos == null || itemDtos.isEmpty()) {
+            throw new RestApiException(
+                    ErrorDescription.NO_PRODUCT_IN_SALE,
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        List<SaleItem> items = new ArrayList<>();
+
+        BigDecimal discountAmountSum = BigDecimal.ZERO;
+        BigDecimal totalPriceSum = BigDecimal.ZERO;
+        BigDecimal taxAmountSum = BigDecimal.ZERO;
+        BigDecimal totalAmountSum = BigDecimal.ZERO;
+
+        int position = 1;
+
+        for (NewSaleItemDto itemDto : itemDtos) {
+            Product product = productService.getProductOrThrow(
+                    itemDto.getProductId()
+            );
+
+            BigDecimal quantity = itemDto.getQuantity();
+            BigDecimal unitPrice = itemDto.getUnitPrice();
+
+            BigDecimal discount = defaultValue(
+                    itemDto.getDiscount(),
+                    sale.getDefaultDiscount()
+            );
+
+            BigDecimal tax = defaultValue(
+                    itemDto.getTax(),
+                    sale.getDefaultTax()
+            );
+
+            BigDecimal totalBeforeDiscount = unitPrice.multiply(quantity);
+
+            BigDecimal discountAmount = totalBeforeDiscount
+                    .multiply(discount.movePointLeft(2))
+                    .setScale(2, RoundingMode.HALF_UP);
+
+            BigDecimal totalPrice = totalBeforeDiscount
+                    .subtract(discountAmount)
+                    .setScale(2, RoundingMode.HALF_UP);
+
+            BigDecimal taxAmount = totalPrice
+                    .multiply(tax.movePointLeft(2))
+                    .setScale(2, RoundingMode.HALF_UP);
+
+            BigDecimal totalAmount = totalPrice
+                    .add(taxAmount)
+                    .setScale(2, RoundingMode.HALF_UP);
+
+            SaleItem item = new SaleItem();
+            item.setSale(sale);
+            item.setProduct(product);
+            item.setPosition(position++);
+            item.setProductName(
+                    normalizeNewlines(itemDto.getProductName())
+            );
+            item.setQuantity(quantity);
+            item.setUnitPrice(unitPrice);
+            item.setDiscount(discount);
+            item.setDiscountAmount(discountAmount);
+            item.setTotalPrice(totalPrice);
+            item.setTax(tax);
+            item.setTaxAmount(taxAmount);
+            item.setTotalAmount(totalAmount);
+
+            items.add(item);
+
+            discountAmountSum = discountAmountSum.add(discountAmount);
+            totalPriceSum = totalPriceSum.add(totalPrice);
+            taxAmountSum = taxAmountSum.add(taxAmount);
+            totalAmountSum = totalAmountSum.add(totalAmount);
+        }
+
+        return new SaleCalculationResult(
+                items,
+                discountAmountSum.setScale(2, RoundingMode.HALF_UP),
+                totalPriceSum.setScale(2, RoundingMode.HALF_UP),
+                taxAmountSum.setScale(2, RoundingMode.HALF_UP),
+                totalAmountSum.setScale(2, RoundingMode.HALF_UP)
+        );
+    }
+
+    private record SaleCalculationResult(
+            List<SaleItem> items,
+            BigDecimal discountAmount,
+            BigDecimal totalPrice,
+            BigDecimal taxAmount,
+            BigDecimal totalAmount
+    ) {
+    }
 
 }

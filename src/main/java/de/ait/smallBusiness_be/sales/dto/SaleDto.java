@@ -1,5 +1,6 @@
 package de.ait.smallBusiness_be.sales.dto;
 
+import de.ait.smallBusiness_be.purchases.model.PaymentStatus;
 import de.ait.smallBusiness_be.sales.models.TermOfPayment;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -27,7 +28,7 @@ public class SaleDto {
     NewShippingDimensionsDto shippingDimensions;
     TermOfPayment termsOfPayment;
     LocalDate salesDate;
-    String paymentStatus;
+    PaymentStatus paymentStatus;
     LocalDate paymentDate;
     String orderNumber;
     String orderType;

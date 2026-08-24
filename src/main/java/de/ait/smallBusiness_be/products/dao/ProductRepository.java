@@ -27,11 +27,20 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     boolean existsByNameAndVendorArticleAndPurchasingPriceAndProductCategory(String name, String vendorArticle, BigDecimal purchasingPrice, ProductCategory productCategory);
 
-    @EntityGraph(attributePaths = {"productCategory", "unitOfMeasurement"})
-    Page<Product> findByProductCategory_Id(int id, Pageable pageable);
+    boolean existsByNameAndArticleAndVendorArticleAndPurchasingPriceAndProductCategoryAndIdNot(
+            String name,
+            String article,
+            String vendorArticle,
+            BigDecimal purchasingPrice,
+            ProductCategory productCategory,
+            Long id
+    );
 
     @EntityGraph(attributePaths = {"productCategory", "unitOfMeasurement"})
-    List<Product> findAllByProductCategory_Id(int id);
+    Page<Product> findByProductCategory_Id(Long id, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"productCategory", "unitOfMeasurement"})
+    List<Product> findAllByProductCategory_Id(Long id);
 
     @EntityGraph(attributePaths = {"productCategory", "unitOfMeasurement"})
     Optional<Product> findProductByArticle(String article);
@@ -75,7 +84,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
               )
         """
     )
-    Page<Product> searchProductsByCategoryPage(@Param("categoryId") int categoryId,
+    Page<Product> searchProductsByCategoryPage(@Param("categoryId") Long categoryId,
                                            @Param("searchTerm") String searchTerm,
                                            Pageable pageable);
 
@@ -89,7 +98,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             OR LOWER(p.vendorArticle) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
           )
     """)
-    List<Product> searchProductsByCategory(@Param("categoryId") int categoryId,
+    List<Product> searchProductsByCategory(@Param("categoryId") Long categoryId,
                                            @Param("searchTerm") String searchTerm);
 
     @Query("""

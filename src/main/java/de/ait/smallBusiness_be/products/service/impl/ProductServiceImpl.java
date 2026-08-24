@@ -1,6 +1,7 @@
 package de.ait.smallBusiness_be.products.service.impl;
 
 import de.ait.smallBusiness_be.exceptions.ErrorDescription;
+import de.ait.smallBusiness_be.exceptions.FieldValidationException;
 import de.ait.smallBusiness_be.exceptions.RestApiException;
 import de.ait.smallBusiness_be.products.dao.ProductRepository;
 import de.ait.smallBusiness_be.products.dao.UnitOfMeasurementRepository;
@@ -9,6 +10,7 @@ import de.ait.smallBusiness_be.products.model.Dimensions;
 import de.ait.smallBusiness_be.products.model.Product;
 import de.ait.smallBusiness_be.products.model.UnitOfMeasurement;
 import de.ait.smallBusiness_be.products.service.ProductService;
+import de.ait.smallBusiness_be.validation.dto.ValidationErrorDto;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -22,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -44,6 +47,8 @@ public class ProductServiceImpl implements ProductService {
     @Transactional
     public ProductDto addProduct(NewProductDto newProductDto) {
 
+        List<ValidationErrorDto> errors = new ArrayList<>();
+
         boolean exists = productRepository
                 .existsByNameAndVendorArticleAndPurchasingPriceAndProductCategory(
                         newProductDto.getName(),
@@ -52,8 +57,17 @@ public class ProductServiceImpl implements ProductService {
                         newProductDto.getProductCategory()
                 );
         if (exists) {
-            throw new RestApiException(ErrorDescription.PRODUCT_ALREADY_EXISTS, HttpStatus.CONFLICT);
+            errors.add(ValidationErrorDto.builder()
+                    .field("name")
+                    .rejectedValue(newProductDto.getName())
+                    .message("Produkt existiert bereits.")
+                    .build());
         }
+
+        if (!errors.isEmpty()) {
+            throw new FieldValidationException(errors);
+        }
+
          UnitOfMeasurement unit = unitOfMeasurementRepository.findById(newProductDto.getUnitOfMeasurementId())
                  .orElseThrow(() -> new EntityNotFoundException("Unit Of Measurement not found"));
 
@@ -94,42 +108,81 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
-    public ProductDto updateProduct(Long id, UpdateProductDto updateProductDto){
+    public ProductDto updateProduct(Long id, UpdateProductDto updateProductDto) {
 
-    Product product = getProductOrThrow(id);
+        Product product = getProductOrThrow(id);
+
+        List<ValidationErrorDto> errors = new ArrayList<>();
+
+        boolean exists = productRepository
+                .existsByNameAndArticleAndVendorArticleAndPurchasingPriceAndProductCategoryAndIdNot(
+                        updateProductDto.getName(),
+                        updateProductDto.getArticle(),
+                        updateProductDto.getVendorArticle(),
+                        updateProductDto.getPurchasingPrice(),
+                        updateProductDto.getProductCategory(),
+                        id
+                );
+
+        if (exists) {
+            errors.add(ValidationErrorDto.builder()
+                    .field("name")
+                    .rejectedValue(updateProductDto.getName())
+                    .message("Produkt existiert bereits.")
+                    .build());
+        }
+
+        if (!errors.isEmpty()) {
+            throw new FieldValidationException(errors);
+        }
+
         product.setName(updateProductDto.getName());
         product.setArticle(updateProductDto.getArticle());
+        product.setVendorArticle(updateProductDto.getVendorArticle());
         product.setPurchasingPrice(updateProductDto.getPurchasingPrice());
         product.setMarkupPercentage(updateProductDto.getMarkupPercentage());
         product.setSellingPrice(updateProductDto.getSellingPrice());
 
         if (updateProductDto.getUnitOfMeasurementId() != null) {
             try {
-                UnitOfMeasurement unit = unitOfMeasurementRepository.findById(updateProductDto.getUnitOfMeasurementId())
+                UnitOfMeasurement unit = unitOfMeasurementRepository
+                        .findById(updateProductDto.getUnitOfMeasurementId())
                         .orElseThrow(() -> new EntityNotFoundException("Unit Of Measurement not found"));
+
                 product.setUnitOfMeasurement(unit);
             } catch (IllegalArgumentException e) {
-                throw new RestApiException(ErrorDescription.INVALID_UNIT_OF_MEASUREMENT, HttpStatus.BAD_REQUEST);
+                throw new RestApiException(
+                        ErrorDescription.INVALID_UNIT_OF_MEASUREMENT,
+                        HttpStatus.BAD_REQUEST
+                );
             }
         }
 
         product.setWeight(updateProductDto.getWeight());
 
         if (updateProductDto.getNewDimensions() != null) {
-            Dimensions dimensions = modelMapper.map(updateProductDto.getNewDimensions(), Dimensions.class);
+            Dimensions dimensions = modelMapper.map(
+                    updateProductDto.getNewDimensions(),
+                    Dimensions.class
+            );
             product.setDimensions(dimensions);
         }
+
         product.setProductCategory(updateProductDto.getProductCategory());
         product.setDescription(updateProductDto.getDescription());
         product.setCustomsNumber(updateProductDto.getCustomsNumber());
         product.setStorageLocation(updateProductDto.getStorageLocation());
-        //product.setDateOfLastPurchase(updateProductDto.getDateOfLastPurchase());
         product.setLastModifiedDate(LocalDateTime.now());
 
         Product updatedProduct = productRepository.save(product);
+
         ProductDto productDto = modelMapper.map(updatedProduct, ProductDto.class);
-        NewDimensionsDto updatedDimensions = modelMapper.map(updatedProduct.getDimensions(), NewDimensionsDto.class);
+        NewDimensionsDto updatedDimensions = modelMapper.map(
+                updatedProduct.getDimensions(),
+                NewDimensionsDto.class
+        );
         productDto.setNewDimensions(updatedDimensions);
+
         return productDto;
     }
 
@@ -167,7 +220,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<ProductDto> findProductsByCategoryId(int categoryId, String searchTerm, Pageable pageable) {
+    public Page<ProductDto> findProductsByCategoryId(Long categoryId, String searchTerm, Pageable pageable) {
         Page<Product> productsPage;
 
         if (StringUtils.hasText(searchTerm)) {
@@ -185,7 +238,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ProductDto> getAllProductsByCategoryId(int categoryId, String searchTerm) {
+    public List<ProductDto> getAllProductsByCategoryId(Long categoryId, String searchTerm) {
         List<Product> products;
 
         if (StringUtils.hasText(searchTerm)) {

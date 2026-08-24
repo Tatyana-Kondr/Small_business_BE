@@ -87,7 +87,7 @@ class PurchaseServiceImplTest {
         newPurchaseDto.setPurchasingDate(LocalDate.now());
         newPurchaseDto.setDocumentId(document.getId());
         newPurchaseDto.setType("EINKAUF");
-        newPurchaseDto.setPaymentStatus("AUSSTEHEND");
+        newPurchaseDto.setPaymentStatus("OFFEN");
         newPurchaseDto.setDocumentNumber("DOC-1");
 
         purchase = new Purchase();
@@ -95,7 +95,7 @@ class PurchaseServiceImplTest {
         purchase.setVendor(customer);
         purchase.setPurchaseItems(new ArrayList<>());
         purchase.setTotal(BigDecimal.valueOf(100));
-        purchase.setPaymentStatus(PaymentStatus.AUSSTEHEND);
+        purchase.setPaymentStatus(PaymentStatus.OFFEN);
 
         lenient().when(modelMapper.map(Mockito.any(NewPurchaseDto.class), Mockito.eq(Purchase.class)))
                 .thenAnswer(invocation -> {

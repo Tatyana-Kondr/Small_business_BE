@@ -206,7 +206,7 @@ public interface ProductsApi {
                             schema = @Schema(implementation = ErrorResponseDto.class)))
     })
     @ResponseStatus(HttpStatus.OK)
-    Page<ProductDto> getProductsByCategoryPaged(@PathVariable("categoryId") int categoryId,
+    Page<ProductDto> getProductsByCategoryPaged(@PathVariable("categoryId") Long categoryId,
                                            @RequestParam(name = "search", required = false) String search,
                                            @PageableDefault(size = 15, sort = "name") Pageable pageable);
 
@@ -226,7 +226,7 @@ public interface ProductsApi {
                             schema = @Schema(implementation = ErrorResponseDto.class)))
     })
     @ResponseStatus(HttpStatus.OK)
-    List<ProductDto> getProductsByCategory(@PathVariable("categoryId") int categoryId,
+    List<ProductDto> getProductsByCategory(@PathVariable("categoryId") Long categoryId,
                                                 @RequestParam(name = "search", required = false) String search);
 
     @PreAuthorize("isAuthenticated()")
