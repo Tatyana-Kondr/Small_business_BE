@@ -8,9 +8,9 @@ import java.util.List;
 
 public interface ProductPhotoService {
     ProductPhoto uploadFile(Long productId, MultipartFile file) throws IOException;
-
+    ProductPhoto replacePhoto(Long photoId, MultipartFile file);
+    void reorderPhotos(Long productId, List<Long> photoIds);
     void deletePhoto(Long photoId);
-
     List<ProductPhoto> getPhotosByProductId(Long productId);
     List<ProductPhoto> getAllPhotos();
 }
