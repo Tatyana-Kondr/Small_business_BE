@@ -93,6 +93,8 @@ public class SecurityConfig {
                                 "/api/productions/{id}",
                                 "/api/productionItems/{id}",
                                 "/api/products/{id}",
+                                "/api/products/photos/{photoId}/file",
+                                "/api/products/{productId}/photos/order",
                                 "/api/units/{id}",
                                 "/api/purchases/{id}",
                                 "/api/purchaseItems/{id}",

@@ -161,29 +161,64 @@ public class ServiceConfiguration {
     }
 
     @Bean
-    @Profile("dev") // активируется только при dev-профиле
+    @Profile("dev")
     public WebMvcConfigurer corsDev() {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
+
                 registry.addMapping("/api/**")
                         .allowedOrigins("http://localhost:5173")
-                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
+                        .allowedMethods(
+                                "GET",
+                                "POST",
+                                "PUT",
+                                "DELETE",
+                                "OPTIONS",
+                                "PATCH"
+                        )
                         .allowCredentials(true);
+
+                registry.addMapping("/uploads/**")
+                        .allowedOrigins("http://localhost:5173")
+                        .allowedMethods("GET", "OPTIONS")
+                        .allowedHeaders("*");
             }
         };
     }
 
     @Bean
-    @Profile("prod") // активируется только при prod-профиле
+    @Profile("prod")
     public WebMvcConfigurer corsProd() {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
+
                 registry.addMapping("/api/**")
-                        .allowedOrigins("http://wolke1:8080", "http://localhost:8080",  "http://wolke1:8081", "http://localhost:8081")
-                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                        .allowedOrigins(
+                                "http://wolke1:8080",
+                                "http://localhost:8080",
+                                "http://wolke1:8081",
+                                "http://localhost:8081"
+                        )
+                        .allowedMethods(
+                                "GET",
+                                "POST",
+                                "PUT",
+                                "DELETE",
+                                "OPTIONS"
+                        )
                         .allowCredentials(true);
+
+                registry.addMapping("/uploads/**")
+                        .allowedOrigins(
+                                "http://wolke1:8080",
+                                "http://localhost:8080",
+                                "http://wolke1:8081",
+                                "http://localhost:8081"
+                        )
+                        .allowedMethods("GET", "OPTIONS")
+                        .allowedHeaders("*");
             }
         };
     }

@@ -35,6 +35,9 @@ public class ProductPhoto {
 
     private String fileUrl;
 
+    @Column(name = "position")
+    private Integer position;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -50,5 +53,5 @@ public class ProductPhoto {
 
     @Override
     public String toString() {
-        return String.format("productPhoto: ID - %d, product_id - %s", id, product);}
+        return String.format("productPhoto: ID - %d, product_id - %s, position - %s", id, product, position);}
 }

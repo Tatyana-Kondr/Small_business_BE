@@ -1,6 +1,7 @@
 package de.ait.smallBusiness_be.products.controller;
 
 
+import de.ait.smallBusiness_be.products.dto.ProductPhotoOrderDto;
 import de.ait.smallBusiness_be.products.model.ProductPhoto;
 import de.ait.smallBusiness_be.products.service.ProductPhotoService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -37,6 +38,22 @@ public class ProductPhotoController {
         } catch (IOException e) {
             return ResponseEntity.status(500).build();
         }
+    }
+
+    @PutMapping(value = "/photos/{photoId}/file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ProductPhoto> replacePhoto(
+            @PathVariable Long photoId,
+            @RequestParam("file") MultipartFile file) {
+        ProductPhoto photo = productPhotoService.replacePhoto(photoId, file);
+        return ResponseEntity.ok(photo);
+    }
+
+    @PutMapping("/{productId}/photos/order")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void reorderPhotos(
+            @PathVariable Long productId,
+            @RequestBody ProductPhotoOrderDto dto) {
+        productPhotoService.reorderPhotos(productId, dto.getPhotoIds());
     }
 
     @DeleteMapping("/photos/{photoId}")

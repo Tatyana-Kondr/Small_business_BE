@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -17,9 +18,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -61,11 +61,16 @@ public class ProductPhotoServiceImpl implements ProductPhotoService {
                 Files.createDirectories(targetDir);
             }
 
+            Integer maxPosition = productPhotoRepository.findMaxPositionByProductId(productId);
+
+            int nextPosition = maxPosition == null ? 0 : maxPosition + 1;
+
             // Создаём временную запись
             ProductPhoto tempPhoto = ProductPhoto.builder()
                     .product(product)
                     .originFileName("temp")
                     .fileUrl("temp")
+                    .position(nextPosition)
                     .build();
             tempPhoto = productPhotoRepository.save(tempPhoto);
 
@@ -87,6 +92,90 @@ public class ProductPhotoServiceImpl implements ProductPhotoService {
         } catch (IOException e) {
             throw new RestApiException("File upload failed: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    @Override
+    public ProductPhoto replacePhoto(Long photoId, MultipartFile file) {
+
+        ProductPhoto photo = productPhotoRepository.findById(photoId)
+                .orElseThrow(() -> new RestApiException("Photo not found", HttpStatus.NOT_FOUND));
+
+        try {
+            String fileExtension = getFileExtension(file.getOriginalFilename());
+            if (fileExtension == null || !PHOTO_TYPES.contains(fileExtension.toLowerCase()))
+            {
+                throw new RestApiException("Unsupported photo type", HttpStatus.BAD_REQUEST);
+            }
+
+            Path targetDir = Paths.get(photoDir);
+
+            if (!Files.exists(targetDir)) {
+                Files.createDirectories(targetDir);
+            }
+
+            String newFileName =
+                    photo.getProduct().getVendorArticle()
+                            + "_"
+                            + photo.getId()
+                            + "_"
+                            + System.currentTimeMillis()
+                            + "."
+                            + fileExtension;
+
+            Path newFilePath = targetDir.resolve(newFileName);
+
+            // Сначала сохраняем новый файл. Старый пока НЕ удаляем.
+            Files.copy(file.getInputStream(), newFilePath);
+
+            String oldFileName = photo.getOriginFileName();
+
+            Path oldFilePath = oldFileName != null ? Paths.get(photoDir).resolve(oldFileName) : null;
+
+            //Меняем только файл. id, product и position остаются теми же
+            photo.setOriginFileName(newFileName);
+            photo.setFileUrl("/uploads/photos/" + newFileName);
+
+            ProductPhoto saved = productPhotoRepository.save(photo);
+
+            // Только после успешного сохранения записи удаляем старый файл.
+            if (oldFilePath != null && !oldFilePath.equals(newFilePath)) {
+                Files.deleteIfExists(oldFilePath);
+            }
+            return saved;
+
+        } catch (IOException e) {
+            throw new RestApiException("Photo replacement failed: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void reorderPhotos(Long productId, List<Long> photoIds) {
+
+        List<ProductPhoto> photos = productPhotoRepository.findOrderedByProductId(productId);
+
+        if (photos.size() != photoIds.size()) {
+            throw new RestApiException("Invalid photo order", HttpStatus.BAD_REQUEST);
+        }
+
+        Set<Long> existingIds = photos.stream()
+                        .map(ProductPhoto::getId)
+                        .collect(Collectors.toSet());
+
+        Set<Long> requestedIds = new HashSet<>(photoIds);
+
+        if (existingIds.size() != requestedIds.size() || !existingIds.equals(requestedIds)) {
+            throw new RestApiException("Invalid photo order", HttpStatus.BAD_REQUEST);
+        }
+
+        Map<Long, ProductPhoto> photoMap = photos.stream().collect(Collectors.toMap(ProductPhoto::getId, photo -> photo));
+
+        for (int i = 0; i < photoIds.size(); i++) {
+            ProductPhoto photo = photoMap.get(photoIds.get(i));
+            photo.setPosition(i);
+        }
+
+        productPhotoRepository.saveAll(photos);
     }
 
 
@@ -112,8 +201,18 @@ public class ProductPhotoServiceImpl implements ProductPhotoService {
             // Удаляем файл с диска
             Files.deleteIfExists(filePath);
 
+            Long productId = photo.getProduct().getId();
+
             // Удаляем запись из базы данных
             productPhotoRepository.delete(photo);
+
+            List<ProductPhoto> remainingPhotos = productPhotoRepository.findOrderedByProductId(productId);
+
+            for (int i = 0; i < remainingPhotos.size(); i++) {
+                remainingPhotos.get(i).setPosition(i);
+            }
+
+            productPhotoRepository.saveAll(remainingPhotos);
         } catch (IOException e) {
             throw new RestApiException("File deletion failed: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -121,7 +220,18 @@ public class ProductPhotoServiceImpl implements ProductPhotoService {
 
     @Override
     public List<ProductPhoto> getPhotosByProductId(Long productId) {
-        return productPhotoRepository.findByProductId(productId);
+        List<ProductPhoto> photos = productPhotoRepository.findOrderedByProductId(productId);
+
+        boolean needsNormalization = photos.stream().anyMatch(photo -> photo.getPosition() == null);
+
+        if (needsNormalization) {
+            for (int i = 0; i < photos.size(); i++) {
+                photos.get(i).setPosition(i);
+            }
+            productPhotoRepository.saveAll(photos);
+        }
+
+        return photos;
     }
 
     @Override
