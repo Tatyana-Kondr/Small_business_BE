@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 
 @Repository
@@ -28,4 +29,13 @@ public interface ProductPhotoRepository extends JpaRepository<ProductPhoto, Long
         where p.product.id = :productId
         """)
     Integer findMaxPositionByProductId(@Param("productId") Long productId);
+
+    @Query("""
+    select distinct p.product.id
+    from ProductPhoto p
+    where p.product.id in :productIds
+    """)
+    List<Long> findProductIdsWithPhotos(
+            @Param("productIds") Collection<Long> productIds
+    );
 }
