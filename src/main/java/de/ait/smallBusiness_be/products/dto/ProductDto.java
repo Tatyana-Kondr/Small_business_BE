@@ -41,4 +41,6 @@ public class ProductDto{
     LocalDateTime dateOfLastPurchase;
     LocalDateTime lastModifiedDate;
     String storageLocation;
+    Boolean hasPhoto;
+    BigDecimal quantity;
 }
