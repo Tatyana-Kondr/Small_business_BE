@@ -3,6 +3,7 @@ package de.ait.smallBusiness_be.products.service.impl;
 import de.ait.smallBusiness_be.exceptions.ErrorDescription;
 import de.ait.smallBusiness_be.exceptions.FieldValidationException;
 import de.ait.smallBusiness_be.exceptions.RestApiException;
+import de.ait.smallBusiness_be.products.dao.ProductPhotoRepository;
 import de.ait.smallBusiness_be.products.dao.ProductRepository;
 import de.ait.smallBusiness_be.products.dao.UnitOfMeasurementRepository;
 import de.ait.smallBusiness_be.products.dto.*;
@@ -11,6 +12,8 @@ import de.ait.smallBusiness_be.products.model.Product;
 import de.ait.smallBusiness_be.products.model.UnitOfMeasurement;
 import de.ait.smallBusiness_be.products.service.ProductService;
 import de.ait.smallBusiness_be.validation.dto.ValidationErrorDto;
+import de.ait.smallBusiness_be.warehouse.dao.WarehouseRepository;
+import de.ait.smallBusiness_be.warehouse.models.Warehouse;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -23,9 +26,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -41,6 +44,8 @@ public class ProductServiceImpl implements ProductService {
 
      private final ProductRepository productRepository;
      private final UnitOfMeasurementRepository unitOfMeasurementRepository;
+    private final ProductPhotoRepository productPhotoRepository;
+    private final WarehouseRepository warehouseRepository;
      private final ModelMapper modelMapper;
 
     @Override
@@ -305,13 +310,47 @@ public class ProductServiceImpl implements ProductService {
 
     private Page<ProductDto> mapToProductDtoPage(Page<Product> productsPage) {
 
+        List<Long> productIds = productsPage
+                .getContent()
+                .stream()
+                .map(Product::getId)
+                .toList();
+
+        Set<Long> productIdsWithPhotos = new HashSet<>(
+                productPhotoRepository.findProductIdsWithPhotos(productIds)
+        );
+
+        Map<Long, BigDecimal> quantityByProductId =
+                warehouseRepository.findAllByProduct_IdIn(productIds)
+                        .stream()
+                        .collect(Collectors.toMap(
+                                warehouse -> warehouse.getProduct().getId(),
+                                Warehouse::getQuantity
+                        ));
+
         return productsPage.map(product -> {
             ProductDto productDto = modelMapper.map(product, ProductDto.class);
 
             if (product.getDimensions() != null) {
-                NewDimensionsDto dimensionsDto = modelMapper.map(product.getDimensions(), NewDimensionsDto.class);
+                NewDimensionsDto dimensionsDto =
+                        modelMapper.map(
+                                product.getDimensions(),
+                                NewDimensionsDto.class
+                        );
+
                 productDto.setNewDimensions(dimensionsDto);
             }
+
+            productDto.setHasPhoto(
+                    productIdsWithPhotos.contains(product.getId())
+            );
+
+            productDto.setQuantity(
+                    quantityByProductId.getOrDefault(
+                            product.getId(),
+                            BigDecimal.ZERO
+                    )
+            );
 
             return productDto;
         });
@@ -321,9 +360,27 @@ public class ProductServiceImpl implements ProductService {
         ProductDto productDto = modelMapper.map(product, ProductDto.class);
 
         if (product.getDimensions() != null) {
-            NewDimensionsDto dimensionsDto = modelMapper.map(product.getDimensions(), NewDimensionsDto.class);
+            NewDimensionsDto dimensionsDto =
+                    modelMapper.map(
+                            product.getDimensions(),
+                            NewDimensionsDto.class
+                    );
+
             productDto.setNewDimensions(dimensionsDto);
         }
+
+        boolean hasPhoto = !productPhotoRepository
+                .findOrderedByProductId(product.getId())
+                .isEmpty();
+
+        productDto.setHasPhoto(hasPhoto);
+
+        BigDecimal quantity = warehouseRepository
+                .findByProduct(product)
+                .map(Warehouse::getQuantity)
+                .orElse(BigDecimal.ZERO);
+
+        productDto.setQuantity(quantity);
 
         return productDto;
     }
