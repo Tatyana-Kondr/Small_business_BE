@@ -109,15 +109,30 @@
             padding-top: 10px;
         }
 
+        .col-pos {
+            text-align: left;
+        }
+
+        .col-artikel {
+            white-space: nowrap;
+            text-align: left;
+            padding-left: 6px;
+            padding-right: 10px;
+        }
+
         .col-desc {
-            width: 55%;
             white-space: normal;
             word-wrap: break-word;
             line-height: 1.15;
+            padding-left: 10px;
+            padding-right: 10px;
         }
 
-        .artikel-column {
-            white-space: nowrap;
+        .col-quantity {
+            text-align: center;
+        }
+
+        .col-unit {
             text-align: center;
         }
     </style>
@@ -174,26 +189,56 @@
 </p>
 
 <!-- Таблица с позициями -->
+<!-- Таблица с позициями -->
 <table style="margin-top: 10px; border-bottom: 1px solid #7B7C81;">
+
+    <colgroup>
+        <col style="width: 7%;" />
+        <col style="width: 22%;" />
+        <col style="width: 43%;" />
+        <col style="width: 15%;" />
+        <col style="width: 13%;" />
+    </colgroup>
+
     <thead>
     <tr>
-        <th>Pos</th>
-        <th class="artikel-column">Artikel</th>
+        <th class="col-pos">Pos</th>
+        <th class="col-artikel">Artikel</th>
         <th class="col-desc">Bezeichnung</th>
-        <th class="center">Menge</th>
-        <th class="center">Einheit</th>
+        <th class="col-quantity">Menge</th>
+        <th class="col-unit">Einheit</th>
     </tr>
     </thead>
+
     <tbody>
     <tr th:each="item, stat : ${items}">
-        <td class="pos" th:text="${stat.count}">1</td>
-        <td class="artikel-column" th:text="${item.product.article}">2022801290</td>
-        <td class="col-desc" th:text="${item.productName}">FEINSTRAHLEN1</td>
-        <td class="center" th:text="${item.quantity}">17</td>
-        <td class="center"
-            th:text="${item.product.unitOfMeasurement != null ? item.product.unitOfMeasurement.name : ''}"></td>
+        <td class="col-pos"
+            th:text="${stat.count}">
+            1
+        </td>
+
+        <td class="col-artikel"
+            th:text="${item.product.article}">
+            2022801290
+        </td>
+
+        <td class="col-desc"
+            th:text="${item.productName}">
+            SCHLEIFENRUECKSEITE
+        </td>
+
+        <td class="col-quantity"
+            th:text="${item.quantity}">
+            17
+        </td>
+
+        <td class="col-unit"
+            th:text="${item.product.unitOfMeasurement != null ? item.product.unitOfMeasurement.name : ''}">
+            st
+        </td>
     </tr>
     </tbody>
+
 </table>
 
 
