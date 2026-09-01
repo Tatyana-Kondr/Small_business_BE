@@ -89,15 +89,8 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public ProductDto getProductById(Long id) {
-
         Product product = getProductOrThrow(id);
-        ProductDto productDto = modelMapper.map(product, ProductDto.class);
-
-        if (product.getDimensions() != null) {
-            NewDimensionsDto dimensionsDto = modelMapper.map(product.getDimensions(), NewDimensionsDto.class);
-            productDto.setNewDimensions(dimensionsDto);
-        }
-        return productDto;
+        return mapToProductDto(product);
     }
 
     @Override
