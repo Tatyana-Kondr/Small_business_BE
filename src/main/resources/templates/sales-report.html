@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="de"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8"/>
+
+    <title>Umsatzbericht</title>
+
+    <style>
+        @page {
+            size: A4;
+            margin: 18mm;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            color: #222;
+        }
+
+        h1 {
+            color: #1a3d6d;
+            font-size: 20px;
+            margin-bottom: 6px;
+        }
+
+        .period {
+            margin-bottom: 20px;
+            color: #555;
+        }
+
+        .year-title {
+            margin-top: 22px;
+            margin-bottom: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #1a3d6d;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th {
+            background-color: #1a3d6d;
+            color: white;
+            padding: 7px;
+            border: 1px solid #cccccc;
+            text-align: right;
+        }
+
+        th:first-child {
+            text-align: left;
+        }
+
+        td {
+            padding: 7px;
+            border: 1px solid #dddddd;
+            text-align: right;
+        }
+
+        td:first-child {
+            text-align: left;
+        }
+
+        .total-row {
+            font-weight: bold;
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>Umsatzbericht</h1>
+
+<div class="period">
+    <span th:if="${selectedYear == null}">
+        Gesamter Zeitraum
+    </span>
+
+</div>
+
+
+<div th:each="report : ${reports}">
+
+    <div
+            class="year-title"
+            th:text="${report.year}">
+    </div>
+
+    <table>
+
+        <thead>
+        <tr>
+            <th>Monat</th>
+            <th>Netto</th>
+            <th>MwSt.</th>
+            <th>Brutto</th>
+        </tr>
+        </thead>
+
+        <tbody>
+
+        <tr th:each="month : ${report.months}">
+
+            <td>
+                <span th:switch="${month.month}">
+                    <span th:case="1">Januar</span>
+                    <span th:case="2">Februar</span>
+                    <span th:case="3">März</span>
+                    <span th:case="4">April</span>
+                    <span th:case="5">Mai</span>
+                    <span th:case="6">Juni</span>
+                    <span th:case="7">Juli</span>
+                    <span th:case="8">August</span>
+                    <span th:case="9">September</span>
+                    <span th:case="10">Oktober</span>
+                    <span th:case="11">November</span>
+                    <span th:case="12">Dezember</span>
+                </span>
+            </td>
+
+            <td
+                    th:text="${#numbers.formatDecimal(
+                        month.netAmount,
+                        1,
+                        'POINT',
+                        2,
+                        'COMMA'
+                    ) + ' €'}">
+            </td>
+
+            <td
+                    th:text="${#numbers.formatDecimal(
+                        month.taxAmount,
+                        1,
+                        'POINT',
+                        2,
+                        'COMMA'
+                    ) + ' €'}">
+            </td>
+
+            <td
+                    th:text="${#numbers.formatDecimal(
+                        month.grossAmount,
+                        1,
+                        'POINT',
+                        2,
+                        'COMMA'
+                    ) + ' €'}">
+            </td>
+
+        </tr>
+
+
+        <tr class="total-row">
+
+            <td
+                    th:text="'Gesamt ' + ${report.year}">
+            </td>
+
+            <td
+                    th:text="${#numbers.formatDecimal(
+                        report.totalNet,
+                        1,
+                        'POINT',
+                        2,
+                        'COMMA'
+                    ) + ' €'}">
+            </td>
+
+            <td
+                    th:text="${#numbers.formatDecimal(
+                        report.totalTax,
+                        1,
+                        'POINT',
+                        2,
+                        'COMMA'
+                    ) + ' €'}">
+            </td>
+
+            <td
+                    th:text="${#numbers.formatDecimal(
+                        report.totalGross,
+                        1,
+                        'POINT',
+                        2,
+                        'COMMA'
+                    ) + ' €'}">
+            </td>
+
+        </tr>
+
+        </tbody>
+
+    </table>
+
+</div>
+
+</body>
+</html>
