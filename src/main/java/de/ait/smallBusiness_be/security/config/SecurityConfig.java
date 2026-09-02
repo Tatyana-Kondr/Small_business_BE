@@ -68,7 +68,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/companies").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/companies", "/api/companies/{id}/logo", "/api/payment-methods", "/api/auth/register", "/api/product-categories" ).hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.GET,  "/api/users").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET,  "/api/users", "/api/reports/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH,  "/api/users/{id}/role", "/api/users/{id}").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT,  "/api/companies/{id}", "/api/customers/{id}", "/api/payments/{id}", "/api/payment-methods/{id}", "/api/product-categories/{id}").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/customers/{id}", "/api/payments/{id}", "/api/payment-methods/{id}", "/api/product-categories/{id}").hasRole("ADMIN")
