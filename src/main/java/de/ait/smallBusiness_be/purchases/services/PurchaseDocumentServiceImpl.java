@@ -71,15 +71,12 @@ public class PurchaseDocumentServiceImpl implements PurchaseDocumentService {
                 Files.createDirectories(targetDir);
             }
 
-            String uniqueFileName =
-                    "purchase_"
-                            + purchaseId
-                            + "_"
-                            + System.currentTimeMillis()
-                            + "."
-                            + fileExtension.toLowerCase();
+            String safeFileName =
+                    Paths.get(originalFileName)
+                            .getFileName()
+                            .toString();
 
-            Path filePath = targetDir.resolve(uniqueFileName);
+            Path filePath = targetDir.resolve(safeFileName);
 
             Files.copy(
                     file.getInputStream(),
@@ -88,12 +85,12 @@ public class PurchaseDocumentServiceImpl implements PurchaseDocumentService {
             );
 
             String fileUrl =
-                    "/uploads/documents/" + uniqueFileName;
+                    "/uploads/documents/" + safeFileName;
 
             PurchaseDocument document =
                     PurchaseDocument.builder()
                             .purchase(purchase)
-                            .originFileName(originalFileName)
+                            .originFileName(safeFileName)
                             .fileUrl(fileUrl)
                             .contentType(
                                     file.getContentType() != null
