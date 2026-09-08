@@ -1,6 +1,7 @@
 package de.ait.smallBusiness_be.purchases.controllers;
 
 import de.ait.smallBusiness_be.purchases.dto.PurchaseDocumentDto;
+import de.ait.smallBusiness_be.purchases.dto.PurchaseScanResultDto;
 import de.ait.smallBusiness_be.purchases.model.PurchaseDocument;
 import de.ait.smallBusiness_be.purchases.services.PurchaseDocumentService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -45,5 +46,18 @@ public class PurchaseDocumentController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteDocument(@PathVariable Long documentId) {
         purchaseDocumentService.deleteDocument(documentId);
+    }
+
+    @PostMapping(
+            value = "/documents/analyze",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ResponseEntity<PurchaseScanResultDto> analyzeDocument(
+            @RequestParam("file") MultipartFile file
+    ) {
+        PurchaseScanResultDto result =
+                purchaseDocumentService.analyzeDocument(file);
+
+        return ResponseEntity.ok(result);
     }
 }
