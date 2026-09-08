@@ -4,6 +4,7 @@ import de.ait.smallBusiness_be.exceptions.RestApiException;
 import de.ait.smallBusiness_be.purchases.dao.PurchaseDocumentRepository;
 import de.ait.smallBusiness_be.purchases.dao.PurchaseRepository;
 import de.ait.smallBusiness_be.purchases.dto.PurchaseDocumentDto;
+import de.ait.smallBusiness_be.purchases.dto.PurchaseScanResultDto;
 import de.ait.smallBusiness_be.purchases.model.Purchase;
 import de.ait.smallBusiness_be.purchases.model.PurchaseDocument;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -167,6 +169,17 @@ public class PurchaseDocumentServiceImpl implements PurchaseDocumentService {
                     HttpStatus.INTERNAL_SERVER_ERROR
             );
         }
+    }
+
+    @Override
+    public PurchaseScanResultDto analyzeDocument(MultipartFile file) {
+
+        return PurchaseScanResultDto.builder()
+                .vendorName("Firma Müller GmbH")
+                .document("RECHNUNG")
+                .documentNumber("RE-2026-1845")
+                .purchasingDate(LocalDate.of(2026, 9, 8))
+                .build();
     }
 
     private PurchaseDocumentDto mapToDto(PurchaseDocument document) {
