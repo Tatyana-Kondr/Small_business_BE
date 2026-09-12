@@ -33,7 +33,7 @@ import static de.ait.smallBusiness_be.exceptions.ErrorDescription.CUSTOMER_NUMBE
 
 @Service
 @RequiredArgsConstructor
-public class CustomerServiceImpl implements  CustomerService{
+public class CustomerServiceImpl implements CustomerService {
 
     private final CustomerRepository customerRepository;
     private final ModelMapper modelMapper;
@@ -45,7 +45,7 @@ public class CustomerServiceImpl implements  CustomerService{
 
         checkCustomer(newCustomerDto);
 
-        Customer customer = modelMapper.map(newCustomerDto, Customer.class);        
+        Customer customer = modelMapper.map(newCustomerDto, Customer.class);
 
         Customer savedCustomer = customerRepository.save(customer);
         return modelMapper.map(savedCustomer, CustomerDto.class);
@@ -63,7 +63,7 @@ public class CustomerServiceImpl implements  CustomerService{
 
     @Override
     public Page<CustomerDto> getAllCustomersWithCustomerNumber(Pageable pageable) {
-        Page <Customer> customers = customerRepository.findAllByCustomerNumberIsNotNullAndCustomerNumberNot(pageable, "");
+        Page<Customer> customers = customerRepository.findAllByCustomerNumberIsNotNullAndCustomerNumberNot(pageable, "");
         return customers.map(customer -> modelMapper.map(customer, CustomerDto.class));
     }
 
@@ -93,10 +93,10 @@ public class CustomerServiceImpl implements  CustomerService{
 
         checkCustomerOnUpdate(id, newCustomerDto);
 
-        if (newCustomerDto.getName()!=null) {
+        if (newCustomerDto.getName() != null) {
             customer.setName(newCustomerDto.getName());
         }
-        if (newCustomerDto.getCustomerNumber()!=null) {
+        if (newCustomerDto.getCustomerNumber() != null) {
             customer.setCustomerNumber(newCustomerDto.getCustomerNumber());
         }
 
@@ -105,19 +105,19 @@ public class CustomerServiceImpl implements  CustomerService{
             if (address == null) {
                 customer.setAddress(modelMapper.map(newCustomerDto.getAddressDto(), Address.class));
             } else {
-        // Вместо создания нового объекта Address,
-        // существующий объект address обновляется новыми данными из DTO, сохраняя ссылку на оригинальный объект.
+                // Вместо создания нового объекта Address,
+                // существующий объект address обновляется новыми данными из DTO, сохраняя ссылку на оригинальный объект.
                 modelMapper.map(newCustomerDto.getAddressDto(), address);
             }
         }
 
-        if (newCustomerDto.getPhone()!=null) {
+        if (newCustomerDto.getPhone() != null) {
             customer.setPhone(newCustomerDto.getPhone());
         }
-        if (newCustomerDto.getEmail()!=null) {
+        if (newCustomerDto.getEmail() != null) {
             customer.setEmail(newCustomerDto.getEmail());
         }
-        if (newCustomerDto.getWebsite()!=null) {
+        if (newCustomerDto.getWebsite() != null) {
             customer.setWebsite(newCustomerDto.getWebsite());
         }
 
@@ -165,6 +165,40 @@ public class CustomerServiceImpl implements  CustomerService{
         return customerRepository.findById(id)
                 .orElseThrow(() -> new RestApiException(ErrorDescription.CUSTOMER_NOT_FOUND, HttpStatus.NOT_FOUND));
 
+    }
+
+    @Override
+    public Page<CustomerDto> searchCustomers(
+            String query,
+            Pageable pageable
+    ) {
+        Page<Customer> customers =
+                customerRepository.findByNameContainingIgnoreCase(
+                        query,
+                        pageable
+                );
+
+        return customers.map(customer ->
+                modelMapper.map(customer, CustomerDto.class)
+        );
+    }
+
+    @Override
+    public Page<CustomerDto> searchCustomersWithCustomerNumber(
+            String query,
+            Pageable pageable
+    ) {
+        Page<Customer> customers =
+                customerRepository
+                        .findByCustomerNumberIsNotNullAndCustomerNumberNotAndNameContainingIgnoreCase(
+                                "",
+                                query,
+                                pageable
+                        );
+
+        return customers.map(customer ->
+                modelMapper.map(customer, CustomerDto.class)
+        );
     }
 
     private void checkCustomerOnUpdate(Long id, NewCustomerDto newCustomerDto) {
