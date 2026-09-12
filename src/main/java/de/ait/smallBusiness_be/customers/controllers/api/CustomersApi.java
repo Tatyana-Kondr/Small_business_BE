@@ -91,6 +91,18 @@ public interface CustomersApi {
             @RequestParam(defaultValue = "name") String sort);
 
     @PreAuthorize("isAuthenticated()")
+    @GetMapping("/search")
+    @Operation(
+            summary = "Search customers",
+            description = "Search customers by name."
+    )
+    @ResponseStatus(HttpStatus.OK)
+    Page<CustomerDto> searchCustomers(
+            @RequestParam String query,
+            @PageableDefault(size = 15) Pageable pageable
+    );
+
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/pick")
     @Operation(
             summary = "Get all customers",
@@ -135,6 +147,18 @@ public interface CustomersApi {
     Page<CustomerDto> getAllCustomersWithCustomerNumber(
             @PageableDefault(size = 15) Pageable pageable,
             @RequestParam(defaultValue = "name") String sort);
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/customer-number/search")
+    @Operation(
+            summary = "Search customers with customer number",
+            description = "Search customers with customer number by name."
+    )
+    @ResponseStatus(HttpStatus.OK)
+    Page<CustomerDto> searchCustomersWithCustomerNumber(
+            @RequestParam String query,
+            @PageableDefault(size = 15) Pageable pageable
+    );
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/customer-number/pick")

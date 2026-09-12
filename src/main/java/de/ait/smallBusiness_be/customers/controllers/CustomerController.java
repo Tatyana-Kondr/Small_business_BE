@@ -35,6 +35,11 @@ public class CustomerController implements CustomersApi {
     }
 
     @Override
+    public Page<CustomerDto> searchCustomers(String query, Pageable pageable) {
+        return customerService.searchCustomers(query, pageable);
+    }
+
+    @Override
     public List<CustomerPickDto> getCustomers() {
         return customerService.getCustomers();
     }
@@ -42,6 +47,14 @@ public class CustomerController implements CustomersApi {
     @Override
     public Page<CustomerDto> getAllCustomersWithCustomerNumber(Pageable pageable, String sort) {
         return customerService.getAllCustomersWithCustomerNumber(pageable);
+    }
+
+    @Override
+    public Page<CustomerDto> searchCustomersWithCustomerNumber(
+            String query,
+            Pageable pageable
+    ) {
+        return customerService.searchCustomersWithCustomerNumber(query, pageable);
     }
 
     @Override
