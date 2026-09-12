@@ -122,8 +122,10 @@ public class SecurityConfig {
                                 "/api/shippings/{id}").authenticated()
                         .requestMatchers(HttpMethod.GET,
                                 "/api/customers",
+                                "/api/customers/search",
                                 "/api/customers/pick",
                                 "/api/customers/customer-number",
+                                "/api/customers/customer-number/search",
                                 "/api/customers/customer-number/pick",
                                 "/api/customers/{id}",
                                 "/api/payments",
