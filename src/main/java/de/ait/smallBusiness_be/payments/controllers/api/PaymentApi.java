@@ -79,8 +79,12 @@ public interface PaymentApi {
                             schema = @Schema(type = "string")))
     })
     @ResponseStatus(HttpStatus.OK)
-    Page<PaymentDto> getAllPayments( @PageableDefault(size = 15, sort = {"paymentDate"},
-            direction = Sort.Direction.DESC) Pageable pageable);
+    Page<PaymentDto> getAllPayments(
+            @PageableDefault(
+                    size = 15,
+                    sort = {"paymentDate", "id"},
+                    direction = Sort.Direction.DESC
+            ) Pageable pageable);
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/search/{query}")
@@ -103,8 +107,11 @@ public interface PaymentApi {
     })
     @ResponseStatus(HttpStatus.OK)
     Page<PaymentDto> searchPayments(
-            @PageableDefault(size = 15) Pageable pageable,
-            @RequestParam(defaultValue = "paymentDate") String sort,
+            @PageableDefault(
+                    size = 15,
+                    sort = {"paymentDate", "id"},
+                    direction = Sort.Direction.DESC
+            ) Pageable pageable,
             @PathVariable String query);
 
     @PreAuthorize("isAuthenticated()")
@@ -128,15 +135,18 @@ public interface PaymentApi {
     })
     @ResponseStatus(HttpStatus.OK)
     Page<PaymentDto> getAllPaymentsByFilter(
-            @PageableDefault(size = 15) Pageable pageable,
-            @RequestParam(defaultValue = "paymentDate") String sort,
+            @PageableDefault(
+                    size = 15,
+                    sort = {"paymentDate", "id"},
+                    direction = Sort.Direction.DESC
+            ) Pageable pageable,
             @RequestParam(required = false) Long id,
             @RequestParam(required = false) Long customerId,
             @RequestParam(required = false) String customerName,
             @RequestParam(required = false) Long saleId,
             @RequestParam(required = false) Long purchaseId,
             @RequestParam(required = false) LocalDate startDate,
-            @RequestParam(required = false)LocalDate endDate,
+            @RequestParam(required = false) LocalDate endDate,
             @RequestParam(required = false) Long documentId,
             @RequestParam(required = false) String documentNumber,
             @RequestParam(required = false) BigDecimal amount,

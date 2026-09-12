@@ -21,4 +21,6 @@ public interface PaymentRepositoryCustom {
                                          String documentNumber,
                                          BigDecimal amount,
                                          String searchQuery);
+
+    Page<Payment> findAllWithSorting(Pageable pageable);
 }

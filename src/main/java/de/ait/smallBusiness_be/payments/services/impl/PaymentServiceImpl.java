@@ -157,22 +157,8 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public Page<PaymentDto> getPayments(Pageable pageable) {
-        // Проверяем, корректно ли передана сортировка
-        List<String> allowedSortFields = List.of("paymentDate");
-        Sort sort = pageable.getSort();
-        for (Sort.Order order : sort) {
-            if (!allowedSortFields.contains(order.getProperty())) {
-                pageable = PageRequest.of(
-                        pageable.getPageNumber(),
-                        pageable.getPageSize(),
-                        Sort.by(
-                                Sort.Order.desc("paymentDate")
-                        )
-                );
-                break;
-            }
-        }
-        Page<Payment> payments = paymentRepository.findAll(pageable);
+
+        Page<Payment> payments = paymentRepository.findAllWithSorting(pageable);
         if (payments.isEmpty()) {
             throw new RestApiException(ErrorDescription.LIST_PAYMENTS_IS_EMPTY, HttpStatus.NOT_FOUND);
         }

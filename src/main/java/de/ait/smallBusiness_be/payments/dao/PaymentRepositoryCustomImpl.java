@@ -4,13 +4,11 @@ import de.ait.smallBusiness_be.payments.model.Payment;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
@@ -32,7 +30,7 @@ public class PaymentRepositoryCustomImpl implements PaymentRepositoryCustom {
 
         List<Predicate> predicates = buildSearchPredicates(cb, root, searchQuery);
         query.where(cb.or(predicates.toArray(new Predicate[0])));
-        query.orderBy(cb.asc(root.get("id")));
+        applySorting(pageable, cb, root, query);
 
         TypedQuery<Payment> typedQuery = entityManager.createQuery(query);
         typedQuery.setFirstResult((int) pageable.getOffset());
@@ -57,7 +55,7 @@ public class PaymentRepositoryCustomImpl implements PaymentRepositoryCustom {
         List<Predicate> predicates = buildFilterPredicates(cb, root, id, customerId, customerName, saleId, purchaseId, documentId, documentNumber, amount, startDate, endDate, searchQuery);
 
         query.where(cb.and(predicates.toArray(new Predicate[0])));
-        query.orderBy(cb.asc(root.get("id")));
+        applySorting(pageable, cb, root, query);
 
         TypedQuery<Payment> typedQuery = entityManager.createQuery(query);
 
@@ -75,6 +73,57 @@ public class PaymentRepositoryCustomImpl implements PaymentRepositoryCustom {
         return new PageImpl<>(typedQuery.getResultList(), pageable, totalCount);
     }
 
+    @Override
+    public Page<Payment> findAllWithSorting(Pageable pageable) {
+
+        CriteriaBuilder cb =
+                entityManager.getCriteriaBuilder();
+
+        CriteriaQuery<Payment> query =
+                cb.createQuery(Payment.class);
+
+        Root<Payment> root =
+                query.from(Payment.class);
+
+        applySorting(
+                pageable,
+                cb,
+                root,
+                query
+        );
+
+        TypedQuery<Payment> typed =
+                entityManager.createQuery(query);
+
+        typed.setFirstResult(
+                (int) pageable.getOffset()
+        );
+
+        typed.setMaxResults(
+                pageable.getPageSize()
+        );
+
+        CriteriaQuery<Long> countQuery =
+                cb.createQuery(Long.class);
+
+        Root<Payment> countRoot =
+                countQuery.from(Payment.class);
+
+        countQuery.select(
+                cb.count(countRoot)
+        );
+
+        Long count =
+                entityManager
+                        .createQuery(countQuery)
+                        .getSingleResult();
+
+        return new PageImpl<>(
+                typed.getResultList(),
+                pageable,
+                count
+        );
+    }
 
     private List<Predicate> buildSearchPredicates(CriteriaBuilder cb, Root<Payment> root, String searchQuery) {
         List<Predicate> predicates = new ArrayList<>();
@@ -86,7 +135,8 @@ public class PaymentRepositoryCustomImpl implements PaymentRepositoryCustom {
             try {
                 Long id = Long.parseLong(searchQuery);
                 predicates.add(cb.equal(root.get("id"), id));
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException ignored) {
+            }
 
             // Поиск по имени поставщика
             predicates.add(cb.like(cb.lower(root.get("customer").get("name")), likePattern));
@@ -147,7 +197,7 @@ public class PaymentRepositoryCustomImpl implements PaymentRepositoryCustom {
             predicates.add(cb.like(cb.lower(root.get("documentNumber")), "%" + documentNumber.toLowerCase() + "%"));
         }
 
-        if (amount!= null) {
+        if (amount != null) {
             predicates.add(cb.equal(root.get("amount"), amount));
         }
 
@@ -170,6 +220,79 @@ public class PaymentRepositoryCustomImpl implements PaymentRepositoryCustom {
         }
 
         return predicates;
+    }
+
+    private void applySorting(
+            Pageable pageable,
+            CriteriaBuilder cb,
+            Root<Payment> root,
+            CriteriaQuery<Payment> query
+    ) {
+
+        List<Order> orders = new ArrayList<>();
+
+        for (Sort.Order sortOrder : pageable.getSort()) {
+
+            Expression<?> expression =
+                    switch (sortOrder.getProperty()) {
+
+                        case "id" -> root.get("id");
+
+                        case "paymentDate" -> root.get("paymentDate");
+
+                        case "customerName" -> root.join("customer")
+                                .get("name");
+
+                        case "amount" -> root.get("amount");
+
+                        case "documentName" -> root.join("document")
+                                .get("name");
+
+                        case "documentNumber" -> root.get("documentNumber");
+
+                        case "saleId" -> root.join(
+                                "sale",
+                                JoinType.LEFT
+                        ).get("id");
+
+                        case "purchaseId" -> root.join(
+                                "purchase",
+                                JoinType.LEFT
+                        ).get("id");
+
+                        default -> null;
+                    };
+
+            if (expression == null) {
+                continue;
+            }
+
+            if (sortOrder.isAscending()) {
+                orders.add(
+                        cb.asc(expression)
+                );
+            } else {
+                orders.add(
+                        cb.desc(expression)
+                );
+            }
+        }
+
+        if (orders.isEmpty()) {
+            orders.add(
+                    cb.desc(
+                            root.get("paymentDate")
+                    )
+            );
+
+            orders.add(
+                    cb.desc(
+                            root.get("id")
+                    )
+            );
+        }
+
+        query.orderBy(orders);
     }
 }
 
