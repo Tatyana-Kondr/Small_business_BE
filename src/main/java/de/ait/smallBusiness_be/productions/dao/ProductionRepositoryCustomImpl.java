@@ -4,10 +4,7 @@ import de.ait.smallBusiness_be.productions.model.Production;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -32,7 +29,7 @@ public class ProductionRepositoryCustomImpl implements ProductionRepositoryCusto
 
         List<Predicate> predicates = buildSearchPredicates(cb, root, searchQuery);
         query.where(cb.or(predicates.toArray(new Predicate[0])));
-        query.orderBy(cb.asc(root.get("id")));
+        applySorting(pageable, cb, root, query);
 
         TypedQuery<Production> typedQuery = entityManager.createQuery(query);
         typedQuery.setFirstResult((int) pageable.getOffset());
@@ -68,7 +65,7 @@ public class ProductionRepositoryCustomImpl implements ProductionRepositoryCusto
         if (!predicates.isEmpty()) {
             query.where(cb.and(predicates.toArray(new Predicate[0])));
         }
-        query.orderBy(cb.asc(root.get("id")));
+        applySorting(pageable, cb, root, query);
 
         TypedQuery<Production> typedQuery = entityManager.createQuery(query);
         typedQuery.setFirstResult((int) pageable.getOffset());
@@ -90,6 +87,31 @@ public class ProductionRepositoryCustomImpl implements ProductionRepositoryCusto
             countQuery.where(cb.and(countPredicates.toArray(new Predicate[0])));
         }
         countQuery.select(cb.count(countRoot));
+        Long totalCount = entityManager.createQuery(countQuery).getSingleResult();
+
+        return new PageImpl<>(typedQuery.getResultList(), pageable, totalCount);
+    }
+
+    @Override
+    public Page<Production> findAllWithSorting(Pageable pageable) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Production> query = cb.createQuery(Production.class);
+        Root<Production> root = query.from(Production.class);
+
+        applySorting(pageable, cb, root, query);
+
+        TypedQuery<Production> typedQuery = entityManager.createQuery(query);
+
+        typedQuery.setFirstResult((int) pageable.getOffset());
+
+        typedQuery.setMaxResults(pageable.getPageSize());
+
+        CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
+
+        Root<Production> countRoot = countQuery.from(Production.class);
+
+        countQuery.select(cb.count(countRoot));
+
         Long totalCount = entityManager.createQuery(countQuery).getSingleResult();
 
         return new PageImpl<>(typedQuery.getResultList(), pageable, totalCount);
@@ -139,5 +161,65 @@ public class ProductionRepositoryCustomImpl implements ProductionRepositoryCusto
         }
 
         return predicates;
+    }
+
+    private void applySorting(
+            Pageable pageable,
+            CriteriaBuilder cb,
+            Root<Production> root,
+            CriteriaQuery<?> query
+    ) {
+        List<Order> orders = new ArrayList<>();
+
+        pageable.getSort().forEach(order -> {
+            String property = order.getProperty();
+
+            if (property.equals("productArticle")) {
+                if (order.getDirection().isAscending()) {
+                    orders.add(
+                            cb.asc(root.get("product").get("article"))
+                    );
+                } else {
+                    orders.add(
+                            cb.desc(root.get("product").get("article"))
+                    );
+                }
+
+            } else if (property.equals("productName")) {
+                if (order.getDirection().isAscending()) {
+                    orders.add(
+                            cb.asc(root.get("product").get("name"))
+                    );
+                } else {
+                    orders.add(
+                            cb.desc(root.get("product").get("name"))
+                    );
+                }
+
+            } else {
+                if (order.getDirection().isAscending()) {
+                    orders.add(
+                            cb.asc(root.get(property))
+                    );
+                } else {
+                    orders.add(
+                            cb.desc(root.get(property))
+                    );
+                }
+            }
+        });
+
+        // Сортировка по умолчанию:
+        // dateOfProduction DESC -> id DESC
+        if (orders.isEmpty()) {
+            orders.add(
+                    cb.desc(root.get("dateOfProduction"))
+            );
+            orders.add(
+                    cb.desc(root.get("id"))
+            );
+        }
+
+        query.orderBy(orders);
     }
 }

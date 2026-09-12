@@ -76,7 +76,7 @@ public interface ProductionsApi {
     })
     @ResponseStatus(HttpStatus.OK)
     Page<ProductionDto> getAllProductions(
-            @PageableDefault(size = 10, sort = "dateOfProduction", direction = Sort.Direction.DESC) Pageable pageable);
+            @PageableDefault(size = 15, sort = {"dateOfProduction", "id"}, direction = Sort.Direction.DESC) Pageable pageable);
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")

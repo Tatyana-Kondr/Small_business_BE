@@ -17,9 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.hibernate.Hibernate;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,7 +39,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 @RequiredArgsConstructor
-public class ProductionServiceImpl implements ProductionService{
+public class ProductionServiceImpl implements ProductionService {
 
     private final ProductionRepository productionRepository;
     private final ProductRepository productRepository;
@@ -64,7 +62,7 @@ public class ProductionServiceImpl implements ProductionService{
 
         AtomicReference<BigDecimal> totalPriceItems = new AtomicReference<>(BigDecimal.ZERO);
 
-        if(newProductionDto.getProductionItems() != null && !newProductionDto.getProductionItems().isEmpty()) {
+        if (newProductionDto.getProductionItems() != null && !newProductionDto.getProductionItems().isEmpty()) {
             List<ProductionItem> productionItems = newProductionDto.getProductionItems().stream()
                     .map(newProductionItemDto -> {
                         Product productForItem = productRepository.findById(newProductionItemDto.getProductId())
@@ -103,14 +101,14 @@ public class ProductionServiceImpl implements ProductionService{
                     savedProduction.getDateOfProduction()
             );
         });
-            warehouseService.recordOperation(
-                    savedProduction.getProduct(),
-                    TypeOfOperation.PRODUKTION,
-                    savedProduction.getQuantity(),
-                    savedProduction.getId(),
-                    null,
-                    savedProduction.getDateOfProduction()
-            );
+        warehouseService.recordOperation(
+                savedProduction.getProduct(),
+                TypeOfOperation.PRODUKTION,
+                savedProduction.getQuantity(),
+                savedProduction.getId(),
+                null,
+                savedProduction.getDateOfProduction()
+        );
 
 
         return modelMapper.map(savedProduction, ProductionDto.class);
@@ -119,25 +117,19 @@ public class ProductionServiceImpl implements ProductionService{
     @Override
     @Transactional
     public Page<ProductionDto> getAllProductions(Pageable pageable) {
-        // Разрешённые поля для сортировки
-        List<String> allowedSortFields = List.of("dateOfProduction");
 
-        Sort sort = pageable.getSort();
-        boolean hasValidSortField = sort.stream()
-                .allMatch(order -> allowedSortFields.contains(order.getProperty()));
-
-        // Если передано некорректное поле сортировки или сортировки вообще нет, заменяем её на дефолтную
-        if (!hasValidSortField || sort.isUnsorted()) {
-            pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(Sort.Direction.DESC, "dateOfProduction"));
-        }
-
-        Page<Production> productions = productionRepository.findAll(pageable);
+        Page<Production> productions = productionRepository.findAllWithSorting(pageable);
 
         if (productions.isEmpty()) {
             throw new RestApiException(ErrorDescription.LIST_IS_EMPTY, HttpStatus.NOT_FOUND);
         }
 
-            return productions.map(production -> modelMapper.map(production, ProductionDto.class));
+        productions.forEach(production -> {Hibernate.initialize(production.getProductionItems());
+
+            production.getProductionItems().forEach(item -> Hibernate.initialize(item.getProduct()));
+        });
+
+        return productions.map(production -> modelMapper.map(production, ProductionDto.class));
     }
 
     @Override
