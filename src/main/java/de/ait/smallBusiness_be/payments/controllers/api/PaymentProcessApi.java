@@ -45,7 +45,11 @@ public interface PaymentProcessApi {
             @ApiResponse(responseCode = "403",
                     description = "Forbidden.",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(type = "string")))
+                            schema = @Schema(type = "string"))),
+            @ApiResponse(responseCode = "409",
+                    description = "Payment process with this name already exists.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDto.class))),
     })
     @ResponseStatus(HttpStatus.CREATED)
     PaymentProcessDto addPaymentProcess(
@@ -97,7 +101,7 @@ public interface PaymentProcessApi {
     @PutMapping("/{id}")
     @Operation(
             summary = "Update the payment process",
-            description = "Update the payment process. Admin is allowed.")
+            description = "Update the payment process.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
                     description = "Payment process updated successfully.",
@@ -114,7 +118,11 @@ public interface PaymentProcessApi {
             @ApiResponse(responseCode = "403",
                     description = "Forbidden.",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(type = "string")))
+                            schema = @Schema(type = "string"))),
+            @ApiResponse(responseCode = "409",
+                    description = "Payment process with this name already exists.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDto.class))),
     })
     @ResponseStatus(HttpStatus.OK)
     PaymentProcessDto updatePaymentProcess(
@@ -126,7 +134,7 @@ public interface PaymentProcessApi {
     @DeleteMapping("/{id}")
     @Operation(
             summary = "Delete payment process by ID",
-            description = "Delete an existing payment process. Admin is allowed.")
+            description = "Delete an existing payment process.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204",
                     description = "Payment process deleted successfully."),
@@ -141,7 +149,11 @@ public interface PaymentProcessApi {
             @ApiResponse(responseCode = "404",
                     description = "Payment process not found.",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponseDto.class)))
+                            schema = @Schema(implementation = ErrorResponseDto.class))),
+            @ApiResponse(responseCode = "409",
+                    description = "Payment process is already in use and cannot be deleted.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDto.class))),
     })
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void deletePaymentProcess(@PathVariable Long id);
