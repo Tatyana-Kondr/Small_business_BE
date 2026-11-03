@@ -45,7 +45,11 @@ public interface PaymentMethodApi {
             @ApiResponse(responseCode = "403",
                     description = "Forbidden.",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(type = "string")))
+                            schema = @Schema(type = "string"))),
+            @ApiResponse(responseCode = "409",
+                    description = "Payment method with this provider and masked number already exists.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDto.class))),
     })
     @ResponseStatus(HttpStatus.CREATED)
     PaymentMethodDto addPaymentMethod(
@@ -73,6 +77,33 @@ public interface PaymentMethodApi {
     })
     @ResponseStatus(HttpStatus.OK)
     List<PaymentMethodDto> getAllPaymentMethods();
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/active")
+    @Operation(
+            summary = "Get active payment methods",
+            description = "Retrieve a list of active payment methods."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Active payment methods retrieved successfully.",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = PaymentMethodDto[].class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "User unauthorized.",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDto.class)
+                    )
+            )
+    })
+    @ResponseStatus(HttpStatus.OK)
+    List<PaymentMethodDto> getActivePaymentMethods();
 
 
     @GetMapping("/{id}")
@@ -114,7 +145,11 @@ public interface PaymentMethodApi {
             @ApiResponse(responseCode = "403",
                     description = "Forbidden.",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(type = "string")))
+                            schema = @Schema(type = "string"))),
+            @ApiResponse(responseCode = "409",
+                    description = "Payment method with this provider and masked number already exists.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDto.class))),
     })
     @ResponseStatus(HttpStatus.OK)
     PaymentMethodDto updatePaymentMethod(
@@ -141,7 +176,11 @@ public interface PaymentMethodApi {
             @ApiResponse(responseCode = "404",
                     description = "Payment method not found.",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponseDto.class)))
+                            schema = @Schema(implementation = ErrorResponseDto.class))),
+            @ApiResponse(responseCode = "409",
+                    description = "Payment method is already in use and cannot be deleted.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDto.class))),
     })
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void deletePaymentMethod(@PathVariable Long id);

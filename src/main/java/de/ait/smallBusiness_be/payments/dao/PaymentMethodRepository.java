@@ -7,5 +7,5 @@ import java.util.List;
 
 public interface PaymentMethodRepository extends JpaRepository<PaymentMethod, Long> {
     boolean existsPaymentMethodByProviderAndMaskedNumber(String provider, String maskedNumber);
-    List<PaymentMethod> findAllByActive(boolean active);
+    List<PaymentMethod> findAllByActiveTrueOrderByProviderAsc();
 }

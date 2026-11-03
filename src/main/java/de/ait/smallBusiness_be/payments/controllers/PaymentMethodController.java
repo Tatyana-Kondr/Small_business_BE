@@ -26,6 +26,9 @@ public class PaymentMethodController implements PaymentMethodApi {
     }
 
     @Override
+    public List<PaymentMethodDto> getActivePaymentMethods() {return paymentMethodService.getActivePaymentMethods();}
+
+    @Override
     public PaymentMethodDto getPaymentMethodById(Long id) {
         return paymentMethodService.getPaymentMethodById(id);
     }
