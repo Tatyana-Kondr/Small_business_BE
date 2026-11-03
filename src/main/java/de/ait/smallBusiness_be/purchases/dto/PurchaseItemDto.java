@@ -29,6 +29,8 @@ public class PurchaseItemDto {
     Long purchaseId;
     BigDecimal quantity;
     BigDecimal unitPrice;
+    BigDecimal discount;
+    BigDecimal discountAmount;
     BigDecimal totalPrice;
     BigDecimal taxPercentage;
     BigDecimal taxAmount;

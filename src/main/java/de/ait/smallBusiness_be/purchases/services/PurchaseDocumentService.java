@@ -14,5 +14,4 @@ public interface PurchaseDocumentService {
 
     void deleteDocument(Long documentId);
 
-    PurchaseScanResultDto analyzeDocument(MultipartFile file);
 }

@@ -38,8 +38,9 @@ public class Purchase {
     @NotNull(message = "{validation.notNull}")
     Customer vendor;
 
-    @Column
-    @PastOrPresent(message = "{validation.dateOfLastPurchase.pastOrPresent}")
+    @Column(nullable = false)
+    @NotNull(message = "{validation.notNull}")
+    @PastOrPresent(message = "{validation.date.pastOrPresent}")
     LocalDate purchasingDate;
 
     @Column(nullable = false)
@@ -51,22 +52,26 @@ public class Purchase {
     @NotNull(message = "{validation.notNull}")
     TypeOfDocument document;
 
-    @Column(nullable = false)
     String documentNumber;
 
-    @Column(precision = 8, scale = 2)
-    @DecimalMin(value = "0.0", message = "{validation.price.min}")
-    @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
+    @Column(nullable = false, precision = 12, scale = 2)
+    @DecimalMin(value = "0.0", message = "{validation.money.min}")
+    @Digits(integer = 10, fraction = 2, message = "{validation.amount.digits}")
     BigDecimal subtotal; // Подитог
 
-    @Column(precision = 8, scale = 2)
-    @DecimalMin(value = "0.0", message = "{validation.price.min}")
-    @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
+    @Column(nullable = false, precision = 12, scale = 2)
+    @DecimalMin(value = "0.0", message = "{validation.money.min}")
+    @Digits(integer = 10, fraction = 2, message = "{validation.amount.digits}")
+    BigDecimal discountAmount; // Общая сумма скидок по позициям
+
+    @Column(nullable = false, precision = 12, scale = 2)
+    @DecimalMin(value = "0.0", message = "{validation.money.min}")
+    @Digits(integer = 10, fraction = 2, message = "{validation.amount.digits}")
     BigDecimal taxSum; // Сумма налога
 
-    @Column(precision = 8, scale = 2)
-    @DecimalMin(value = "0.0", message = "{validation.price.min}")
-    @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
+    @Column(nullable = false, precision = 12, scale = 2)
+    @DecimalMin(value = "0.0", message = "{validation.money.min}")
+    @Digits(integer = 10, fraction = 2, message = "{validation.amount.digits}")
     BigDecimal total; // Общая сумма
 
     @Column(nullable = false)

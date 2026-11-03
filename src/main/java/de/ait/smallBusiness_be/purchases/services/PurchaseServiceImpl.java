@@ -8,6 +8,8 @@ import de.ait.smallBusiness_be.payments.dao.PaymentRepository;
 import de.ait.smallBusiness_be.payments.model.Payment;
 import de.ait.smallBusiness_be.products.dao.ProductRepository;
 import de.ait.smallBusiness_be.products.model.Product;
+import de.ait.smallBusiness_be.purchases.dao.PurchaseDocumentRepository;
+import de.ait.smallBusiness_be.purchases.dao.PurchaseItemRepository;
 import de.ait.smallBusiness_be.purchases.dao.PurchaseRepository;
 import de.ait.smallBusiness_be.purchases.dao.TypeOfDocumentRepository;
 import de.ait.smallBusiness_be.purchases.dto.NewPurchaseDto;
@@ -19,18 +21,25 @@ import jakarta.persistence.EntityNotFoundException;
 
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.io.IOException;
 
 
 /**
@@ -45,33 +54,44 @@ import java.util.concurrent.atomic.AtomicReference;
 public class PurchaseServiceImpl implements PurchaseService {
 
     private final PurchaseRepository purchaseRepository;
+    private final PurchaseItemRepository purchaseItemRepository;
+    private final PurchaseDocumentRepository purchaseDocumentRepository;
     private final CustomerRepository customerRepository;
     private final ProductRepository productRepository;
     private final PaymentRepository paymentRepository;
     private final TypeOfDocumentRepository typeOfDocumentRepository;
     private final WarehouseService warehouseService;
+    private final PendingFileDeletionService pendingFileDeletionService;
     private final ModelMapper modelMapper;
+
+    @Value("${file.document-dir}")
+    private String documentDir;
 
     @Override
     @Transactional
     public PurchaseDto createPurchase(NewPurchaseDto newPurchaseDto) {
-        Customer customer = customerRepository.findById(newPurchaseDto.getVendorId())
-                .orElseThrow(() -> new EntityNotFoundException("Vendor not found"));
 
-        TypeOfDocument document = typeOfDocumentRepository.findById(newPurchaseDto.getDocumentId())
-                .orElseThrow(() -> new EntityNotFoundException("Type of document not found."));
+        Customer vendor = getVendorOrThrow(newPurchaseDto.getVendorId());
+        TypeOfDocument document = getDocumentOrThrow(newPurchaseDto.getDocumentId());
 
-        if (newPurchaseDto.getPurchaseItems() == null || newPurchaseDto.getPurchaseItems().isEmpty()) {
-            throw new RestApiException(ErrorDescription.NO_PRODUCT_IN_PURCHASE);
-        }
+        validatePurchaseItems(newPurchaseDto);
 
         Purchase purchase = modelMapper.map(newPurchaseDto, Purchase.class);
-        purchase.setVendor(customer);
+
+        purchase.setVendor(vendor);
         purchase.setDocument(document);
+        purchase.setType(parseTypeOfOperation(newPurchaseDto.getType()));
+        purchase.setPaymentStatus(PaymentStatus.OFFEN);
 
         calculatePurchaseAmounts(purchase, newPurchaseDto);
 
-        Purchase savedPurchase = purchaseRepository.save(purchase);
+        Purchase savedPurchase = purchaseRepository.saveAndFlush(purchase);
+
+        // Пересчитываем закупочную цену и дату последней закупки товара
+        savedPurchase.getPurchaseItems().stream()
+                .map(PurchaseItem::getProduct)
+                .distinct()
+                .forEach(this::recalculateProductPurchaseData);
 
         // Обновляем склад
         savedPurchase.getPurchaseItems().forEach(item -> {
@@ -85,76 +105,75 @@ public class PurchaseServiceImpl implements PurchaseService {
             );
         });
 
-        return modelMapper.map(savedPurchase, PurchaseDto.class);
+        return toPurchaseDto(savedPurchase);
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public Page<PurchaseDto> getAllPurchases(Pageable pageable) {
-        Page<Purchase> purchases = purchaseRepository.findAllWithSorting(pageable);
-
-        if (purchases.isEmpty()) {
-            throw new RestApiException(ErrorDescription.LIST_IS_EMPTY, HttpStatus.NOT_FOUND);
-        }
-
-        return purchases.map(purchase -> modelMapper.map(purchase, PurchaseDto.class));
+        return purchaseRepository.findAllWithSorting(pageable)
+                .map(this::toPurchaseDto);
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public PurchaseDto getPurchaseById(Long id) {
-        Purchase purchase = purchaseRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Purchase not found"));
-        return modelMapper.map(purchase, PurchaseDto.class);
+        Purchase purchase = getPurchaseOrThrow(id);
+        return toPurchaseDto(purchase);
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public Page<PurchaseDto> searchPurchases(Pageable pageable, String query) {
         return purchaseRepository.searchPurchases(pageable, query)
-                .map(purchase -> modelMapper.map(purchase, PurchaseDto.class));
+                .map(this::toPurchaseDto);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<PurchaseDto> getAllPurchasesByFilter(Pageable pageable, Long id, Long vendorId, String vendorName, Long documentId, String documentNumber, BigDecimal total, String paymentStatus, LocalDate startDate, LocalDate endDate, String searchQuery) {
         return purchaseRepository.filterByFields(pageable, id, vendorId, vendorName, documentId, documentNumber, total, paymentStatus, startDate, endDate, searchQuery)
-                .map(purchase -> modelMapper.map(purchase, PurchaseDto.class));
+                .map(this::toPurchaseDto);
     }
 
     @Override
     @Transactional
     public PurchaseDto updatePurchase(Long id, NewPurchaseDto newPurchaseDto) {
-        Purchase purchase = purchaseRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Purchase not found"));
 
-        Customer customer = customerRepository.findById(newPurchaseDto.getVendorId())
-                .orElseThrow(() -> new EntityNotFoundException("Customer not found"));
+        Purchase purchase = getPurchaseOrThrow(id);
+        validateVendorChange(purchase, newPurchaseDto.getVendorId());
+        Customer vendor = getVendorOrThrow(newPurchaseDto.getVendorId());
+        TypeOfDocument document = getDocumentOrThrow(newPurchaseDto.getDocumentId());
 
-        TypeOfDocument document = typeOfDocumentRepository.findById(newPurchaseDto.getDocumentId())
-                .orElseThrow(() -> new EntityNotFoundException("Type of document not found."));
+        validatePurchaseItems(newPurchaseDto);
 
-        // Обновляем базовые поля
-        purchase.setVendor(customer);
+        Set<Product> affectedProducts = purchase.getPurchaseItems()
+                .stream()
+                .map(PurchaseItem::getProduct)
+                .collect(Collectors.toSet());
+
+        purchase.setVendor(vendor);
         purchase.setDocument(document);
         purchase.setPurchasingDate(newPurchaseDto.getPurchasingDate());
         purchase.setDocumentNumber(newPurchaseDto.getDocumentNumber());
+        purchase.setType(parseTypeOfOperation(newPurchaseDto.getType()));
 
-        try {
-            purchase.setType(TypeOfOperation.valueOf(newPurchaseDto.getType().toUpperCase()));
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid type of operation: " + newPurchaseDto.getType());
-        }
-
-        try {
-            purchase.setPaymentStatus(PaymentStatus.valueOf(newPurchaseDto.getPaymentStatus().toUpperCase()));
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid payment status: " + newPurchaseDto.getPaymentStatus());
-        }
-
+        // Пересоздаём позиции и пересчитываем суммы Purchase
         calculatePurchaseAmounts(purchase, newPurchaseDto);
 
-        Purchase updatedPurchase = purchaseRepository.save(purchase);
+        Purchase updatedPurchase = purchaseRepository.saveAndFlush(purchase);
+
+        recalculatePaymentStatus(updatedPurchase);
+
+        // Добавляем товары из новой версии Purchase
+        updatedPurchase.getPurchaseItems()
+                .stream()
+                .map(PurchaseItem::getProduct)
+                .forEach(affectedProducts::add);
+
+        // Пересчитываем закупочную цену и дату последней закупки
+        // как для оставшихся/добавленных, так и для удалённых товаров
+        affectedProducts.forEach(this::recalculateProductPurchaseData);
 
         // Синхронизируем документ со складом
         warehouseService.syncDocument(
@@ -164,132 +183,286 @@ public class PurchaseServiceImpl implements PurchaseService {
                 updatedPurchase.getPurchasingDate(),
                 updatedPurchase.getPurchaseItems()
         );
-        return modelMapper.map(updatedPurchase, PurchaseDto.class);
+
+        return toPurchaseDto(updatedPurchase);
     }
 
-
     @Override
+    @Transactional
     public void deletePurchase(Long id) {
-        Purchase purchase = purchaseRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Purchase not found"));
-        warehouseService.rollbackDocument(purchase.getId());
+
+        Purchase purchase = getPurchaseOrThrow(id);
+
+        // 1. Проверяем статус оплаты
+        if (purchase.getPaymentStatus() == PaymentStatus.BEZAHLT) {
+            throw new RestApiException(ErrorDescription.PURCHASE_ALREADY_PAID, HttpStatus.CONFLICT);
+        }
+
+        // 2. Проверяем наличие платежей
+        if (paymentRepository.existsByPurchaseId(id)) {
+            throw new RestApiException(ErrorDescription.PURCHASE_HAS_PAYMENTS, HttpStatus.CONFLICT);
+        }
+
+        // 3. Получаем URL документов покупки
+        List<String> fileUrls = purchaseDocumentRepository
+                .findAllByPurchaseIdOrderByIdAsc(id)
+                .stream()
+                .map(PurchaseDocument::getFileUrl)
+                .toList();
+
+        // 4. Запоминаем товары для пересчёта
+        Set<Product> affectedProducts = purchase.getPurchaseItems()
+                .stream()
+                .map(PurchaseItem::getProduct)
+                .collect(Collectors.toSet());
+
+        // 5. Откатываем складские операции
+        warehouseService.rollbackDocument(
+                purchase.getId(),
+                List.of(
+                        TypeOfOperation.EINKAUF,
+                        TypeOfOperation.LIEFERANT_RABATT
+                )
+        );
+
+        // 6. Создаём задания на удаление файлов
+        pendingFileDeletionService.createTasks(id, fileUrls);
+
+        // 7. Удаляем покупку
         purchaseRepository.delete(purchase);
+        purchaseRepository.flush();
+
+        // 8. Пересчитываем данные товаров
+        affectedProducts.forEach(this::recalculateProductPurchaseData);
+
+        // 9. Запускаем очистку после успешного COMMIT
+        if (!fileUrls.isEmpty()) {
+
+            TransactionSynchronizationManager.registerSynchronization(
+                    new TransactionSynchronization() {
+
+                        @Override
+                        public void afterCommit() {
+                            try {
+                                pendingFileDeletionService.processPendingFiles();
+                            } catch (Exception e) {
+                                // Purchase deletion has already been committed.
+                                // Pending tasks remain available for scheduled retry.
+                            }
+                        }
+                    }
+            );
+        }
     }
 
     @Override
     @Transactional
     public PurchaseDto updatePaymentStatus(Long purchaseId) {
-        Purchase purchase = purchaseRepository.findById(purchaseId)
-                .orElseThrow(() -> new EntityNotFoundException("Purchase not found"));
+        Purchase purchase = getPurchaseOrThrow(purchaseId);
+        recalculatePaymentStatus(purchase);
+        return toPurchaseDto(purchase);
+    }
 
-        // Получаем список оплат по purchaseId
-        List<Payment> payments = paymentRepository.findByPurchaseId(purchaseId);
+
+    private void recalculatePaymentStatus(Purchase purchase) {
+
+        List<Payment> payments = paymentRepository.findByPurchaseId(purchase.getId());
 
         BigDecimal totalPaid = payments.stream()
-                .map(Payment::getAmount)
+                .map(payment -> switch (payment.getType()) {
+                    case AUSGABE -> payment.getAmount();
+                    case EINNAHME -> payment.getAmount().negate();
+                })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        PaymentStatus newStatus;
+        BigDecimal totalAmount = purchase.getTotal();
 
-        if (totalPaid.compareTo(BigDecimal.ZERO) == 0) {
-            newStatus = PaymentStatus.OFFEN;
-        } else if (totalPaid.compareTo(purchase.getTotal()) >= 0) {
-            newStatus = PaymentStatus.BEZAHLT;
+        if (totalPaid.compareTo(BigDecimal.ZERO) <= 0) {
+            purchase.setPaymentStatus(PaymentStatus.OFFEN);
+
+        } else if (totalPaid.compareTo(totalAmount) < 0) {
+            purchase.setPaymentStatus(PaymentStatus.ANZAHLUNG);
+
         } else {
-            newStatus = PaymentStatus.ANZAHLUNG;
+            purchase.setPaymentStatus(PaymentStatus.BEZAHLT);
         }
-
-        // Обновляем статус, если он изменился
-        if (purchase.getPaymentStatus() != newStatus) {
-            purchase.setPaymentStatus(newStatus);
-            purchaseRepository.save(purchase);
-        }
-        return modelMapper.map(purchase, PurchaseDto.class);
     }
 
-    private void calculatePurchaseAmounts(Purchase purchase, NewPurchaseDto newPurchaseDto) {
-        AtomicReference<BigDecimal> subtotal = new AtomicReference<>(BigDecimal.ZERO);
-        AtomicReference<BigDecimal> taxSum = new AtomicReference<>(BigDecimal.ZERO);
-        AtomicReference<BigDecimal> total = new AtomicReference<>(BigDecimal.ZERO);
-
+    private void calculatePurchaseAmounts(
+            Purchase purchase,
+            NewPurchaseDto newPurchaseDto
+    ) {
         purchase.getPurchaseItems().clear();
 
-        newPurchaseDto.getPurchaseItems().stream()
-                .map(dto -> createPurchaseItem(
-                        purchase,
-                        dto,
-                        subtotal,
-                        taxSum,
-                        total,
-                        newPurchaseDto.getPurchasingDate()
-                ))
-                .forEach(purchase.getPurchaseItems()::add);
+        int position = 1;
 
-        purchase.setSubtotal(subtotal.get());
-        purchase.setTaxSum(taxSum.get());
-        purchase.setTotal(total.get());
+        for (NewPurchaseItemDto dto : newPurchaseDto.getPurchaseItems()) {
+            PurchaseItem item = createPurchaseItem(purchase, dto, position++);
+
+            purchase.getPurchaseItems().add(item);
+        }
+
+        BigDecimal subtotal = purchase.getPurchaseItems().stream()
+                .map(PurchaseItem::getTotalPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal discountAmount = purchase.getPurchaseItems().stream()
+                .map(PurchaseItem::getDiscountAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal taxSum = purchase.getPurchaseItems().stream()
+                .map(PurchaseItem::getTaxAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal total = purchase.getPurchaseItems().stream()
+                .map(PurchaseItem::getTotalAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        purchase.setSubtotal(subtotal.setScale(2, RoundingMode.HALF_UP));
+        purchase.setDiscountAmount(discountAmount.setScale(2, RoundingMode.HALF_UP));
+        purchase.setTaxSum(taxSum.setScale(2, RoundingMode.HALF_UP));
+        purchase.setTotal(total.setScale(2, RoundingMode.HALF_UP));
     }
 
-    private PurchaseItem createPurchaseItem(
-            Purchase purchase,
-            NewPurchaseItemDto dto,
-            AtomicReference<BigDecimal> subtotal,
-            AtomicReference<BigDecimal> taxSum,
-            AtomicReference<BigDecimal> total,
-            LocalDate purchasingDate) {
-
+    private PurchaseItem createPurchaseItem(Purchase purchase, NewPurchaseItemDto dto, int position) {
         Product product = productRepository.findById(dto.getProductId())
-                .orElseThrow(() -> new IllegalArgumentException("Product not found with ID: " + dto.getProductId()));
+                .orElseThrow(() -> new EntityNotFoundException(ErrorDescription.PRODUCT_NOT_FOUND.getDescription()));
 
-        PurchaseItem item = modelMapper.map(dto, PurchaseItem.class);
+        BigDecimal quantity = dto.getQuantity();
+        BigDecimal unitPrice = dto.getUnitPrice();
+        BigDecimal discount = dto.getDiscount();
+        BigDecimal taxPercentage = dto.getTaxPercentage();
+
+        // Стоимость позиции до скидки
+        BigDecimal priceBeforeDiscount = unitPrice.multiply(quantity);
+
+        // Сумма скидки
+        BigDecimal discountAmount = priceBeforeDiscount
+                .multiply(discount.movePointLeft(2))
+                .setScale(2, RoundingMode.HALF_UP);
+
+        // Netto после скидки
+        BigDecimal totalPrice = priceBeforeDiscount
+                .subtract(discountAmount)
+                .setScale(2, RoundingMode.HALF_UP);
+
+        // НДС после скидки
+        BigDecimal taxAmount = totalPrice
+                .multiply(taxPercentage.movePointLeft(2))
+                .setScale(2, RoundingMode.HALF_UP);
+
+        // Brutto
+        BigDecimal totalAmount = totalPrice
+                .add(taxAmount)
+                .setScale(2, RoundingMode.HALF_UP);
+
+        PurchaseItem item = new PurchaseItem();
+
         item.setPurchase(purchase);
         item.setProduct(product);
-
-        BigDecimal totalPrice = dto.getUnitPrice().multiply(dto.getQuantity());
-        BigDecimal taxAmount = totalPrice.multiply(dto.getTaxPercentage().movePointLeft(2))
-                .setScale(2, RoundingMode.HALF_UP);
-        BigDecimal totalAmount = totalPrice.add(taxAmount);
-
+        item.setPosition(position);
+        item.setProductName(dto.getProductName());
+        item.setQuantity(quantity);
+        item.setUnitPrice(unitPrice);
+        item.setDiscount(discount);
+        item.setDiscountAmount(discountAmount);
         item.setTotalPrice(totalPrice);
+        item.setTaxPercentage(taxPercentage);
         item.setTaxAmount(taxAmount);
         item.setTotalAmount(totalAmount);
-
-        subtotal.updateAndGet(v -> v.add(totalPrice));
-        taxSum.updateAndGet(v -> v.add(taxAmount));
-        total.updateAndGet(v -> v.add(totalAmount));
-
-        updateProductAfterPurchase(product, dto.getUnitPrice(), purchasingDate);
 
         return item;
     }
 
-    private void updateProductAfterPurchase(Product product, BigDecimal unitPrice, LocalDate purchasingDate) {
-        boolean updated = false;
+    private void recalculateProductPurchaseData(Product product) {
 
-        // Обновление закупочной цены
-        if (product.getPurchasingPrice() == null || unitPrice.compareTo(product.getPurchasingPrice()) > 0) {
-            product.setPurchasingPrice(unitPrice);
-            updated = true;
+        List<PurchaseItem> latestItems = purchaseItemRepository.findLatestPurchaseItemsByProductId(product.getId());
 
-            // Пересчёт продажной цены, если нужно
-            BigDecimal calculatedSellingPrice = unitPrice
-                    .multiply(BigDecimal.valueOf(1.2))
-                    .setScale(2, RoundingMode.HALF_UP);
+        // У товара больше нет ни одной закупки
+        if (latestItems.isEmpty()) {
+            product.setPurchasingPrice(null);
+            product.setDateOfLastPurchase(null);
 
-            if (product.getSellingPrice() == null || product.getSellingPrice().compareTo(calculatedSellingPrice) < 0) {
-                product.setSellingPrice(calculatedSellingPrice);
-            }
-        }
-
-        // Обновление даты последней закупки
-        LocalDateTime newPurchaseDateTime = purchasingDate.atStartOfDay();
-        if (product.getDateOfLastPurchase() == null || newPurchaseDateTime.isAfter(product.getDateOfLastPurchase())) {
-            product.setDateOfLastPurchase(newPurchaseDateTime);
-            updated = true;
-        }
-
-        if (updated) {
             productRepository.save(product);
+            return;
+        }
+
+        // Репозиторий уже сортирует позиции:
+        // самая новая дата + самая высокая цена первой
+        PurchaseItem latestItem = latestItems.get(0);
+
+        BigDecimal purchasingPrice = latestItem.getUnitPrice();
+        LocalDate purchasingDate = latestItem.getPurchase().getPurchasingDate();
+
+        product.setPurchasingPrice(purchasingPrice);
+        product.setDateOfLastPurchase(purchasingDate.atStartOfDay());
+
+        // Продажную цену автоматически только повышаем
+        BigDecimal calculatedSellingPrice = purchasingPrice
+                .multiply(BigDecimal.valueOf(1.2))
+                .setScale(2, RoundingMode.HALF_UP);
+
+        if (product.getSellingPrice() == null || product.getSellingPrice().compareTo(calculatedSellingPrice) < 0) {
+
+            product.setSellingPrice(calculatedSellingPrice);
+        }
+
+        productRepository.save(product);
+    }
+
+
+    private void validateVendorChange(Purchase purchase, Long newVendorId) {
+
+        Long currentVendorId = purchase.getVendor().getId();
+
+        if (currentVendorId.equals(newVendorId)) {
+            return;
+        }
+
+        if (paymentRepository.existsByPurchaseId(purchase.getId())) {
+            throw new RestApiException(ErrorDescription.PURCHASE_VENDOR_CHANGE_HAS_PAYMENTS, HttpStatus.CONFLICT);
         }
     }
+
+
+    private void validatePurchaseItems(NewPurchaseDto dto) {
+        if (dto.getPurchaseItems() == null || dto.getPurchaseItems().isEmpty()) {
+            throw new RestApiException(ErrorDescription.NO_PRODUCT_IN_PURCHASE);
+        }
+    }
+
+    private Customer getVendorOrThrow(Long vendorId) {
+        return customerRepository.findById(vendorId)
+                .orElseThrow(() -> new EntityNotFoundException(ErrorDescription.CUSTOMER_NOT_FOUND.getDescription()));
+    }
+
+    private TypeOfDocument getDocumentOrThrow(Long documentId) {
+        return typeOfDocumentRepository.findById(documentId)
+                .orElseThrow(() -> new EntityNotFoundException(ErrorDescription.TYPE_OF_DOCUMENT_NOT_FOUND.getDescription()));
+    }
+
+    private Purchase getPurchaseOrThrow(Long purchaseId) {
+        return purchaseRepository.findById(purchaseId)
+                .orElseThrow(() -> new EntityNotFoundException(ErrorDescription.PURCHASE_NOT_FOUND.getDescription()));
+    }
+
+    private TypeOfOperation parseTypeOfOperation(String type) {
+        if (type == null) {
+            throw new RestApiException(ErrorDescription.INVALID_OPERATION_TYPE, HttpStatus.BAD_REQUEST);
+        }
+        try {
+            return TypeOfOperation.valueOf(type.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new RestApiException(ErrorDescription.INVALID_OPERATION_TYPE, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+
+    private PurchaseDto toPurchaseDto(Purchase purchase) {
+        PurchaseDto dto = modelMapper.map(purchase, PurchaseDto.class);
+        dto.setHasPayments(paymentRepository.existsByPurchaseId(purchase.getId()));
+        return dto;
+    }
+
+
 }

@@ -1,6 +1,7 @@
 package de.ait.smallBusiness_be.purchases.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
@@ -25,7 +26,8 @@ public class NewPurchaseDto {
     @Schema(description = "Customer's id", example = "1")
     Long vendorId;
 
-    @PastOrPresent(message = "{validation.dateOfLastPurchase.pastOrPresent}")
+    @NotNull(message = "{validation.notNull}")
+    @PastOrPresent(message = "{validation.date.pastOrPresent}")
     @Schema(description = "Date of purchase", example = "2025-01-01")
     LocalDate purchasingDate;
 
@@ -33,14 +35,14 @@ public class NewPurchaseDto {
     @Schema(description = "Type of operation", example = "EINKAUF, LIEFERANT_RABATT")
     String type;
 
+    @NotNull(message = "{validation.notNull}")
     @Schema(description = "Type of purchasing document", example = "RECHNUNG")
     Long documentId;
 
     @Schema(description = "Document's number", example = "12345-Aa")
     String documentNumber;
 
-    @Schema(description = "Status of payment", example = "OFFEN")
-    String paymentStatus;
-
+    @NotEmpty(message = "{validation.notEmpty}")
+    @Valid
     List<NewPurchaseItemDto> purchaseItems;
 }

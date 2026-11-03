@@ -1,12 +1,13 @@
 package de.ait.smallBusiness_be.purchases.services;
 
+import de.ait.smallBusiness_be.exceptions.ErrorDescription;
 import de.ait.smallBusiness_be.exceptions.RestApiException;
 import de.ait.smallBusiness_be.purchases.dao.PurchaseDocumentRepository;
 import de.ait.smallBusiness_be.purchases.dao.PurchaseRepository;
 import de.ait.smallBusiness_be.purchases.dto.PurchaseDocumentDto;
-import de.ait.smallBusiness_be.purchases.dto.PurchaseScanResultDto;
 import de.ait.smallBusiness_be.purchases.model.Purchase;
 import de.ait.smallBusiness_be.purchases.model.PurchaseDocument;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -18,8 +19,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -39,92 +38,76 @@ public class PurchaseDocumentServiceImpl implements PurchaseDocumentService {
     @Override
     public PurchaseDocumentDto uploadFile(Long purchaseId, MultipartFile file) {
 
-        Purchase purchase = purchaseRepository.findById(purchaseId)
-                .orElseThrow(() ->
-                        new RestApiException(
-                                "Purchase not found",
-                                HttpStatus.NOT_FOUND
-                        )
-                );
+        Purchase purchase = getPurchaseOrThrow(purchaseId);
+
+        if (file == null || file.isEmpty()) {
+            throw new RestApiException(ErrorDescription.FILE_IS_EMPTY, HttpStatus.BAD_REQUEST);
+        }
 
         String originalFileName = file.getOriginalFilename();
 
         if (!StringUtils.hasText(originalFileName)) {
-            throw new RestApiException(
-                    "File name is empty",
-                    HttpStatus.BAD_REQUEST
-            );
+            throw new RestApiException(ErrorDescription.FILE_NAME_IS_EMPTY, HttpStatus.BAD_REQUEST);
         }
 
-        String fileExtension = StringUtils.getFilenameExtension(originalFileName);
+        String safeOriginalFileName = Paths.get(originalFileName).getFileName().toString();
+
+        String fileExtension = StringUtils.getFilenameExtension(safeOriginalFileName);
 
         if (fileExtension == null || !ALLOWED_TYPES.contains(fileExtension.toLowerCase())) {
-
-            throw new RestApiException(
-                    "Unsupported file type",
-                    HttpStatus.BAD_REQUEST
-            );
+            throw new RestApiException(ErrorDescription.UNSUPPORTED_FILE_TYPE, HttpStatus.BAD_REQUEST);
         }
 
         try {
             Path targetDir = Paths.get(documentDir);
+            Files.createDirectories(targetDir);
 
-            if (!Files.exists(targetDir)) {
-                Files.createDirectories(targetDir);
-            }
+            String extension = fileExtension.toLowerCase();
 
-            String safeFileName =
-                    Paths.get(originalFileName)
-                            .getFileName()
-                            .toString();
+            /* Например: 15_2026-09-23_Amazon_RECHNUNG_RE12345678  */
+            String baseFileName = buildBaseFileName(purchase);
+            /*
+             * Если файла ещё нет:
+             * 15_2026-09-23_Amazon_RECHNUNG_RE12345678.pdf
+             * Если уже существует:
+             * 15_2026-09-23_Amazon_RECHNUNG_RE12345678_2.pdf
+             * 15_2026-09-23_Amazon_RECHNUNG_RE12345678_3.pdf
+             */
 
-            Path filePath = targetDir.resolve(safeFileName);
+            String storedFileName = buildUniqueFileName(targetDir, baseFileName, extension);
 
-            Files.copy(
-                    file.getInputStream(),
-                    filePath,
-                    StandardCopyOption.REPLACE_EXISTING
-            );
+            Path filePath = targetDir.resolve(storedFileName);
 
-            String fileUrl =
-                    "/uploads/documents/" + safeFileName;
+            Files.copy(file.getInputStream(), filePath);
+
+            String fileUrl = "/uploads/documents/" + storedFileName;
 
             PurchaseDocument document =
                     PurchaseDocument.builder()
                             .purchase(purchase)
-                            .originFileName(safeFileName)
+                            .originFileName(safeOriginalFileName)
                             .fileUrl(fileUrl)
                             .contentType(
-                                    file.getContentType() != null
+                                    StringUtils.hasText(file.getContentType())
                                             ? file.getContentType()
                                             : "application/octet-stream"
                             )
                             .createdDate(LocalDateTime.now())
                             .build();
 
-            PurchaseDocument savedDocument =
-                    purchaseDocumentRepository.save(document);
+            PurchaseDocument savedDocument = purchaseDocumentRepository.save(document);
 
             return mapToDto(savedDocument);
 
         } catch (IOException e) {
-
-            throw new RestApiException(
-                    "Document upload failed: " + e.getMessage(),
-                    HttpStatus.INTERNAL_SERVER_ERROR
-            );
+            throw new RestApiException(ErrorDescription.FILE_UPLOAD_FAILED, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @Override
     public List<PurchaseDocumentDto> getDocuments(Long purchaseId) {
 
-        if (!purchaseRepository.existsById(purchaseId)) {
-            throw new RestApiException(
-                    "Purchase not found",
-                    HttpStatus.NOT_FOUND
-            );
-        }
+        getPurchaseOrThrow(purchaseId);
 
         return purchaseDocumentRepository
                 .findAllByPurchaseIdOrderByIdAsc(purchaseId)
@@ -136,47 +119,75 @@ public class PurchaseDocumentServiceImpl implements PurchaseDocumentService {
     @Override
     public void deleteDocument(Long documentId) {
 
-        PurchaseDocument document =
-                purchaseDocumentRepository.findById(documentId)
-                        .orElseThrow(() ->
-                                new RestApiException(
-                                        "Document not found",
-                                        HttpStatus.NOT_FOUND
-                                )
-                        );
+        PurchaseDocument document = purchaseDocumentRepository.findById(documentId)
+                        .orElseThrow(() -> new EntityNotFoundException(ErrorDescription.FILE_NOT_FOUND.getDescription()));
 
         try {
-            String fileName =
-                    Paths.get(document.getFileUrl())
-                            .getFileName()
-                            .toString();
-
-            Path filePath =
-                    Paths.get(documentDir)
-                            .resolve(fileName);
-
+            String fileName = Paths.get(document.getFileUrl()).getFileName().toString();
+            Path filePath = Paths.get(documentDir).resolve(fileName);
             Files.deleteIfExists(filePath);
 
             purchaseDocumentRepository.delete(document);
 
         } catch (IOException e) {
-
-            throw new RestApiException(
-                    "Document deletion failed: " + e.getMessage(),
-                    HttpStatus.INTERNAL_SERVER_ERROR
-            );
+            throw new RestApiException(ErrorDescription.FILE_DELETE_FAILED, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    @Override
-    public PurchaseScanResultDto analyzeDocument(MultipartFile file) {
+    private String buildBaseFileName(Purchase purchase) {
 
-        return PurchaseScanResultDto.builder()
-                .vendorName("Firma Müller GmbH")
-                .document("RECHNUNG")
-                .documentNumber("RE-2026-1845")
-                .purchasingDate(LocalDate.of(2026, 9, 8))
-                .build();
+        StringBuilder fileName = new StringBuilder();
+
+        fileName
+                .append(purchase.getId())
+                .append("_")
+                .append(purchase.getPurchasingDate())
+                .append("_")
+                .append(sanitizeFilePart(purchase.getVendor().getName()))
+                .append("_")
+                .append(sanitizeFilePart(purchase.getDocument().getName()));
+
+        if (StringUtils.hasText(purchase.getDocumentNumber())) {
+            fileName.append("_").append(sanitizeFilePart(purchase.getDocumentNumber()));
+        }
+
+        return fileName.toString();
+    }
+
+    /**
+     * Если файл с таким именем уже существует,
+     * добавляет _2, _3, _4 и т.д.
+     */
+    private String buildUniqueFileName(Path targetDir, String baseFileName, String extension) {
+
+        String fileName = baseFileName + "." + extension;
+        Path filePath = targetDir.resolve(fileName);
+
+        if (!Files.exists(filePath)) {
+            return fileName;
+        }
+
+        int counter = 2;
+
+        while (true) {
+            fileName = baseFileName + "_" + counter + "." + extension;
+            filePath = targetDir.resolve(fileName);
+
+            if (!Files.exists(filePath)) {
+                return fileName;
+            }
+
+            counter++;
+        }
+    }
+
+    private String sanitizeFilePart(String value) {
+        if (!StringUtils.hasText(value)) {return "";}
+
+        return value
+                .trim()
+                .replaceAll("[\\\\/:*?\"<>|]", "_")
+                .replaceAll("\\s+", "_");
     }
 
     private PurchaseDocumentDto mapToDto(PurchaseDocument document) {
@@ -188,5 +199,10 @@ public class PurchaseDocumentServiceImpl implements PurchaseDocumentService {
                 .contentType(document.getContentType())
                 .createdDate(document.getCreatedDate())
                 .build();
+    }
+
+    private Purchase getPurchaseOrThrow(Long purchaseId) {
+        return purchaseRepository.findById(purchaseId)
+                .orElseThrow(() -> new EntityNotFoundException(ErrorDescription.PURCHASE_NOT_FOUND.getDescription()));
     }
 }
