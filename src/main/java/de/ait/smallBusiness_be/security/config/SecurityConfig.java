@@ -67,11 +67,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/logout", "/api/auth/refresh").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/companies").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/companies", "/api/companies/{id}/logo", "/api/payment-methods", "/api/auth/register", "/api/product-categories" ).hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/companies", "/api/companies/{id}/logo", "/api/payment-methods", "/api/auth/register", "/api/product-categories", "/api/tax-rates", "/api/discount-rates" ).hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET,  "/api/users", "/api/reports/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH,  "/api/users/{id}/role", "/api/users/{id}").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT,  "/api/companies/{id}", "/api/customers/{id}", "/api/payments/{id}", "/api/payment-methods/{id}", "/api/product-categories/{id}").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/customers/{id}", "/api/payments/{id}", "/api/payment-methods/{id}", "/api/product-categories/{id}").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT,  "/api/companies/{id}", "/api/customers/{id}", "/api/payments/{id}", "/api/payment-methods/{id}", "/api/product-categories/{id}", "/api/tax-rates/{id}", "/api/discount-rates/{id}").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/customers/{id}", "/api/payments/{id}", "/api/payment-methods/{id}", "/api/product-categories/{id}", "/api/tax-rates/{id}", "/api/discount-rates/{id}").hasRole("ADMIN")
 
                         .requestMatchers(HttpMethod.POST,
                                 "/api/customers",
@@ -127,6 +127,7 @@ public class SecurityConfig {
                                 "/api/customers/customer-number",
                                 "/api/customers/customer-number/search",
                                 "/api/customers/customer-number/pick",
+                                "/api/customers/duplicates",
                                 "/api/customers/{id}",
                                 "/api/payments",
                                 "/api/payments/search/{query}",
@@ -137,6 +138,7 @@ public class SecurityConfig {
                                 "/api/payments/all-sale-ids",
                                 "/api/payments/all-purchase-ids",
                                 "/api/payment-methods",
+                                "/api/payment-methods/active",
                                 "/api/payment-methods/{id}",
                                 "/api/payment-processes",
                                 "/api/payment-processes/{id}",
@@ -147,10 +149,10 @@ public class SecurityConfig {
                                 "/api/productionItems/{id}",
                                 "/api/products/{id}",
                                 "/api/products",
-                                "/api/products/all",
                                 "/api/products/pick",
+                                "/api/products/similar",
+                                "/api/products/{productId}/similar-update",
                                 "/api/products/category/{categoryId}",
-                                "/api/products/category/{categoryId}/all",
                                 "/api/product-categories",
                                 "/api/product-categories/{id}",
                                 "/api/units",
@@ -179,6 +181,11 @@ public class SecurityConfig {
                                 "/api/shippings/{id}",
                                 "/api/payment-terms",
                                 "/api/payment-terms/{id}",
+                                "/api/tax-rates",
+                                "/api/tax-rates/active",
+                                "/api/tax-rates/default",
+                                "/api/discount-rates",
+                                "/api/discount-rates/active",
                                 "/api/users/{id}",
                                 "/api/auth/me",
                                 "/api/warehouse/stocks",
@@ -186,6 +193,7 @@ public class SecurityConfig {
                                 "/api/warehouse/product/{productId}/stock").authenticated()
                         .requestMatchers(HttpMethod.PATCH,
                                 "/api/purchases/{id}/update-payment-status",
+                                "/api/products/{id}/article",
                                 "/api/sales/{id}/update-payment-status",
                                 "/api/users/{id}/change-password").authenticated()
                         .anyRequest().authenticated()
