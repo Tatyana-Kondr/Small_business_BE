@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 
 public interface WarehouseService {
@@ -18,5 +19,5 @@ public interface WarehouseService {
     Page<WarehouseRecordDto> getProductHistory(Long productId, Pageable pageable);
     Page<WarehouseStockDto> getAllStocks(Pageable pageable);
     <T> void syncDocument(TypeOfOperation type, Long documentId, Customer partner, LocalDate date, List<T> items);
-    void rollbackDocument(Long documentId);
+    void rollbackDocument(Long documentId, Collection<TypeOfOperation> types);
 }
