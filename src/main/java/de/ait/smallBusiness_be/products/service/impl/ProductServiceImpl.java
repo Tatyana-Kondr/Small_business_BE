@@ -3,20 +3,24 @@ package de.ait.smallBusiness_be.products.service.impl;
 import de.ait.smallBusiness_be.exceptions.ErrorDescription;
 import de.ait.smallBusiness_be.exceptions.FieldValidationException;
 import de.ait.smallBusiness_be.exceptions.RestApiException;
+import de.ait.smallBusiness_be.productions.dao.ProductionItemRepository;
+import de.ait.smallBusiness_be.productions.dao.ProductionRepository;
 import de.ait.smallBusiness_be.products.dao.ProductPhotoRepository;
 import de.ait.smallBusiness_be.products.dao.ProductRepository;
-import de.ait.smallBusiness_be.products.dao.UnitOfMeasurementRepository;
 import de.ait.smallBusiness_be.products.dto.*;
-import de.ait.smallBusiness_be.products.model.Dimensions;
-import de.ait.smallBusiness_be.products.model.Product;
-import de.ait.smallBusiness_be.products.model.UnitOfMeasurement;
+import de.ait.smallBusiness_be.products.model.*;
+import de.ait.smallBusiness_be.products.service.ProductCategoryService;
 import de.ait.smallBusiness_be.products.service.ProductService;
+import de.ait.smallBusiness_be.products.service.UnitOfMeasurementService;
+import de.ait.smallBusiness_be.purchases.dao.PurchaseItemRepository;
+import de.ait.smallBusiness_be.sales.dao.SaleItemRepository;
 import de.ait.smallBusiness_be.validation.dto.ValidationErrorDto;
+import de.ait.smallBusiness_be.warehouse.dao.WarehouseRecordRepository;
 import de.ait.smallBusiness_be.warehouse.dao.WarehouseRepository;
 import de.ait.smallBusiness_be.warehouse.models.Warehouse;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -24,12 +28,18 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 
+import java.io.IOException;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 11/15/2024
@@ -38,101 +48,199 @@ import java.util.stream.Collectors;
  * @author Chechkina (AIT TR)
  */
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProductServiceImpl implements ProductService {
 
-     private final ProductRepository productRepository;
-     private final UnitOfMeasurementRepository unitOfMeasurementRepository;
+    private final ProductRepository productRepository;
+    private final ProductCategoryService productCategoryService;
+    private final UnitOfMeasurementService unitOfMeasurementService;
     private final ProductPhotoRepository productPhotoRepository;
     private final WarehouseRepository warehouseRepository;
+    private final SaleItemRepository saleItemRepository;
+    private final PurchaseItemRepository purchaseItemRepository;
+    private final ProductionRepository productionRepository;
+    private final ProductionItemRepository productionItemRepository;
+    private final WarehouseRecordRepository warehouseRecordRepository;
+
      private final ModelMapper modelMapper;
+
+    @Value("${file.photo-dir}")
+    private String photoDir;
+
+    @Value("${file.document-dir}")
+    private String documentDir;
 
     @Override
     @Transactional
     public ProductDto addProduct(NewProductDto newProductDto) {
 
-        List<ValidationErrorDto> errors = new ArrayList<>();
-
-        boolean exists = productRepository
-                .existsByNameAndVendorArticleAndPurchasingPriceAndProductCategory(
-                        newProductDto.getName(),
-                        newProductDto.getVendorArticle(),
-                        newProductDto.getPurchasingPrice(),
-                        newProductDto.getProductCategory()
-                );
-        if (exists) {
-            errors.add(ValidationErrorDto.builder()
-                    .field("name")
-                    .rejectedValue(newProductDto.getName())
-                    .message("Produkt existiert bereits.")
-                    .build());
-        }
-
-        if (!errors.isEmpty()) {
-            throw new FieldValidationException(errors);
-        }
-
-         UnitOfMeasurement unit = unitOfMeasurementRepository.findById(newProductDto.getUnitOfMeasurementId())
-                 .orElseThrow(() -> new EntityNotFoundException("Unit Of Measurement not found"));
+        ProductCategory category = productCategoryService.getProductCategoryOrThrow(newProductDto.getProductCategoryId());
+        UnitOfMeasurement unit = unitOfMeasurementService.getUnitOfMeasurementOrThrow(newProductDto.getUnitOfMeasurementId());
 
         Product product = modelMapper.map(newProductDto, Product.class);
+
+        product.setProductCategory(category);
         product.setUnitOfMeasurement(unit);
+
         Product savedProduct = productRepository.save(product);
-        String art = newProductDto.getProductCategory().getArtName() + "-" + savedProduct.getId();
-        savedProduct.setArticle(art);
-        productRepository.save(savedProduct);
+
+        String article = category.getArtName() + "-" + savedProduct.getId();
+        savedProduct.setArticle(article);
+
+        savedProduct = productRepository.save(savedProduct);
 
         return modelMapper.map(savedProduct, ProductDto.class);
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public ProductDto getProductById(Long id) {
         Product product = getProductOrThrow(id);
         return mapToProductDto(product);
     }
 
+    private Path resolveProductFilePath(ProductPhoto file) {
+
+        String fileName = file.getOriginFileName();
+        String fileUrl = file.getFileUrl();
+
+        if (fileName == null || fileName.isBlank()
+                || fileUrl == null || fileUrl.isBlank()) {
+            throw new IllegalStateException(
+                    "Ungültige Produktdatei: " + file.getId()
+            );
+        }
+
+        Path baseDir;
+
+        if (fileUrl.startsWith("/uploads/photos/")) {
+            baseDir = Paths.get(photoDir);
+        } else if (fileUrl.startsWith("/uploads/documents/")) {
+            baseDir = Paths.get(documentDir);
+        } else {
+            throw new IllegalStateException(
+                    "Unbekannter Dateipfad: " + fileUrl
+            );
+        }
+
+        Path normalizedBase = baseDir.toAbsolutePath().normalize();
+
+        Path resolvedPath = normalizedBase.resolve(fileName).normalize();
+
+        if (!resolvedPath.startsWith(normalizedBase)
+                || resolvedPath.equals(normalizedBase)) {
+            throw new IllegalStateException(
+                    "Ungültiger Dateiname: " + fileName
+            );
+        }
+
+        return resolvedPath;
+    }
+
+
     @Override
     @Transactional
     public void deleteProductById(Long id) {
+        Product product = getProductOrThrow(id);
+
+        // 1. Проверяем, используется ли продукт в документах
+        List<String> usedIn = new ArrayList<>();
+        if (saleItemRepository.existsByProduct_Id(id)) {
+            usedIn.add("Verkäufen");
+        }
+        if (purchaseItemRepository.existsByProduct_Id(id)) {
+            usedIn.add("Einkäufen");
+        }
+        if (productionRepository.existsByProduct_Id(id)) {
+            usedIn.add("Produktionen");
+        }
+        if (productionItemRepository.existsByProduct_Id(id)) {
+            usedIn.add("Produktionsmaterialien");
+        }
+        if (warehouseRecordRepository.existsByProduct_Id(id)) {
+            usedIn.add("Lagerbewegungen");
+        }
+
+        if (!usedIn.isEmpty()) {
+            String message =
+                    "Das Produkt kann nicht gelöscht werden, da es bereits in folgenden Vorgängen verwendet wird: " + String.join(", ", usedIn) + ".";
+
+            throw new FieldValidationException(
+                    List.of(ValidationErrorDto.builder().field("product").message(message).build()));
+        }
+
+        // 2. Проверяем складской остаток
+        Warehouse warehouse = warehouseRepository.findByProduct(product).orElse(null);
+
+        if (warehouse != null && warehouse.getQuantity() != null && warehouse.getQuantity().compareTo(BigDecimal.ZERO) != 0) {
+
+            throw new FieldValidationException(
+                    List.of(ValidationErrorDto.builder()
+                                    .field("product")
+                                    .message("Das Produkt kann nicht gelöscht werden, da noch ein Lagerbestand vorhanden ist.").build()));
+        }
+
+        // 3. Получаем фотографии, которые потребуется удалить
+        List<ProductPhoto> photos = productPhotoRepository.findOrderedByProductId(id);
+
+        List<Path> filePaths = photos.stream()
+                .map(this::resolveProductFilePath)
+                .distinct()
+                .toList();
+
+        // 4. Удаляем связанные записи и сам продукт
         try {
-            productRepository.deleteById(id);
-            productRepository.flush(); //сразу отправляем изменения в базу, чтобы исключение возникло здесь, если есть ограничения.
+            if (!photos.isEmpty()) {
+                productPhotoRepository.deleteAll(photos);
+                productPhotoRepository.flush();
+            }
+
+            if (warehouse != null) {
+                warehouseRepository.delete(warehouse);
+                warehouseRepository.flush();
+            }
+
+            productRepository.delete(product);
+            productRepository.flush();
+
         } catch (DataIntegrityViolationException e) {
             throw new RestApiException(ErrorDescription.PRODUCT_DELETE_FAILED, HttpStatus.CONFLICT);
         }
+
+        // 5. Файлы удаляем только после успешного COMMIT
+        if (!filePaths.isEmpty()) {
+
+            TransactionSynchronizationManager.registerSynchronization(
+                    new TransactionSynchronization() {
+
+                        @Override
+                        public void afterCommit() {
+                            for (Path filePath : filePaths) {
+                                try {
+                                    Files.deleteIfExists(filePath);
+                                    log.info("Produktdatei gelöscht: {}", filePath);
+
+                                } catch (IOException | SecurityException e) {
+                                    log.error("Fehler beim Löschen der Produktdatei: {}", filePath, e);
+                                }
+                            }
+                        }
+                    }
+            );
+        }
     }
+
+
 
     @Override
     @Transactional
     public ProductDto updateProduct(Long id, UpdateProductDto updateProductDto) {
 
         Product product = getProductOrThrow(id);
-
-        List<ValidationErrorDto> errors = new ArrayList<>();
-
-        boolean exists = productRepository
-                .existsByNameAndArticleAndVendorArticleAndPurchasingPriceAndProductCategoryAndIdNot(
-                        updateProductDto.getName(),
-                        updateProductDto.getArticle(),
-                        updateProductDto.getVendorArticle(),
-                        updateProductDto.getPurchasingPrice(),
-                        updateProductDto.getProductCategory(),
-                        id
-                );
-
-        if (exists) {
-            errors.add(ValidationErrorDto.builder()
-                    .field("name")
-                    .rejectedValue(updateProductDto.getName())
-                    .message("Produkt existiert bereits.")
-                    .build());
-        }
-
-        if (!errors.isEmpty()) {
-            throw new FieldValidationException(errors);
-        }
+        ProductCategory category = productCategoryService.getProductCategoryOrThrow(updateProductDto.getProductCategoryId());
+        UnitOfMeasurement unit = unitOfMeasurementService.getUnitOfMeasurementOrThrow(updateProductDto.getUnitOfMeasurementId());
 
         product.setName(updateProductDto.getName());
         product.setArticle(updateProductDto.getArticle());
@@ -141,145 +249,56 @@ public class ProductServiceImpl implements ProductService {
         product.setMarkupPercentage(updateProductDto.getMarkupPercentage());
         product.setSellingPrice(updateProductDto.getSellingPrice());
 
-        if (updateProductDto.getUnitOfMeasurementId() != null) {
-            try {
-                UnitOfMeasurement unit = unitOfMeasurementRepository
-                        .findById(updateProductDto.getUnitOfMeasurementId())
-                        .orElseThrow(() -> new EntityNotFoundException("Unit Of Measurement not found"));
-
-                product.setUnitOfMeasurement(unit);
-            } catch (IllegalArgumentException e) {
-                throw new RestApiException(
-                        ErrorDescription.INVALID_UNIT_OF_MEASUREMENT,
-                        HttpStatus.BAD_REQUEST
-                );
-            }
-        }
-
+        product.setUnitOfMeasurement(unit);
         product.setWeight(updateProductDto.getWeight());
 
         if (updateProductDto.getNewDimensions() != null) {
-            Dimensions dimensions = modelMapper.map(
-                    updateProductDto.getNewDimensions(),
-                    Dimensions.class
-            );
+            Dimensions dimensions = modelMapper.map(updateProductDto.getNewDimensions(), Dimensions.class);
             product.setDimensions(dimensions);
+        } else {
+            product.setDimensions(null);
         }
 
-        product.setProductCategory(updateProductDto.getProductCategory());
+        product.setProductCategory(category);
         product.setDescription(updateProductDto.getDescription());
         product.setCustomsNumber(updateProductDto.getCustomsNumber());
         product.setStorageLocation(updateProductDto.getStorageLocation());
-        product.setLastModifiedDate(LocalDateTime.now());
 
         Product updatedProduct = productRepository.save(product);
 
-        ProductDto productDto = modelMapper.map(updatedProduct, ProductDto.class);
-        NewDimensionsDto updatedDimensions = modelMapper.map(
-                updatedProduct.getDimensions(),
-                NewDimensionsDto.class
-        );
-        productDto.setNewDimensions(updatedDimensions);
-
-        return productDto;
+        return mapToProductDto(updatedProduct);
     }
+
+
+    @Override
+    @Transactional
+    public ProductDto updateProductArticle(Long id, UpdateProductArticleDto dto) {
+        Product product = getProductOrThrow(id);
+        product.setArticle(dto.getArticle().trim());
+        return mapToProductDto(product);
+    }
+
 
     @Override
     @Transactional(readOnly = true)
     public Page<ProductDto> findProducts(String searchTerm, Pageable pageable) {
-        Page<Product> productsPage;
-
-        if (StringUtils.hasText(searchTerm)) {
-            productsPage = productRepository.searchProductsPage(searchTerm, pageable);
-        } else {
-            productsPage = productRepository.findAll(pageable);
-        }
-
-        if (productsPage.isEmpty()) {
-            throw new RestApiException(ErrorDescription.LIST_PRODUCTS_IS_EMPTY, HttpStatus.NOT_FOUND);
-        }
+        Page<Product> productsPage =
+                StringUtils.hasText(searchTerm)
+                        ? productRepository.searchProductsPage(searchTerm, pageable)
+                        : productRepository.findAll(pageable);
 
         return mapToProductDtoPage(productsPage);
     }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<ProductDto> getAllProducts(String searchTerm) {
-        List<Product> products = StringUtils.hasText(searchTerm)
-                ? productRepository.searchProducts(searchTerm)
-                : productRepository.findAll();
-
-        if (products.isEmpty()) {
-            throw new RestApiException(ErrorDescription.LIST_PRODUCTS_IS_EMPTY, HttpStatus.NOT_FOUND);
-        }
-        return mapToProductDtoList(products);
-    }
-
 
     @Override
     @Transactional(readOnly = true)
     public Page<ProductDto> findProductsByCategoryId(Long categoryId, String searchTerm, Pageable pageable) {
-        Page<Product> productsPage;
-
-        if (StringUtils.hasText(searchTerm)) {
-            productsPage = productRepository.searchProductsByCategoryPage(categoryId, searchTerm, pageable);
-        } else {
-            productsPage = productRepository.findByProductCategory_Id(categoryId, pageable);
-        }
-
-        if (productsPage.isEmpty()) {
-            throw new RestApiException(ErrorDescription.LIST_PRODUCTS_IS_EMPTY, HttpStatus.NOT_FOUND);
-        }
+        Page<Product> productsPage =
+                StringUtils.hasText(searchTerm)
+                        ? productRepository.searchProductsByCategoryPage(categoryId, searchTerm, pageable)
+                        : productRepository.findByProductCategory_Id(categoryId, pageable);
 
         return mapToProductDtoPage(productsPage);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<ProductDto> getAllProductsByCategoryId(Long categoryId, String searchTerm) {
-        List<Product> products;
-
-        if (StringUtils.hasText(searchTerm)) {
-            products = productRepository.searchProductsByCategory(categoryId, searchTerm);
-        } else {
-            products = productRepository.findAllByProductCategory_Id(categoryId);
-        }
-
-        if (products.isEmpty()) {
-            throw new RestApiException(ErrorDescription.LIST_PRODUCTS_IS_EMPTY, HttpStatus.NOT_FOUND);
-        }
-
-        return products.stream().map(productDto -> modelMapper.map(productDto, ProductDto.class)).collect(Collectors.toList());
-    }
-
-
-    @Override
-    @Transactional(readOnly = true)
-    public ProductDto findProductByArticle(String article) {
-        Product product = productRepository.findProductByArticle(article)
-                .orElseThrow(() -> new RestApiException(ErrorDescription.PRODUCT_NOT_FOUND, HttpStatus.NOT_FOUND));
-
-        return mapToProductDto(product);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<ProductDto> findProductsByVendorArticle(String vendorArticle) {
-        List<Product> products = productRepository.findProductsByVendorArticle(vendorArticle);
-        if (products.isEmpty()) {
-            throw new RestApiException(ErrorDescription.LIST_PRODUCTS_IS_EMPTY, HttpStatus.NOT_FOUND);
-        }
-        return mapToProductDtoList(products);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<ProductDto> findProductsByName(String name) {
-        List<Product> products = productRepository.findProductsByName(name);
-        if (products.isEmpty()) {
-            throw new RestApiException(ErrorDescription.LIST_PRODUCTS_IS_EMPTY, HttpStatus.NOT_FOUND);
-        }
-        return mapToProductDtoList(products);
     }
 
     @Override
@@ -296,12 +315,43 @@ public class ProductServiceImpl implements ProductService {
         return productRepository.pickProducts(q, categoryId, PageRequest.of(0, safeLimit));
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProductPickDto> findSimilarProducts(String name, String vendorArticle) {
+        if (!StringUtils.hasText(name)) {
+            return List.of();
+        }
+        String normalizedName = name.trim();
+        String normalizedVendorArticle = StringUtils.hasText(vendorArticle) ? vendorArticle.trim() : null;
+
+        return productRepository.findSimilarProducts(normalizedName, normalizedVendorArticle);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProductPickDto> findSimilarProductsForUpdate(Long productId, String name, String article, String vendorArticle) {
+        getProductOrThrow(productId);
+        return productRepository.findSimilarProductsForUpdate(productId, normalizeNullable(name), normalizeNullable(article), normalizeNullable(vendorArticle));
+    }
+
+    private String normalizeNullable(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+
+        return value.trim();
+    }
+
     public Product getProductOrThrow(Long id) {
         return productRepository.findById(id)
                 .orElseThrow(() -> new RestApiException(ErrorDescription.PRODUCT_NOT_FOUND, HttpStatus.NOT_FOUND));
     }
 
     private Page<ProductDto> mapToProductDtoPage(Page<Product> productsPage) {
+
+        if (productsPage.isEmpty()) {
+            return productsPage.map(product -> modelMapper.map(product, ProductDto.class));
+        }
 
         List<Long> productIds = productsPage
                 .getContent()
@@ -317,33 +367,19 @@ public class ProductServiceImpl implements ProductService {
                 warehouseRepository.findAllByProduct_IdIn(productIds)
                         .stream()
                         .collect(Collectors.toMap(
-                                warehouse -> warehouse.getProduct().getId(),
-                                Warehouse::getQuantity
-                        ));
+                                warehouse -> warehouse.getProduct().getId(), Warehouse::getQuantity));
 
         return productsPage.map(product -> {
             ProductDto productDto = modelMapper.map(product, ProductDto.class);
 
             if (product.getDimensions() != null) {
-                NewDimensionsDto dimensionsDto =
-                        modelMapper.map(
-                                product.getDimensions(),
-                                NewDimensionsDto.class
-                        );
+                NewDimensionsDto dimensionsDto = modelMapper.map(product.getDimensions(), NewDimensionsDto.class);
 
                 productDto.setNewDimensions(dimensionsDto);
             }
 
-            productDto.setHasPhoto(
-                    productIdsWithPhotos.contains(product.getId())
-            );
-
-            productDto.setQuantity(
-                    quantityByProductId.getOrDefault(
-                            product.getId(),
-                            BigDecimal.ZERO
-                    )
-            );
+            productDto.setHasPhoto(productIdsWithPhotos.contains(product.getId()));
+            productDto.setQuantity(quantityByProductId.getOrDefault(product.getId(), BigDecimal.ZERO));
 
             return productDto;
         });
@@ -376,11 +412,5 @@ public class ProductServiceImpl implements ProductService {
         productDto.setQuantity(quantity);
 
         return productDto;
-    }
-
-    private List<ProductDto> mapToProductDtoList(List<Product> products) {
-        return products.stream()
-                .map(this::mapToProductDto)
-                .toList();
     }
 }
