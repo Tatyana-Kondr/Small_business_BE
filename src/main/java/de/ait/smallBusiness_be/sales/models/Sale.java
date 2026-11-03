@@ -4,10 +4,7 @@ import de.ait.smallBusiness_be.customers.model.Customer;
 import de.ait.smallBusiness_be.purchases.model.PaymentStatus;
 import de.ait.smallBusiness_be.purchases.model.TypeOfOperation;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.Digits;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.PastOrPresent;
+import jakarta.validation.constraints.*;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -57,11 +54,14 @@ public class Sale {
     @Embedded
     private ShippingDimensions shippingDimensions;
 
-    @ManyToOne
-    @JoinColumn(name = "term_of_payment_id")
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "term_of_payment_id", nullable = false)
+    @NotNull(message = "{validation.notNull}")
     private TermOfPayment termsOfPayment;
 
-    @Column
+    @Column(nullable = false)
+    @NotNull(message = "{validation.notNull}")
+    @PastOrPresent(message = "{validation.date.pastOrPresent}")
     private LocalDate salesDate;
 
     @Column(nullable = false)
@@ -69,7 +69,7 @@ public class Sale {
     private PaymentStatus paymentStatus;
 
     @Column
-    @PastOrPresent
+    @PastOrPresent(message = "{validation.date.pastOrPresent}")
     private LocalDate paymentDate;
 
     @Column
@@ -84,32 +84,24 @@ public class Sale {
     @Column
     private String deliveryBill;
 
-    @Column(precision = 2)
-    @DecimalMin(value = "0", message = "{validation.tax.min}")
-    private BigDecimal defaultDiscount;
-
-    @Column(precision = 8, scale = 2)
-    @DecimalMin(value = "0.0", message = "{validation.price.min}")
-    @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
+    @Column(nullable = false, precision = 12, scale = 2)
+    @DecimalMin(value = "0.0", message = "{validation.money.min}")
+    @Digits(integer = 10, fraction = 2, message = "{validation.amount.digits}")
     private BigDecimal discountAmount;
 
-    @Column(precision = 8, scale = 2)
-    @DecimalMin(value = "0.0", message = "{validation.price.min}")
-    @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
+    @Column(nullable = false, precision = 12, scale = 2)
+    @DecimalMin(value = "0.0", message = "{validation.money.min}")
+    @Digits(integer = 10, fraction = 2, message = "{validation.amount.digits}")
     private BigDecimal totalPrice;// (количество*цена-скидка)
 
-    @Column(precision = 2)
-    @DecimalMin(value = "0", message = "{validation.tax.min}")
-    private BigDecimal defaultTax;
-
-    @Column(precision = 8, scale = 2)
-    @DecimalMin(value = "0.0", message = "{validation.price.min}")
-    @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
+    @Column(nullable = false, precision = 12, scale = 2)
+    @DecimalMin(value = "0.0", message = "{validation.money.min}")
+    @Digits(integer = 10, fraction = 2, message = "{validation.amount.digits}")
     private BigDecimal taxAmount;
 
-    @Column(precision = 8, scale = 2)
-    @DecimalMin(value = "0.0", message = "{validation.price.min}")
-    @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
+    @Column(nullable = false, precision = 12, scale = 2)
+    @DecimalMin(value = "0.0", message = "{validation.money.min}")
+    @Digits(integer = 10, fraction = 2, message = "{validation.amount.digits}")
     private BigDecimal totalAmount; // (количество*цена-скидка) + налог
 
     @OneToMany(mappedBy = "sale", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)

@@ -8,6 +8,7 @@ import de.ait.smallBusiness_be.customers.services.CustomerService;
 import de.ait.smallBusiness_be.exceptions.RestApiException;
 import de.ait.smallBusiness_be.payments.dao.PaymentRepository;
 import de.ait.smallBusiness_be.payments.model.Payment;
+import de.ait.smallBusiness_be.payments.model.PaymentType;
 import de.ait.smallBusiness_be.products.model.Product;
 import de.ait.smallBusiness_be.products.service.ProductService;
 import de.ait.smallBusiness_be.purchases.model.PaymentStatus;
@@ -22,11 +23,13 @@ import de.ait.smallBusiness_be.sales.models.Sale;
 import de.ait.smallBusiness_be.sales.models.Shipping;
 import de.ait.smallBusiness_be.sales.models.TermOfPayment;
 import de.ait.smallBusiness_be.sales.services.DocumentService;
+import de.ait.smallBusiness_be.sales.services.TermOfPaymentService;
 import de.ait.smallBusiness_be.sales.services.impl.SaleServiceImpl;
 import de.ait.smallBusiness_be.warehouse.services.WarehouseService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -45,15 +48,24 @@ import static org.mockito.Mockito.lenient;
 @ExtendWith(MockitoExtension.class)
 class SaleServiceImplTest {
 
-    @Mock private SaleRepository saleRepository;
-    @Mock private PaymentRepository paymentRepository;
-    @Mock private ShippingRepository shippingRepository;
-    @Mock private TermOfPaymentRepository termOfPaymentRepository;
-    @Mock private CustomerService customerService;
-    @Mock private ProductService productService;
-    @Mock private DocumentService invoiceService;
-    @Mock private WarehouseService warehouseService;
-    @Mock private ModelMapper modelMapper;
+    @Mock
+    private SaleRepository saleRepository;
+    @Mock
+    private PaymentRepository paymentRepository;
+    @Mock
+    private ShippingRepository shippingRepository;
+    @Mock
+    private TermOfPaymentService termOfPaymentService;
+    @Mock
+    private CustomerService customerService;
+    @Mock
+    private ProductService productService;
+    @Mock
+    private DocumentService invoiceService;
+    @Mock
+    private WarehouseService warehouseService;
+    @Mock
+    private ModelMapper modelMapper;
 
     @InjectMocks
     private SaleServiceImpl saleService;
@@ -92,7 +104,7 @@ class SaleServiceImplTest {
         itemDto.setUnitPrice(BigDecimal.valueOf(50));
         itemDto.setDiscount(BigDecimal.valueOf(10));
         itemDto.setTax(BigDecimal.valueOf(5));
-        itemDto.setPosition(1);
+
 
         sale = new Sale();
         sale.setId(1L);
@@ -105,8 +117,6 @@ class SaleServiceImplTest {
         sale.setPaymentStatus(PaymentStatus.OFFEN);
         sale.setSalesDate(LocalDate.now());
         sale.setDeliveryDate(LocalDate.now());
-        sale.setDefaultTax(BigDecimal.valueOf(19));
-        sale.setDefaultDiscount(BigDecimal.ZERO);
         sale.setTotalAmount(BigDecimal.valueOf(100));
         sale.setSaleItems(new ArrayList<>());
 
@@ -115,11 +125,8 @@ class SaleServiceImplTest {
         newSaleDto.setShippingId(shipping.getId());
         newSaleDto.setTermsOfPaymentId(termOfPayment.getId());
         newSaleDto.setTypeOfOperation(TypeOfOperation.VERKAUF);
-        newSaleDto.setPaymentStatus(PaymentStatus.OFFEN);
         newSaleDto.setSalesDate(LocalDate.now());
         newSaleDto.setDeliveryDate(LocalDate.now());
-        newSaleDto.setDefaultTax(BigDecimal.valueOf(19));
-        newSaleDto.setDefaultDiscount(BigDecimal.ZERO);
         newSaleDto.setSalesItems(List.of(itemDto));
 
         lenient()
@@ -146,14 +153,16 @@ class SaleServiceImplTest {
         Path invoiceTemp = Path.of("invoice-temp.pdf");
         Path deliveryTemp = Path.of("delivery-temp.pdf");
 
+        ArgumentCaptor<Sale> saleCaptor = ArgumentCaptor.forClass(Sale.class);
+
         when(customerService.getCustomerOrThrow(customer.getId()))
                 .thenReturn(customer);
 
         when(shippingRepository.findById(shipping.getId()))
                 .thenReturn(Optional.of(shipping));
 
-        when(termOfPaymentRepository.findById(termOfPayment.getId()))
-                .thenReturn(Optional.of(termOfPayment));
+        when(termOfPaymentService.getTermOfPaymentOrThrow(termOfPayment.getId()))
+                .thenReturn(termOfPayment);
 
         when(productService.getProductOrThrow(product.getId()))
                 .thenReturn(product);
@@ -187,38 +196,133 @@ class SaleServiceImplTest {
         assertNotNull(result.getInvoiceNumber());
         assertNotNull(result.getDeliveryBill());
 
-        verify(saleRepository).saveAndFlush(any(Sale.class));
+        verify(saleRepository).saveAndFlush(saleCaptor.capture());
 
-        verify(invoiceService).generateInvoiceTempPdf(
-                any(Sale.class),
-                eq("invoices")
+        Sale savedSale = saleCaptor.getValue();
+
+        assertEquals(
+                0,
+                new BigDecimal("10.00")
+                        .compareTo(savedSale.getDiscountAmount())
         );
 
-        verify(invoiceService).generateDeliveryBillTempPdf(
-                any(Sale.class),
-                eq("delivery-bill")
+        assertEquals(
+                0,
+                new BigDecimal("90.00")
+                        .compareTo(savedSale.getTotalPrice())
         );
 
-        verify(invoiceService).replaceInvoicePdf(
-                any(Sale.class),
-                eq("invoices"),
-                eq(invoiceTemp)
+        assertEquals(
+                0,
+                new BigDecimal("4.50")
+                        .compareTo(savedSale.getTaxAmount())
         );
 
-        verify(invoiceService).replaceDeliveryBillPdf(
-                any(Sale.class),
-                eq("delivery-bill"),
-                eq(deliveryTemp)
+        assertEquals(
+                0,
+                new BigDecimal("94.50")
+                        .compareTo(savedSale.getTotalAmount())
         );
 
-        verify(warehouseService).recordOperation(
-                eq(product),
-                eq(TypeOfOperation.VERKAUF),
-                eq(itemDto.getQuantity()),
-                eq(1L),
-                eq(customer),
-                eq(newSaleDto.getSalesDate())
+        assertEquals(1, savedSale.getSaleItems().size());
+
+        var item = savedSale.getSaleItems().get(0);
+
+        assertEquals(1, item.getPosition());
+        assertEquals(product, item.getProduct());
+        assertEquals(product.getName(), item.getProductName());
+
+        assertEquals(
+                0,
+                new BigDecimal("2")
+                        .compareTo(item.getQuantity())
         );
+
+        assertEquals(
+                0,
+                new BigDecimal("50")
+                        .compareTo(item.getUnitPrice())
+        );
+
+        assertEquals(
+                0,
+                new BigDecimal("10")
+                        .compareTo(item.getDiscount())
+        );
+
+        assertEquals(
+                0,
+                new BigDecimal("10.00")
+                        .compareTo(item.getDiscountAmount())
+        );
+
+        assertEquals(
+                0,
+                new BigDecimal("90.00")
+                        .compareTo(item.getTotalPrice())
+        );
+
+        assertEquals(
+                0,
+                new BigDecimal("5")
+                        .compareTo(item.getTax())
+        );
+
+        assertEquals(
+                0,
+                new BigDecimal("4.50")
+                        .compareTo(item.getTaxAmount())
+        );
+
+        assertEquals(
+                0,
+                new BigDecimal("94.50")
+                        .compareTo(item.getTotalAmount())
+        );
+        // --- Repository ---
+
+        verify(saleRepository)
+                .saveAndFlush(any(Sale.class));
+
+        // --- PDF ---
+
+        verify(invoiceService)
+                .generateInvoiceTempPdf(
+                        any(Sale.class),
+                        eq("invoices")
+                );
+
+        verify(invoiceService)
+                .generateDeliveryBillTempPdf(
+                        any(Sale.class),
+                        eq("delivery-bill")
+                );
+
+        verify(invoiceService)
+                .replaceInvoicePdf(
+                        any(Sale.class),
+                        eq("invoices"),
+                        eq(invoiceTemp)
+                );
+
+        verify(invoiceService)
+                .replaceDeliveryBillPdf(
+                        any(Sale.class),
+                        eq("delivery-bill"),
+                        eq(deliveryTemp)
+                );
+
+        // --- Warehouse ---
+
+        verify(warehouseService)
+                .recordOperation(
+                        eq(product),
+                        eq(TypeOfOperation.VERKAUF),
+                        eq(itemDto.getQuantity()),
+                        eq(1L),
+                        eq(customer),
+                        eq(newSaleDto.getSalesDate())
+                );
     }
 
     @Test
@@ -232,8 +336,8 @@ class SaleServiceImplTest {
         when(shippingRepository.findById(shipping.getId()))
                 .thenReturn(Optional.of(shipping));
 
-        when(termOfPaymentRepository.findById(termOfPayment.getId()))
-                .thenReturn(Optional.of(termOfPayment));
+        when(termOfPaymentService.getTermOfPaymentOrThrow(termOfPayment.getId()))
+                .thenReturn(termOfPayment);
 
         when(productService.getProductOrThrow(itemDto.getProductId()))
                 .thenReturn(product);
@@ -294,13 +398,9 @@ class SaleServiceImplTest {
         dto.setTermsOfPaymentId(termOfPayment.getId());
 
         dto.setTypeOfOperation(TypeOfOperation.VERKAUF);
-        dto.setPaymentStatus(PaymentStatus.OFFEN);
 
         dto.setSalesDate(LocalDate.now());
         dto.setDeliveryDate(LocalDate.now());
-
-        dto.setDefaultTax(BigDecimal.valueOf(19));
-        dto.setDefaultDiscount(BigDecimal.ZERO);
 
         dto.setSalesItems(List.of(itemDto));
 
@@ -310,8 +410,8 @@ class SaleServiceImplTest {
         when(shippingRepository.findById(shipping.getId()))
                 .thenReturn(Optional.of(shipping));
 
-        when(termOfPaymentRepository.findById(termOfPayment.getId()))
-                .thenReturn(Optional.of(termOfPayment));
+        when(termOfPaymentService.getTermOfPaymentOrThrow(termOfPayment.getId()))
+                .thenReturn(termOfPayment);
 
         when(saleRepository.findLastInvoiceSequenceForYear(anyInt()))
                 .thenReturn(0);
@@ -350,6 +450,11 @@ class SaleServiceImplTest {
         LocalDate existingPaymentDate = LocalDate.now().minusDays(2);
         sale.setPaymentDate(existingPaymentDate);
 
+        Payment existingPayment = new Payment();
+        existingPayment.setType(PaymentType.EINNAHME);
+        existingPayment.setAmount(BigDecimal.valueOf(20));
+        existingPayment.setPaymentDate(existingPaymentDate);
+
         NewSaleDto updateDto = new NewSaleDto();
         updateDto.setCustomerId(customer.getId());
         updateDto.setShippingId(shipping.getId());
@@ -359,21 +464,11 @@ class SaleServiceImplTest {
         updateDto.setDeliveryBill("LF2026002");
 
         updateDto.setTypeOfOperation(TypeOfOperation.VERKAUF);
-        updateDto.setPaymentStatus(PaymentStatus.OFFEN);
 
         updateDto.setSalesDate(LocalDate.now());
         updateDto.setDeliveryDate(LocalDate.now().plusDays(2));
 
-        updateDto.setDefaultTax(BigDecimal.valueOf(19));
-        updateDto.setDefaultDiscount(BigDecimal.ZERO);
-
         updateDto.setSalesItems(List.of(itemDto));
-
-        /*
-         * Даже если DTO содержит другую paymentDate,
-         * updateSale не должен её применять.
-         */
-        updateDto.setPaymentDate(LocalDate.now());
 
         sale.setSaleItems(new ArrayList<>());
 
@@ -386,14 +481,17 @@ class SaleServiceImplTest {
         when(shippingRepository.findById(shipping.getId()))
                 .thenReturn(Optional.of(shipping));
 
-        when(termOfPaymentRepository.findById(termOfPayment.getId()))
-                .thenReturn(Optional.of(termOfPayment));
+        when(termOfPaymentService.getTermOfPaymentOrThrow(termOfPayment.getId()))
+                .thenReturn(termOfPayment);
 
         when(productService.getProductOrThrow(product.getId()))
                 .thenReturn(product);
 
         when(saleRepository.saveAndFlush(any(Sale.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
+
+        when(paymentRepository.findBySaleId(1L))
+                .thenReturn(List.of(existingPayment));
 
         when(invoiceService.generateInvoiceTempPdf(
                 any(Sale.class),
@@ -413,13 +511,65 @@ class SaleServiceImplTest {
         assertEquals(existingPaymentDate, sale.getPaymentDate());
 
         assertEquals(TypeOfOperation.VERKAUF, sale.getTypeOfOperation());
-        assertEquals(PaymentStatus.OFFEN, sale.getPaymentStatus());
-
-        assertEquals(BigDecimal.valueOf(19), sale.getDefaultTax());
-        assertEquals(BigDecimal.ZERO, sale.getDefaultDiscount());
+        assertEquals(PaymentStatus.ANZAHLUNG, sale.getPaymentStatus());
 
         assertEquals(1, sale.getSaleItems().size());
         assertEquals(product, sale.getSaleItems().get(0).getProduct());
+
+        var updatedItem = sale.getSaleItems().get(0);
+
+        assertEquals(1, updatedItem.getPosition());
+
+        assertEquals(
+                0,
+                new BigDecimal("10.00")
+                        .compareTo(updatedItem.getDiscountAmount())
+        );
+
+        assertEquals(
+                0,
+                new BigDecimal("90.00")
+                        .compareTo(updatedItem.getTotalPrice())
+        );
+
+        assertEquals(
+                0,
+                new BigDecimal("4.50")
+                        .compareTo(updatedItem.getTaxAmount())
+        );
+
+        assertEquals(
+                0,
+                new BigDecimal("94.50")
+                        .compareTo(updatedItem.getTotalAmount())
+        );
+
+
+// Sale aggregate totals
+
+        assertEquals(
+                0,
+                new BigDecimal("10.00")
+                        .compareTo(sale.getDiscountAmount())
+        );
+
+        assertEquals(
+                0,
+                new BigDecimal("90.00")
+                        .compareTo(sale.getTotalPrice())
+        );
+
+        assertEquals(
+                0,
+                new BigDecimal("4.50")
+                        .compareTo(sale.getTaxAmount())
+        );
+
+        assertEquals(
+                0,
+                new BigDecimal("94.50")
+                        .compareTo(sale.getTotalAmount())
+        );
 
         verify(saleRepository).saveAndFlush(sale);
 
@@ -470,8 +620,8 @@ class SaleServiceImplTest {
         when(shippingRepository.findById(shipping.getId()))
                 .thenReturn(Optional.of(shipping));
 
-        when(termOfPaymentRepository.findById(termOfPayment.getId()))
-                .thenReturn(Optional.of(termOfPayment));
+        when(termOfPaymentService.getTermOfPaymentOrThrow(termOfPayment.getId()))
+                .thenReturn(termOfPayment);
 
         when(productService.getProductOrThrow(product.getId()))
                 .thenReturn(product);
@@ -530,41 +680,53 @@ class SaleServiceImplTest {
 
     @Test
     void updatePaymentStatus_fullPaid_setsBEZAHLT_andPaymentDate() {
+
         sale.setTotalAmount(BigDecimal.valueOf(100));
         sale.setPaymentStatus(PaymentStatus.OFFEN);
 
         Payment payment = new Payment();
+        payment.setType(PaymentType.EINNAHME);
         payment.setAmount(BigDecimal.valueOf(100));
+
         LocalDate payDate = LocalDate.now();
         payment.setPaymentDate(payDate);
 
         when(saleRepository.findById(1L)).thenReturn(Optional.of(sale));
+
         when(paymentRepository.findBySaleId(1L)).thenReturn(List.of(payment));
-        when(saleRepository.save(any(Sale.class))).thenReturn(sale);
 
         SaleDto result = saleService.updatePaymentStatus(1L);
 
         assertNotNull(result);
         assertEquals(PaymentStatus.BEZAHLT, sale.getPaymentStatus());
         assertEquals(payDate, sale.getPaymentDate());
-        verify(saleRepository).save(any(Sale.class));
+
+        verify(paymentRepository, times(2)).findBySaleId(1L);
+
+        verify(saleRepository, never()).save(any(Sale.class));
     }
 
     @Test
     void updatePaymentStatus_noPayments_setsOFFEN() {
+
         sale.setTotalAmount(BigDecimal.valueOf(100));
-        sale.setPaymentStatus(PaymentStatus.BEZAHLT); // было оплачено
+        sale.setPaymentStatus(PaymentStatus.BEZAHLT);
+        sale.setPaymentDate(LocalDate.now().minusDays(2));
 
         when(saleRepository.findById(1L)).thenReturn(Optional.of(sale));
+
         when(paymentRepository.findBySaleId(1L)).thenReturn(List.of());
 
-        // так как статус не поменяется (с BEZAHLT на OFFEN логика не меняет)
         SaleDto result = saleService.updatePaymentStatus(1L);
 
         assertNotNull(result);
-        assertEquals(PaymentStatus.OFFEN, sale.getPaymentStatus());
-        verify(saleRepository).save(any(Sale.class));
 
+        assertEquals(PaymentStatus.OFFEN, sale.getPaymentStatus());
+        assertNull(sale.getPaymentDate());
+
+        verify(paymentRepository, times(2)).findBySaleId(1L);
+
+        verify(saleRepository, never()).save(any(Sale.class));
     }
 
     // ---------------------------------------
@@ -573,48 +735,33 @@ class SaleServiceImplTest {
 
     @Test
     void getAllSales_returnsPage() {
-        Pageable pageable =
-                PageRequest.of(
-                        0,
-                        10,
-                        Sort.by("salesDate").descending()
-                );
+        Pageable pageable = PageRequest.of(0, 10, Sort.by("salesDate").descending());
 
-        Page<Sale> salesPage =
-                new PageImpl<>(List.of(sale));
+        Page<Sale> salesPage = new PageImpl<>(List.of(sale));
 
-        when(saleRepository.findAllWithSorting(pageable))
-                .thenReturn(salesPage);
+        when(saleRepository.findAllWithSorting(pageable)).thenReturn(salesPage);
 
-        Page<SaleDto> result =
-                saleService.getAllSales(pageable);
+        Page<SaleDto> result = saleService.getAllSales(pageable);
 
         assertNotNull(result);
         assertEquals(1, result.getContent().size());
 
-        verify(saleRepository)
-                .findAllWithSorting(pageable);
+        verify(saleRepository).findAllWithSorting(pageable);
     }
 
     @Test
-    void getAllSales_empty_throwsRestApiException() {
-        Pageable pageable =
-                PageRequest.of(
-                        0,
-                        10,
-                        Sort.by("salesDate").descending()
-                );
+    void getAllSales_empty_returnsEmptyPage() {
+        Pageable pageable = PageRequest.of(0, 10, Sort.by("salesDate").descending());
 
-        when(saleRepository.findAllWithSorting(pageable))
-                .thenReturn(Page.empty());
+        when(saleRepository.findAllWithSorting(pageable)).thenReturn(Page.empty());
 
-        assertThrows(
-                RestApiException.class,
-                () -> saleService.getAllSales(pageable)
-        );
+        Page<SaleDto> result = saleService.getAllSales(pageable);
 
-        verify(saleRepository)
-                .findAllWithSorting(pageable);
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        assertEquals(0, result.getTotalElements());
+
+        verify(saleRepository).findAllWithSorting(pageable);
     }
 
     // ---------------------------------------
@@ -665,17 +812,18 @@ class SaleServiceImplTest {
 
     @Test
     void deleteSale_success() {
-        when(saleRepository.findById(1L)).thenReturn(Optional.of(sale));
 
-        doNothing().when(invoiceService).deleteInvoicePdf(any(Sale.class), anyString());
-        doNothing().when(invoiceService).deleteDeliveryBillPdf(any(Sale.class), anyString());
-        doNothing().when(warehouseService).rollbackDocument(anyLong());
+        when(saleRepository.findById(1L)).thenReturn(Optional.of(sale));
 
         saleService.deleteSale(1L);
 
         verify(invoiceService).deleteInvoicePdf(sale, "invoices");
+
         verify(invoiceService).deleteDeliveryBillPdf(sale, "delivery-bill");
-        verify(warehouseService).rollbackDocument(1L);
+
+        verify(warehouseService)
+                .rollbackDocument(eq(1L), eq(List.of(TypeOfOperation.VERKAUF, TypeOfOperation.KUNDENERSTATTUNG)));
+
         verify(saleRepository).delete(sale);
     }
 

@@ -29,16 +29,18 @@ public class SaleDto {
     TermOfPayment termsOfPayment;
     LocalDate salesDate;
     PaymentStatus paymentStatus;
+    boolean hasPayments;
     LocalDate paymentDate;
     String orderNumber;
     String orderType;
     LocalDate deliveryDate;
     String deliveryBill;
-    BigDecimal defaultDiscount;
     BigDecimal discountAmount;
     BigDecimal totalPrice;
-    BigDecimal defaultTax;
     BigDecimal taxAmount;
     BigDecimal totalAmount;
+    BigDecimal totalPaid;    // Уже оплачено
+    BigDecimal remaining;    // Осталось оплатить
+    BigDecimal overpayment;  // Переплата
     List<SaleItemDto> saleItems;
 }
