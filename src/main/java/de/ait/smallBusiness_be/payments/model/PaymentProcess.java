@@ -3,6 +3,7 @@ package de.ait.smallBusiness_be.payments.model;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 
 @Getter
@@ -19,7 +20,8 @@ public class PaymentProcess {
     private Long id;
 
     @NotBlank(message = "{validation.notBlank}")
-    @Column(name = "process_name", unique = true, nullable = false)
+    @Size(max = 30, message = "{validation.max.size}")
+    @Column(name = "process_name", unique = true, nullable = false, length = 30)
     @Schema(description = "Name of the payment process (e.g. 'Bank Transfer', 'Card payment', 'PayPal')", example = "Kartenzahlung")
     private String processName;
 }

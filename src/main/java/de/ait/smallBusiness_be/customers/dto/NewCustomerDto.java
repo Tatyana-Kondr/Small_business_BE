@@ -2,6 +2,7 @@ package de.ait.smallBusiness_be.customers.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.annotation.Nullable;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -22,15 +23,17 @@ import static de.ait.smallBusiness_be.constaints.EntityValidationConstants.*;
 @Schema(name = "New Customer", description = "Data for registration of new customers")
 public class NewCustomerDto {
 
-    @NotBlank(message = "validation.notBlank")
-    @Size(min = 3, max = 100, message = "{validation.name.size}")
+    @NotBlank(message = "{validation.notBlank}")
+    @Size(min = 2, max = 200, message = "{validation.name.size}")
     @Schema(description = "Customer's name", example = "Amazon")
     String name;
 
-    @Size( max = 6, message = "{validation.name.size}")
+    @Size(max = 6, message = "{validation.customerNumber.size}")
     @Schema(description = "Customer's number", example = "12345")
     String customerNumber;
 
+    @Valid
+    @NotNull(message = "{validation.notNull}")
     AddressDto addressDto;
 
     @Pattern(regexp = PHONE_REGEX, message = "{phone.Pattern.message}")

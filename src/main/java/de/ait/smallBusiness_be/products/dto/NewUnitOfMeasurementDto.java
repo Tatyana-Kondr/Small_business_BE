@@ -16,7 +16,7 @@ import lombok.Setter;
 public class NewUnitOfMeasurementDto {
 
     @NotBlank(message = "{validation.notBlank}")
-    @Size(max = 20, message = "Name must not exceed 20 characters")
-    @Schema(description = "Name of the unit of measurement", example = "ST", required = true)
-    String name;
+    @Size(max = 20, message = "{validation.max.size}")
+    @Schema(description = "Name of the unit of measurement", example = "ST")
+    private String name;
 }

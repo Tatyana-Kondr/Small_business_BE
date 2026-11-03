@@ -19,16 +19,17 @@ public class PaymentMethod {
     private Long id;
 
     @NotBlank(message = "{validation.notBlank}")
-    @Size(max = 50, message = "Provider must not exceed 50 characters")
-    @Column(nullable = false)
-    private String provider;  // Например, Visa, Mastercard, Альфа-Банк
+    @Size(max = 50, message = "{validation.max.size}")
+    @Column(nullable = false, length = 50)
+    private String provider;
 
-    @Size(max = 30, message = "Masked number must not exceed 30 characters")
-    @Column(name = "masked_number")
-    private String maskedNumber;  // **** **** **** 1234 или банковский счёт
+    @Size(max = 30, message = "{validation.max.size}")
+    @Column(name = "masked_number", length = 30)
+    private String maskedNumber;
 
-    @Size(max = 50, message = "Details must not exceed 50 characters")
-    private String details;  // Например: срок действия, комментарий
+    @Size(max = 50, message = "{validation.max.size}")
+    @Column(length = 50)
+    private String details;
 
     @Column(nullable = false)
     private boolean active;

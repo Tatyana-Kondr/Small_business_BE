@@ -18,12 +18,12 @@ public class NewProductCategoryDto{
     @Size(min = 3, max = 50, message = "{validation.name.size}")
     @Pattern(regexp = NAME_REGEX, message = "{name.Pattern.message}")
     @Schema(description = "Product category name", example = "ELEKTRIK")
-    String name;
+    private String name;
 
     @NotBlank(message = "{validation.notBlank}")
-    @Size(min = 2, max = 5, message = "{validation.name.size}")
-    @Pattern(regexp = NAME_REGEX, message = "{name.Pattern.message}")
+    @Size(min = 2, max = 6, message = "{validation.name.size}")
+    @Pattern(regexp = "^[A-Za-z0-9]+$", message = "{validation.artName.pattern}")
     @Schema(description = "Product category article name", example = "EL")
-    String artName;
+    private String artName;
 
 }

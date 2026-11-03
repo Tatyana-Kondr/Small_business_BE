@@ -27,31 +27,36 @@ public class NewProductDto{
     @Schema(description = "Product's name", example = "Lampe")
     String name;
 
-    @Size( max = 50, message = "{validation.article.size}")
+    @Size( max = 30, message = "{validation.article.size}")
     @Schema(description = "Product's vendor article", example = "ab123")
     String vendorArticle;
 
-    @DecimalMin(value = "0.0", message = "{validation.price.min}")
+    @DecimalMin(value = "0.0", message = "{validation.money.min}")
     @Digits(integer = 10, fraction = 2, message = "{validation.price.digits}")
     @Schema(description = "Product's purchasing price", example = "20.0")
     BigDecimal purchasingPrice;
 
-    @DecimalMin(value = "0.0", message = "{validation.tax.min}")
-    @Schema(description = "Markup percentage", example = "20")
+    @DecimalMin(value = "0.0", message = "{validation.percentage.min}")
+    @Digits(integer = 3, fraction = 2, message = "{validation.digits}")
+    @Schema(description = "Markup percentage", example = "20.00")
     BigDecimal markupPercentage;
 
-    @DecimalMin(value = "0.0", message = "{validation.price.min}")
+    @DecimalMin(value = "0.0", message = "{validation.money.min}")
     @Digits(integer = 10, fraction = 2, message = "{validation.price.digits}")
     @Schema(description = "Product's purchasing price", example = "20.0")
     BigDecimal sellingPrice;
 
-    @Schema(description = "Product's category", example = "Electronics")
-    ProductCategory productCategory;
+    @NotNull(message = "{validation.notNull}")
+    @Positive(message = "{validation.positive}")
+    @Schema(description = "Product category ID", example = "1")
+    Long productCategoryId;
 
     @NotNull(message = "{validation.notNull}")
+    @Positive(message = "{validation.positive}")
     @Schema(description = "Unit Of Measurement", example = "ST")
     Long unitOfMeasurementId;
 
+    @Size(max = 30, message = "{validation.max.size}")
     @Schema(description = "Product storage location", example = "L1, p-11")
     String storageLocation;
 }
