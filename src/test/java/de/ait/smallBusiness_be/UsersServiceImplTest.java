@@ -1,5 +1,6 @@
 package de.ait.smallBusiness_be;
 
+import de.ait.smallBusiness_be.exceptions.ErrorDescription;
 import de.ait.smallBusiness_be.exceptions.RestApiException;
 import de.ait.smallBusiness_be.users.dao.UserRepository;
 import de.ait.smallBusiness_be.users.dto.ChangePasswordDto;
@@ -171,7 +172,7 @@ class UsersServiceImplTest {
                 () -> usersService.changePassword(1L, dto, principal));
 
         assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
-        assertTrue(ex.getMessage().contains("Invalid password"));
+        assertEquals(ErrorDescription.INVALID_OLD_PASSWORD.getDescription(), ex.getMessage());
     }
 
     @Test
@@ -187,4 +188,193 @@ class UsersServiceImplTest {
         assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
         assertTrue(ex.getMessage().contains("Invalid user role"));
     }
+
+
+    @Test
+    void getAllUsers_empty_returnsEmptyList() {
+        when(usersRepository.findAll()).thenReturn(List.of());
+
+        List<UserDto> result = usersService.getAllUsers();
+
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(modelMapper);
+    }
+
+    @Test
+    void updateUserById_usernameAlreadyExists_throws() {
+        User admin = new User();
+        admin.setId(2L);
+        admin.setUsername("admin");
+        admin.setRole(Role.ADMIN);
+
+        UpdateUserDto dto = new UpdateUserDto();
+        dto.setUsername("existingUser");
+
+        when(usersRepository.findByUsername("admin")).thenReturn(Optional.of(admin));
+        when(usersRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(usersRepository.existsByUsername("existingUser")).thenReturn(true);
+
+        RestApiException ex = assertThrows(
+                RestApiException.class,
+                () -> usersService.updateUserById(1L, dto, principal)
+        );
+
+        assertEquals(HttpStatus.CONFLICT, ex.getStatus());
+        assertEquals("testuser", user.getUsername());
+        verify(usersRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void updateUserById_emailAlreadyExists_throws() {
+        User admin = new User();
+        admin.setId(2L);
+        admin.setUsername("admin");
+        admin.setRole(Role.ADMIN);
+
+        user.setEmail("old@email.com");
+
+        UpdateUserDto dto = new UpdateUserDto();
+        dto.setEmail("existing@email.com");
+
+        when(usersRepository.findByUsername("admin")).thenReturn(Optional.of(admin));
+        when(usersRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(usersRepository.existsByEmail("existing@email.com")).thenReturn(true);
+
+        RestApiException ex = assertThrows(RestApiException.class,
+                () -> usersService.updateUserById(1L, dto, principal)
+        );
+
+        assertEquals(HttpStatus.CONFLICT, ex.getStatus());
+        assertEquals("old@email.com", user.getEmail());
+        verify(usersRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void updateUserById_emailWasNull_success() {
+        User admin = new User();
+        admin.setId(2L);
+        admin.setUsername("admin");
+        admin.setRole(Role.ADMIN);
+
+        user.setEmail(null);
+
+        UpdateUserDto dto = new UpdateUserDto();
+        dto.setEmail("new@email.com");
+
+        when(usersRepository.findByUsername("admin")).thenReturn(Optional.of(admin));
+        when(usersRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(modelMapper.map(user, UserDto.class)).thenReturn(userDto);
+
+        UserDto result = usersService.updateUserById(1L, dto, principal);
+
+        assertNotNull(result);
+        assertEquals("new@email.com", user.getEmail());
+        verify(usersRepository).save(user);
+    }
+
+    @Test
+    void updateUserRole_success() {
+        UpdateUserRoleDto dto = new UpdateUserRoleDto();
+        dto.setRole("ADMIN");
+
+        when(usersRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(usersRepository.save(user)).thenReturn(user);
+        when(modelMapper.map(user, UserDto.class)).thenReturn(userDto);
+
+        UserDto result = usersService.updateUserRole(1L, dto);
+
+        assertNotNull(result);
+        assertEquals(Role.ADMIN, user.getRole());
+        verify(usersRepository).save(user);
+    }
+
+    @Test
+    void updateUserRole_blankRole_throws() {
+        UpdateUserRoleDto dto = new UpdateUserRoleDto();
+        dto.setRole(" ");
+
+        when(usersRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        RestApiException ex = assertThrows(RestApiException.class,
+                () -> usersService.updateUserRole(1L, dto));
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
+        verify(usersRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void updateUserRole_userNotFound_throws() {
+        UpdateUserRoleDto dto = new UpdateUserRoleDto();
+        dto.setRole("ADMIN");
+
+        when(usersRepository.findById(1L)).thenReturn(Optional.empty());
+
+        RestApiException ex = assertThrows(RestApiException.class,
+                () -> usersService.updateUserRole(1L, dto));
+
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatus());
+    }
+
+    @Test
+    void changePassword_adminChangesOtherUser_success() {
+        User admin = new User();
+        admin.setId(2L);
+        admin.setUsername("admin");
+        admin.setRole(Role.ADMIN);
+
+        ChangePasswordDto dto = new ChangePasswordDto();
+        dto.setNewPassword("newPassword");
+
+        when(usersRepository.findByUsername("admin")).thenReturn(Optional.of(admin));
+        when(usersRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode("newPassword")).thenReturn("encodedNewPassword");
+        when(modelMapper.map(user, UserDto.class)).thenReturn(userDto);
+
+        UserDto result = usersService.changePassword(1L, dto, principal);
+
+        assertNotNull(result);
+        assertEquals("encodedNewPassword", user.getPassword());
+
+        verify(passwordEncoder, never()).matches(anyString(), anyString());
+        verify(usersRepository).save(user);
+    }
+
+    @Test
+    void changePassword_nonAdminChangesOtherUser_forbidden() {
+        User otherUser = new User();
+        otherUser.setId(2L);
+        otherUser.setUsername("other");
+        otherUser.setPassword("otherEncodedPassword");
+
+        ChangePasswordDto dto = new ChangePasswordDto();
+        dto.setNewPassword("newPassword");
+
+        Principal userPrincipal = () -> "testuser";
+
+        when(usersRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
+        when(usersRepository.findById(2L)).thenReturn(Optional.of(otherUser));
+
+        RestApiException ex = assertThrows(RestApiException.class,
+                () -> usersService.changePassword(2L, dto, userPrincipal));
+
+        assertEquals(HttpStatus.FORBIDDEN, ex.getStatus());
+
+        verify(passwordEncoder, never()).encode(anyString());
+        verify(usersRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void changePassword_userNotFound_throws() {
+        ChangePasswordDto dto = new ChangePasswordDto();
+        dto.setNewPassword("newPassword");
+
+        when(usersRepository.findByUsername("admin")).thenReturn(Optional.empty());
+
+        RestApiException ex = assertThrows(RestApiException.class,
+                () -> usersService.changePassword(1L, dto, principal));
+
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatus());
+        verify(usersRepository, never()).save(any(User.class));
+    }
+
 }

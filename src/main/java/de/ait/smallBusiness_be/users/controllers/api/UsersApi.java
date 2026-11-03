@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 
 import java.security.Principal;
 import java.util.List;
@@ -82,7 +83,7 @@ public interface UsersApi {
     })
     @ResponseStatus(HttpStatus.OK)
     ResponseEntity<UserDto> updateUserRole(@PathVariable Long id,
-                                           @RequestBody UpdateUserRoleDto dto);
+                                           @Valid @RequestBody UpdateUserRoleDto dto);
     @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}")
     @Operation(
@@ -105,7 +106,7 @@ public interface UsersApi {
     })
     @ResponseStatus(HttpStatus.OK)
     UserDto updateUserById(@PathVariable Long id,
-                           @RequestBody UpdateUserDto updateUserDto,
+                           @Valid @RequestBody UpdateUserDto updateUserDto,
                            Principal principal);
 
     @PreAuthorize("isAuthenticated()")
@@ -134,6 +135,6 @@ public interface UsersApi {
     })
     @ResponseStatus(HttpStatus.OK)
     UserDto changePassword(@PathVariable Long id,
-                           @RequestBody ChangePasswordDto dto,
+                           @Valid @RequestBody ChangePasswordDto dto,
                            Principal principal);
 }

@@ -11,7 +11,7 @@ import lombok.*;
  */
 @Getter
 @Setter
-@ToString
+@ToString(exclude = "password")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -32,7 +32,7 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(nullable = false)
-    @Enumerated(value = EnumType.STRING)
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
     private Role role;
 }

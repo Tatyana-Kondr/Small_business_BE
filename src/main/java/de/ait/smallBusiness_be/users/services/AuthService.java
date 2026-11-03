@@ -1,3 +1,4 @@
+
 package de.ait.smallBusiness_be.users.services;
 
 import de.ait.smallBusiness_be.exceptions.ErrorDescription;
@@ -7,32 +8,25 @@ import de.ait.smallBusiness_be.users.dao.UserRepository;
 import de.ait.smallBusiness_be.users.dto.AuthRequestDto;
 import de.ait.smallBusiness_be.users.dto.AuthResponseDto;
 import de.ait.smallBusiness_be.users.dto.NewUserDto;
-import de.ait.smallBusiness_be.users.model.RefreshToken;
 import de.ait.smallBusiness_be.users.dto.UserDto;
+import de.ait.smallBusiness_be.users.model.RefreshToken;
 import de.ait.smallBusiness_be.users.model.Role;
 import de.ait.smallBusiness_be.users.model.User;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.security.Principal;
-
-
-/**
- * 1/30/2025
- * Small_business_BE
- *
- * @author Chechkina (AIT TR)
- */
 
 @Service
 @RequiredArgsConstructor
@@ -46,42 +40,71 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final ModelMapper modelMapper;
 
-
     // -------------------- REGISTER --------------------
+
     public UserDto register(NewUserDto newUser, Principal principal) {
-        // 1. Найдём текущего пользователя (тот, кто вызывает register)
-        User currentUser = userRepository.findByUsername(principal.getName())
-                .orElseThrow(() ->  new RestApiException(ErrorDescription.USERNAME_ALREADY_EXISTS, HttpStatus.CONFLICT));
 
-        // 2. Проверим, что он админ
-        if (currentUser.getRole() != Role.ADMIN) {
-            throw new RuntimeException("Только администратор может регистрировать новых пользователей!");
+        // Проверяем авторизацию
+        if (principal == null) {
+            throw new RestApiException(
+                    ErrorDescription.UNAUTHORIZED,
+                    HttpStatus.UNAUTHORIZED
+            );
         }
 
-        // 3. Проверим, что username ещё не занят
-        if (userRepository.existsByUsername(newUser.getUsername())) {
-            throw new RuntimeException("Пользователь с таким username уже существует!");
-        }
-
-        // 4. Создадим нового пользователя
-        User user = modelMapper.map(newUser, User.class);
-        user.setPassword(passwordEncoder.encode(newUser.getPassword()));
-        user.setRole(Role.USER); // по умолчанию USER
-
-        userRepository.save(user);
-
-        // 6. Возвращаем UserDto
-        return modelMapper.map(user, UserDto.class);
-}
-
-    // -------------------- LOGIN --------------------
-    public AuthResponseDto login(AuthRequestDto authRequest) {
-
-        User user = userRepository.findByUsername(authRequest.getUsername())
+        // Получаем текущего пользователя
+        User currentUser = userRepository
+                .findByUsername(principal.getName())
                 .orElseThrow(() -> new RestApiException(
                         ErrorDescription.USER_NOT_FOUND,
                         HttpStatus.UNAUTHORIZED
                 ));
+
+        // Только администратор может регистрировать
+        if (currentUser.getRole() != Role.ADMIN) {
+            throw new RestApiException(
+                    ErrorDescription.FORBIDDEN,
+                    HttpStatus.FORBIDDEN
+            );
+        }
+
+        // Проверяем уникальность username
+        if (userRepository.existsByUsername(newUser.getUsername())) {
+            throw new RestApiException(
+                    ErrorDescription.USERNAME_ALREADY_EXISTS,
+                    HttpStatus.CONFLICT
+            );
+        }
+
+        if (userRepository.existsByEmail(newUser.getEmail())) {
+            throw new RestApiException(
+                    ErrorDescription.EMAIL_ALREADY_EXISTS,
+                    HttpStatus.CONFLICT
+            );
+        }
+
+        // Создаём пользователя
+        User user = modelMapper.map(newUser, User.class);
+
+        user.setPassword(
+                passwordEncoder.encode(newUser.getPassword())
+        );
+
+        user.setRole(Role.USER);
+
+        User savedUser = userRepository.save(user);
+
+        log.info("New user registered: {}", savedUser.getUsername());
+
+        return modelMapper.map(savedUser, UserDto.class);
+    }
+
+    // -------------------- LOGIN --------------------
+    public AuthResponseDto login(AuthRequestDto authRequest) {
+
+        User user = userRepository
+                .findByUsername(authRequest.getUsername())
+                .orElseThrow(() -> new RestApiException(ErrorDescription.USER_NOT_FOUND, HttpStatus.UNAUTHORIZED));
 
         try {
             authenticationManager.authenticate(
@@ -94,8 +117,13 @@ public class AuthService {
             throw new RestApiException(ErrorDescription.INVALID_PASSWORD, HttpStatus.UNAUTHORIZED);
         }
 
-        String accessToken = jwtUtil.generateAccessToken(user.getUsername(), user.getRole().name());
-        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
+        String accessToken = jwtUtil.generateAccessToken(
+                user.getUsername(),
+                user.getRole().name()
+        );
+
+        RefreshToken refreshToken =
+                refreshTokenService.createRefreshToken(user.getId());
 
         return AuthResponseDto.builder()
                 .accessToken(accessToken)
@@ -105,27 +133,43 @@ public class AuthService {
     }
 
     // -------------------- REFRESH --------------------
+    @Transactional
     public AuthResponseDto refreshToken(String token) {
 
         if (token == null || token.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Refresh token missing");
+            throw new RestApiException(
+                    ErrorDescription.REFRESH_TOKEN_MISSING,
+                    HttpStatus.UNAUTHORIZED
+            );
         }
 
-        RefreshToken refreshToken = refreshTokenService.findByToken(token)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Refresh token not found"));
+        RefreshToken refreshToken = refreshTokenService
+                .findByToken(token)
+                .orElseThrow(() -> new RestApiException(
+                        ErrorDescription.REFRESH_TOKEN_NOT_FOUND,
+                        HttpStatus.UNAUTHORIZED
+                ));
 
         if (refreshTokenService.isExpired(refreshToken)) {
+
             refreshTokenService.delete(refreshToken);
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Refresh token expired");
+
+            throw new RestApiException(
+                    ErrorDescription.REFRESH_TOKEN_EXPIRED,
+                    HttpStatus.UNAUTHORIZED
+            );
         }
 
         User user = refreshToken.getUser();
 
-        // access token новый
-        String newAccessToken = jwtUtil.generateAccessToken(user.getUsername(), user.getRole().name());
+        String newAccessToken = jwtUtil.generateAccessToken(
+                user.getUsername(),
+                user.getRole().name()
+        );
 
-        // ROTATION: refresh token делаем новый (и продлеваем срок)
-        RefreshToken rotated = refreshTokenService.rotate(refreshToken);
+        // Refresh token rotation
+        RefreshToken rotated =
+                refreshTokenService.rotate(refreshToken);
 
         return AuthResponseDto.builder()
                 .accessToken(newAccessToken)
@@ -134,22 +178,24 @@ public class AuthService {
                 .build();
     }
 
-
     // -------------------- LOGOUT --------------------
     public void logout(String refreshToken) {
 
         if (refreshToken != null && !refreshToken.isBlank()) {
-            refreshTokenService.findByToken(refreshToken).ifPresent(refreshTokenService::delete);
+            refreshTokenService
+                    .findByToken(refreshToken)
+                    .ifPresent(refreshTokenService::delete);
         }
 
         SecurityContextHolder.clearContext();
     }
 
-
     // -------------------- GET USER PROFILE --------------------
     public UserDto getUserProfile(String username) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        User user = userRepository
+                .findByUsername(username)
+                .orElseThrow(() -> new RestApiException(ErrorDescription.USER_NOT_FOUND, HttpStatus.NOT_FOUND));
 
         return UserDto.builder()
                 .id(user.getId())
@@ -158,34 +204,4 @@ public class AuthService {
                 .role(user.getRole())
                 .build();
     }
-
-    // -------------------- HELPER METHODS --------------------
-//    private void setRefreshCookie(HttpServletResponse response, String refreshToken) {
-//        Cookie cookie = new Cookie("refreshToken", refreshToken);
-//        cookie.setHttpOnly(true);
-//        cookie.setSecure(false);
-//        cookie.setPath("/");
-//        cookie.setMaxAge(7 * 24 * 60 * 60); // 7 дней
-//        cookie.setAttribute("SameSite", "Lax");
-//        response.addCookie(cookie);
-//    }
-//
-//    private void clearRefreshCookie(HttpServletResponse response) {
-//        Cookie cookie = new Cookie("refreshToken", "");
-//        cookie.setHttpOnly(true);
-//        cookie.setSecure(false);
-//        cookie.setPath("/");
-//        cookie.setMaxAge(0);
-//        cookie.setAttribute("SameSite", "Lax");
-//        response.addCookie(cookie);
-//    }
-//
-//    private String extractRefreshToken(HttpServletRequest request) {
-//        if (request.getCookies() == null) return null;
-//        return Arrays.stream(request.getCookies())
-//                .filter(c -> "refreshToken".equals(c.getName()))
-//                .map(Cookie::getValue)
-//                .findFirst()
-//                .orElse(null);
-//    }
 }
