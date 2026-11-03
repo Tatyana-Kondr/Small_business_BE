@@ -1,9 +1,9 @@
 package de.ait.smallBusiness_be.productions.dto;
 
-import de.ait.smallBusiness_be.products.model.Product;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
+
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -27,30 +27,19 @@ import java.math.BigDecimal;
 public class NewProductionItemDto {
 
     @NotNull(message = "{validation.notNull}")
-    @Schema(description = "Production's id", example = "1")
-    Long productionId;
-
-    @NotNull(message = "{validation.notNull}")
     @Schema(description = "Product's id", example = "1")
     Long productId;
 
-    @Schema(description = "Type of operation", example = "PRODUKTIONSMATERIAL")
-    String type;
-
     @NotNull(message = "{validation.notNull}")
-    @DecimalMin(value = "0.0", message = "{validation.price.min}")
-    @Digits(integer = 6, fraction = 3, message = "{validation.price.digits}")
+    @DecimalMin(value = "0.001", message = "{validation.positive}")
+    @Digits(integer = 6, fraction = 3, message = "{validation.quantity.digits}")
     @Schema(description = "Quantity", example = "1")
     BigDecimal quantity;
 
-    @DecimalMin(value = "0.0", message = "{validation.price.min}")
-    @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
+    @NotNull(message = "{validation.notNull}")
+    @DecimalMin(value = "0.0", message = "{validation.money.min}")
+    @Digits(integer = 10, fraction = 2, message = "{validation.price.digits}")
     @Schema(description = "Unit price", example = "5.00")
     BigDecimal unitPrice;
 
-    @NotNull(message = "{validation.notNull}")
-    @DecimalMin(value = "0.0", message = "{validation.price.min}")
-    @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
-    @Schema(description = "Amount without percentage", example = "0")
-    BigDecimal totalPrice;
 }
