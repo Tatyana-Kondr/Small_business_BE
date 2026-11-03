@@ -22,29 +22,46 @@ public class PaymentRepositoryCustomImpl implements PaymentRepositoryCustom {
     @PersistenceContext
     private EntityManager entityManager;
 
+
     @Override
     public Page<Payment> searchPayments(Pageable pageable, String searchQuery) {
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+
         CriteriaQuery<Payment> query = cb.createQuery(Payment.class);
+
         Root<Payment> root = query.from(Payment.class);
 
         List<Predicate> predicates = buildSearchPredicates(cb, root, searchQuery);
-        query.where(cb.or(predicates.toArray(new Predicate[0])));
+
+        if (!predicates.isEmpty()) {
+            query.where(cb.or(predicates.toArray(new Predicate[0])));
+        }
+
         applySorting(pageable, cb, root, query);
 
         TypedQuery<Payment> typedQuery = entityManager.createQuery(query);
+
         typedQuery.setFirstResult((int) pageable.getOffset());
         typedQuery.setMaxResults(pageable.getPageSize());
 
-        // Подсчет количества записей
+        // Подсчёт общего количества записей
         CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
+
         Root<Payment> countRoot = countQuery.from(Payment.class);
-        countQuery.select(cb.count(countRoot)).where(cb.or(buildSearchPredicates(cb, countRoot, searchQuery).toArray(new Predicate[0])));
+
+        List<Predicate> countPredicates = buildSearchPredicates(cb, countRoot, searchQuery);
+
+        countQuery.select(cb.count(countRoot));
+
+        if (!countPredicates.isEmpty()) {
+            countQuery.where(cb.or(countPredicates.toArray(new Predicate[0])));
+        }
 
         Long totalCount = entityManager.createQuery(countQuery).getSingleResult();
 
         return new PageImpl<>(typedQuery.getResultList(), pageable, totalCount);
     }
+
 
     @Override
     public Page<Payment> filterByPaymentsFields(Pageable pageable, Long id, Long customerId, String customerName, Long saleId, Long purchaseId, LocalDate startDate, LocalDate endDate, Long documentId, String documentNumber, BigDecimal amount, String searchQuery) {
@@ -76,53 +93,29 @@ public class PaymentRepositoryCustomImpl implements PaymentRepositoryCustom {
     @Override
     public Page<Payment> findAllWithSorting(Pageable pageable) {
 
-        CriteriaBuilder cb =
-                entityManager.getCriteriaBuilder();
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
 
-        CriteriaQuery<Payment> query =
-                cb.createQuery(Payment.class);
+        CriteriaQuery<Payment> query = cb.createQuery(Payment.class);
 
-        Root<Payment> root =
-                query.from(Payment.class);
+        Root<Payment> root = query.from(Payment.class);
 
-        applySorting(
-                pageable,
-                cb,
-                root,
-                query
-        );
+        applySorting(pageable, cb, root, query);
 
-        TypedQuery<Payment> typed =
-                entityManager.createQuery(query);
+        TypedQuery<Payment> typed = entityManager.createQuery(query);
 
-        typed.setFirstResult(
-                (int) pageable.getOffset()
-        );
+        typed.setFirstResult((int) pageable.getOffset());
 
-        typed.setMaxResults(
-                pageable.getPageSize()
-        );
+        typed.setMaxResults(pageable.getPageSize());
 
-        CriteriaQuery<Long> countQuery =
-                cb.createQuery(Long.class);
+        CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
 
-        Root<Payment> countRoot =
-                countQuery.from(Payment.class);
+        Root<Payment> countRoot = countQuery.from(Payment.class);
 
-        countQuery.select(
-                cb.count(countRoot)
-        );
+        countQuery.select(cb.count(countRoot));
 
-        Long count =
-                entityManager
-                        .createQuery(countQuery)
-                        .getSingleResult();
+        Long count = entityManager.createQuery(countQuery).getSingleResult();
 
-        return new PageImpl<>(
-                typed.getResultList(),
-                pageable,
-                count
-        );
+        return new PageImpl<>(typed.getResultList(), pageable, count);
     }
 
     private List<Predicate> buildSearchPredicates(CriteriaBuilder cb, Root<Payment> root, String searchQuery) {
@@ -222,12 +215,7 @@ public class PaymentRepositoryCustomImpl implements PaymentRepositoryCustom {
         return predicates;
     }
 
-    private void applySorting(
-            Pageable pageable,
-            CriteriaBuilder cb,
-            Root<Payment> root,
-            CriteriaQuery<Payment> query
-    ) {
+    private void applySorting(Pageable pageable, CriteriaBuilder cb, Root<Payment> root, CriteriaQuery<Payment> query) {
 
         List<Order> orders = new ArrayList<>();
 
@@ -235,31 +223,14 @@ public class PaymentRepositoryCustomImpl implements PaymentRepositoryCustom {
 
             Expression<?> expression =
                     switch (sortOrder.getProperty()) {
-
                         case "id" -> root.get("id");
-
                         case "paymentDate" -> root.get("paymentDate");
-
-                        case "customerName" -> root.join("customer")
-                                .get("name");
-
+                        case "customerName" -> root.join("customer").get("name");
                         case "amount" -> root.get("amount");
-
-                        case "documentName" -> root.join("document")
-                                .get("name");
-
+                        case "documentName" -> root.join("document").get("name");
                         case "documentNumber" -> root.get("documentNumber");
-
-                        case "saleId" -> root.join(
-                                "sale",
-                                JoinType.LEFT
-                        ).get("id");
-
-                        case "purchaseId" -> root.join(
-                                "purchase",
-                                JoinType.LEFT
-                        ).get("id");
-
+                        case "saleId" -> root.join("sale", JoinType.LEFT).get("id");
+                        case "purchaseId" -> root.join("purchase", JoinType.LEFT).get("id");
                         default -> null;
                     };
 
@@ -268,31 +239,28 @@ public class PaymentRepositoryCustomImpl implements PaymentRepositoryCustom {
             }
 
             if (sortOrder.isAscending()) {
-                orders.add(
-                        cb.asc(expression)
-                );
+                orders.add(cb.asc(expression));
             } else {
-                orders.add(
-                        cb.desc(expression)
-                );
+                orders.add(cb.desc(expression));
             }
         }
 
-        if (orders.isEmpty()) {
-            orders.add(
-                    cb.desc(
-                            root.get("paymentDate")
-                    )
-            );
 
-            orders.add(
-                    cb.desc(
-                            root.get("id")
-                    )
-            );
+        if (orders.isEmpty()) {
+            // Сортировка по умолчанию
+            orders.add(cb.desc(root.get("paymentDate")));
+        }
+
+        // Стабильная пагинация при одинаковых значениях сортировки
+        boolean sortedById = pageable.getSort().stream()
+                .anyMatch(order -> order.getProperty().equals("id"));
+
+        if (!sortedById) {
+            orders.add(cb.desc(root.get("id")));
         }
 
         query.orderBy(orders);
+
     }
 }
 

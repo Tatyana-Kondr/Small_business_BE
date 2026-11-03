@@ -26,6 +26,12 @@ public class PaymentPrefillDto {
     @Schema(description = "Left amount after partial payment", example = "100.00")
     private BigDecimal amountLeft;
 
+    @Schema(description = "Left amount after partial payment", example = "100.00")
+    private BigDecimal alreadyPaid;
+
+    @Schema(description = "Left amount after partial payment", example = "100.00")
+    private BigDecimal overpayment;
+
     @Schema(description = "Related sale ID", example = "10")
     private Long saleId;
 
