@@ -4,10 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Column;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 import org.hibernate.validator.constraints.Length;
 
 import static de.ait.smallBusiness_be.constaints.EntityValidationConstants.*;
@@ -19,31 +16,32 @@ import static de.ait.smallBusiness_be.constaints.EntityValidationConstants.BUILD
  */
 
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class AddressDto {
 
-    @Length(min = 4, max = 10, message = "{javax.validation.constraints.Size.message}")
+    @Length(min = 4, max = 10, message = "{validation.size}")
     @Pattern(regexp = POSTAL_CODE_REGEX, message = "{address.postalCode.Pattern.message}")
     @Schema(description = "Postal code", example = "60365")
-    String postalCode;
+    private String postalCode;
 
-    @NotBlank(message = "{javax.validation.constraints.NotBlank.message}")
+    @NotBlank(message = "{validation.notBlank}")
     @Schema(description = "Country name", example = "DE")
-    String country;
+    private String country;
 
-    @Length(min = 3, max = 50, message = "{javax.validation.constraints.Size.message}")
+    @Length(min = 2, max = 50, message = "{validation.size}")
     @Pattern(regexp = CITY_REGEX, message = "{address.city.Pattern.message}")
     @Schema(description = "City name", example = "Frankfurt")
-    String city;
+    private String city;
 
-    @Length(min = 3, max = 100, message = "{javax.validation.constraints.Size.message}")
+    @Length(min = 3, max = 100, message = "{validation.size}")
     @Pattern(regexp = STREET_REGEX, message = "{address.street.Pattern.message}")
     @Schema(description = "Street name", example = "Willy-Brandt-Platz")
-    String street;
+    private String street;
 
-    @Length(min = 1, max = 6, message = "{javax.validation.constraints.Size.message}")
+    @Length(min = 1, max = 6, message = "{validation.size}")
     @Pattern(regexp = BUILDING_REGEX, message = "{address.building.Pattern.message}")
     @Schema(description = "Building number", example = "12")
-    String building;
+    private String building;
 }
