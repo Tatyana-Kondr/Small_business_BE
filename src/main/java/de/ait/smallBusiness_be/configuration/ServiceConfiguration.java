@@ -7,12 +7,17 @@ import de.ait.smallBusiness_be.customers.model.Customer;
 import de.ait.smallBusiness_be.payments.dto.PaymentDto;
 import de.ait.smallBusiness_be.payments.dto.PaymentPrefillDto;
 import de.ait.smallBusiness_be.payments.model.Payment;
+import de.ait.smallBusiness_be.productions.dto.NewProductionDto;
 import de.ait.smallBusiness_be.productions.dto.ProductionDto;
 import de.ait.smallBusiness_be.productions.dto.ProductionItemDto;
 import de.ait.smallBusiness_be.productions.model.Production;
 import de.ait.smallBusiness_be.productions.model.ProductionItem;
+import de.ait.smallBusiness_be.products.dto.ProductCategoryDto;
 import de.ait.smallBusiness_be.products.dto.ProductDto;
+import de.ait.smallBusiness_be.products.dto.UnitOfMeasurementDto;
 import de.ait.smallBusiness_be.products.model.Product;
+import de.ait.smallBusiness_be.products.model.ProductCategory;
+import de.ait.smallBusiness_be.products.model.UnitOfMeasurement;
 import de.ait.smallBusiness_be.purchases.dto.PurchaseDto;
 import de.ait.smallBusiness_be.purchases.dto.PurchaseItemDto;
 import de.ait.smallBusiness_be.purchases.model.Purchase;
@@ -140,22 +145,24 @@ public class ServiceConfiguration {
                 .addMapping(src -> src.getProduct().getArticle(), ProductionDto::setProductArticle)
                 .addMapping(src -> src.getProduct().getName(), ProductionDto::setProductName);
 
+        // NewProductionDto → Production
+        modelMapper.createTypeMap(NewProductionDto.class, Production.class)
+                .addMappings(mapper -> mapper.skip(Production::setProductionItems));
+
         //  User ↔ UserDto
         modelMapper.createTypeMap(User.class, UserDto.class);
         modelMapper.createTypeMap(NewUserDto.class, User.class);
 
-        //  Product ↔ ProductDto
+        // UnitOfMeasurement → UnitOfMeasurementDto
+        modelMapper.createTypeMap(UnitOfMeasurement.class, UnitOfMeasurementDto.class);
+
+        // ProductCategory → ProductCategoryDto
+        modelMapper.createTypeMap(ProductCategory.class, ProductCategoryDto.class);
+
+        // Product → ProductDto
         modelMapper.createTypeMap(Product.class, ProductDto.class)
                 .addMappings(mapper -> {
-                    mapper.map(Product::getDimensions, ProductDto::setNewDimensions);
-                    mapper.map(Product::getUnitOfMeasurement, ProductDto::setUnitOfMeasurement);
-                });
-
-        modelMapper.createTypeMap(ProductDto.class, Product.class)
-                .addMappings(mapper -> {
-                    mapper.map(ProductDto::getNewDimensions, Product::setDimensions);
-                    mapper.map(ProductDto::getUnitOfMeasurement, Product::setUnitOfMeasurement);
-                });
+                    mapper.map(Product::getDimensions, ProductDto::setNewDimensions);});
 
         return modelMapper;
     }
