@@ -1,10 +1,7 @@
 package de.ait.smallBusiness_be.products.controller;
 
 import de.ait.smallBusiness_be.products.controller.api.ProductsApi;
-import de.ait.smallBusiness_be.products.dto.NewProductDto;
-import de.ait.smallBusiness_be.products.dto.ProductPickDto;
-import de.ait.smallBusiness_be.products.dto.UpdateProductDto;
-import de.ait.smallBusiness_be.products.dto.ProductDto;
+import de.ait.smallBusiness_be.products.dto.*;
 import de.ait.smallBusiness_be.products.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -24,7 +21,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ProductController implements ProductsApi {
 
-    final ProductService productService;
+    private final ProductService productService;
 
     @Override
     public ProductDto createProduct(NewProductDto newProductDto) {
@@ -42,18 +39,13 @@ public class ProductController implements ProductsApi {
     }
 
     @Override
+    public ProductDto updateProductArticle(Long id, UpdateProductArticleDto dto) {
+        return productService.updateProductArticle(id, dto);
+    }
+
+    @Override
     public void removeProductById(Long id) {
         productService.deleteProductById(id);
-    }
-
-    @Override
-    public List<ProductDto> getAllProducts(String search) {
-        return productService.getAllProducts(search);
-    }
-
-    @Override
-    public List<ProductDto> getProductsByCategory(Long categoryId, String search) {
-        return productService.getAllProductsByCategoryId(categoryId, search);
     }
 
     @Override
@@ -69,6 +61,19 @@ public class ProductController implements ProductsApi {
     @Override
     public Page<ProductDto> getProductsByCategoryPaged(Long categoryId, String search, Pageable pageable) {
         return productService.findProductsByCategoryId(categoryId, search, pageable);
+    }
+
+    @Override
+    public List<ProductPickDto> findSimilarProducts(
+            String name,
+            String vendorArticle
+    ) {
+        return productService.findSimilarProducts(name, vendorArticle);
+    }
+
+    @Override
+    public List<ProductPickDto> findSimilarProductsForUpdate(Long productId, String name, String article, String vendorArticle) {
+        return productService.findSimilarProductsForUpdate(productId, name, article, vendorArticle);
     }
 
 }
