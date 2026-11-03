@@ -27,4 +27,5 @@ public interface CustomerService {
     Customer getCustomerOrThrow(Long id);
     Page<CustomerDto> searchCustomers(String query, Pageable pageable);
     Page<CustomerDto> searchCustomersWithCustomerNumber(String query, Pageable pageable);
+    List<CustomerDto> findPotentialDuplicates(String name, Long excludeId);
 }

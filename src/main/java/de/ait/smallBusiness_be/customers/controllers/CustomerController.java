@@ -63,6 +63,11 @@ public class CustomerController implements CustomersApi {
     }
 
     @Override
+    public List<CustomerDto> findPotentialDuplicates(String name, Long excludeId) {
+        return customerService.findPotentialDuplicates(name, excludeId);
+    }
+
+    @Override
     public CustomerDto getCustomerById(Long id) {
         return customerService.getCustomerById(id);
     }

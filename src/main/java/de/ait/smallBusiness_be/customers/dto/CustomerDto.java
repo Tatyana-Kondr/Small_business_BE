@@ -21,16 +21,10 @@ import lombok.Setter;
 public class CustomerDto {
 
     Long id;
-
     String name;
-
     String customerNumber;
-
     Address address;
-
     String phone;
-
     String email;
-
     String website;
 }

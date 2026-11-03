@@ -13,8 +13,6 @@ import lombok.Setter;
 @Schema(name = "CustomerPick", description = "Data of customer")
 public class CustomerPickDto {
     Long id;
-
     String name;
-
     String customerNumber;
 }
