@@ -117,13 +117,13 @@
         <th class="center">Menge</th>
         <th class="center">Einheit</th>
         <th class="right">Preis</th>
-        <th class="right" th:if="${sale.defaultDiscount > 0}">Rabatt</th>
+        <th class="right" th:if="${hasDiscount}">Rabatt</th>
         <th class="right">Gesamt</th>
     </tr>
     </thead>
 
     <tbody>
-    <tr th:each="item : ${sale.saleItems}">
+    <tr th:each="item : ${items}">
         <td th:text="${item.position}">1</td>
         <td class="artikel-column"  th:text="${item.product.article}">3606011300</td>
         <td class="col-desc"
@@ -135,8 +135,8 @@
         <td class="right"
             th:text="${#numbers.formatDecimal(item.unitPrice, 1, 'COMMA', 2, 'POINT')} + ' €'">16,30 €</td>
 
-        <td class="right" th:if="${sale.defaultDiscount > 0}"
-            th:text="${item.discount > 0 ? item.discount + '%' : ''}"></td>
+        <td class="right" th:if="${hasDiscount}"
+            th:text="${item.discount != null and item.discount > 0 ? item.discount + '%' : ''}"></td>
 
         <td class="right"
             th:text="${#numbers.formatDecimal(item.totalPrice, 1, 'COMMA', 2, 'POINT')} + ' €'">586,80 €</td>
@@ -148,7 +148,7 @@
 <table class="totals">
     <tr>
         <td style="width: 60%; vertical-align: top; font-size: 10px; padding-top: 20px; min-height: 30px;">
-            <div th:if="${sale.defaultTax == 0}"
+            <div th:if="${taxSummary.size() == 1  and taxSummary.containsKey(T(java.math.BigDecimal).ZERO)}"
                  th:utext="'Es handelt sich hierbei um eine Ausfuhrlieferung nach §6 Abs. 1 Nr. 1 UstG,<br/>die gem. §4 Nr.1 UstG steuerfrei ist.'">
             </div>
         </td>
@@ -158,9 +158,9 @@
                     <td class="right bold" style="text-align: left; padding-right: 10px;">Gesamt Netto:</td>
                     <td class="right" style="text-align: right;" th:text="${#numbers.formatDecimal(sale.totalPrice, 1, 'COMMA', 2, 'POINT')} + ' €'">586,80 €</td>
                 </tr>
-                <tr>
-                    <td class="right bold" style="text-align: left;" th:text="'zzgl. MwSt (' + ${sale.defaultTax} + '%):'">zzgl. MwSt (19%):</td>
-                    <td class="right" style="text-align: right;" th:text="${#numbers.formatDecimal(sale.taxAmount, 1, 'COMMA', 2, 'POINT')} + ' €'">111,49 €</td>
+                <tr th:each="taxEntry : ${taxSummary}" th:if="${taxEntry.key.compareTo(T(java.math.BigDecimal).ZERO) > 0}">
+                    <td class="right bold" style="text-align: left;" th:text="'MwSt ' + ${#numbers.formatDecimal(taxEntry.key,1, 'COMMA', 2, 'POINT')} + '%:'">MwSt 19%:</td>
+                    <td class="right" style="text-align: right;" th:text="${#numbers.formatDecimal(taxEntry.value, 1, 'COMMA', 2, 'POINT')} + ' €'">111,49 €</td>
                 </tr>
                 <tr>
                     <td class="right bold" style="text-align: left;">Rechnungsbetrag:</td>
