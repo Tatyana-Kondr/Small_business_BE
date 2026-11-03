@@ -2,6 +2,7 @@ package de.ait.smallBusiness_be.sales.services.impl;
 
 import de.ait.smallBusiness_be.exceptions.ErrorDescription;
 import de.ait.smallBusiness_be.exceptions.RestApiException;
+import de.ait.smallBusiness_be.sales.dao.SaleRepository;
 import de.ait.smallBusiness_be.sales.dao.TermOfPaymentRepository;
 import de.ait.smallBusiness_be.sales.dto.NewTermOfPaymentDto;
 import de.ait.smallBusiness_be.sales.dto.TermOfPaymentDto;
@@ -12,51 +13,80 @@ import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class TermOfPaymentServiceImpl implements TermOfPaymentService {
 
     private final TermOfPaymentRepository repository;
+    private final SaleRepository saleRepository;
     private final ModelMapper modelMapper;
 
     @Override
     public TermOfPaymentDto createTermOfPayment(NewTermOfPaymentDto newTermOfPaymentDto) {
-        if (repository.existsByName(newTermOfPaymentDto.getName())) {
-            throw new IllegalArgumentException("Term Of Payment with name '" + newTermOfPaymentDto.getName() + "' already exists");
+
+        String name = newTermOfPaymentDto.getName().trim();
+
+        if (repository.existsByName(name)) {
+            throw new RestApiException(ErrorDescription.TERM_OF_PAYMENT_ALREADY_EXISTS, HttpStatus.CONFLICT);
         }
-        TermOfPayment term = TermOfPayment.builder().name(newTermOfPaymentDto.getName()).build();
+
+        TermOfPayment term = TermOfPayment.builder().name(name).build();
         TermOfPayment savedTerm = repository.save(term);
+
         return modelMapper.map(savedTerm, TermOfPaymentDto.class);
     }
 
     @Override
     public List<TermOfPaymentDto> findAllTermsOfPayment() {
-        List<TermOfPayment> terms = repository.findAll();
-        if (terms.isEmpty()) {throw new RestApiException(ErrorDescription.LIST_IS_EMPTY, HttpStatus.NOT_FOUND);}
-        return terms.stream().map(term -> modelMapper.map(term, TermOfPaymentDto.class)).collect(Collectors.toList());
+        return repository.findAll()
+                .stream()
+                .map(term -> modelMapper.map(term, TermOfPaymentDto.class))
+                .toList();
     }
 
     @Override
     public TermOfPaymentDto findTermOfPaymentById(long id) {
-        TermOfPayment term = repository.findById(id).orElseThrow(() -> new EntityNotFoundException("Term Of Payment not found"));
+        TermOfPayment term = getTermOfPaymentOrThrow(id);
         return modelMapper.map(term, TermOfPaymentDto.class);
     }
 
     @Override
     public TermOfPaymentDto updateTermOfPayment(Long id, NewTermOfPaymentDto newTermOfPaymentDto) {
-        TermOfPayment term = repository.findById(id).orElseThrow(() -> new EntityNotFoundException("Term Of Payment not found"));
-        term.setName(newTermOfPaymentDto.getName());
+
+        TermOfPayment term = getTermOfPaymentOrThrow(id);
+        String name = newTermOfPaymentDto.getName().trim();
+
+        if (!term.getName().equals(name) && repository.existsByName(name)) {
+            throw new RestApiException(ErrorDescription.TERM_OF_PAYMENT_ALREADY_EXISTS, HttpStatus.CONFLICT);
+        }
+
+        term.setName(name);
         TermOfPayment savedTerm = repository.save(term);
+
         return modelMapper.map(savedTerm, TermOfPaymentDto.class);
     }
 
     @Override
+    @Transactional
     public void deleteTermOfPayment(long id) {
-        if (repository.existsById(id)) { throw new EntityNotFoundException("Term Of Payment with id '" + id + "' not found"); }
-        repository.deleteById(id);
+
+        TermOfPayment term = getTermOfPaymentOrThrow(id);
+
+        if (saleRepository.existsByTermsOfPayment_Id(id)) {
+            throw new RestApiException(ErrorDescription.TERM_OF_PAYMENT_IN_USE, HttpStatus.CONFLICT);
+        }
+
+        repository.delete(term);
+        repository.flush();
+    }
+
+    @Override
+    public TermOfPayment getTermOfPaymentOrThrow(Long id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException(ErrorDescription.TERM_OF_PAYMENT_NOT_FOUND.getDescription()));
     }
 }
