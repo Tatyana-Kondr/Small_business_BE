@@ -141,7 +141,15 @@ public interface TypeOfDocumentApi {
             @ApiResponse(responseCode = "404",
                     description = "Type of document not found.",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponseDto.class)))
+                            schema = @Schema(implementation = ErrorResponseDto.class))),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "Type of document is already in use.",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDto.class)
+                    )
+            )
     })
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void deleteTypeOfDocument(@PathVariable Long id);
