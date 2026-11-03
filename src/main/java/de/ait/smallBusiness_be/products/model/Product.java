@@ -13,8 +13,6 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.StringJoiner;
 
-import static de.ait.smallBusiness_be.constaints.EntityValidationConstants.DESCRIPTION_REGEX;
-import static de.ait.smallBusiness_be.constaints.EntityValidationConstants.NAME_REGEX;
 
 /**
  * 19.09.2024
@@ -37,40 +35,40 @@ public class Product {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    @NotBlank(message = "validation.notBlank")
+    @Column(nullable = false, length = 150)
+    @NotBlank(message = "{validation.notBlank}")
     @Size(min = 3, max = 150, message = "{validation.name.size}")
-    private String name;   // наименование продукта
+    private String name;
 
-    @Column(nullable = false)
-    @Size(max = 30, message = "{validation.max.size}")
+    @Size(max = 30, message = "{validation.article.size}")
+    @Column(name = "article", length = 30)
     private String article; // артикль который должен присваиваться автоматически или лучше сказать генерироваться, но также должна быть возможность его забивать вручную
 
-    @Column
+    @Column(length = 30)
     @Size(max = 30, message = "{validation.max.size}")
     private String vendorArticle;  // артикль от поставщика
 
-    @Column
-    @DecimalMin(value = "0.0", message = "{validation.price.min}")
+    @Column(precision = 12, scale = 2)
+    @DecimalMin(value = "0.0", message = "{validation.money.min}")
     @Digits(integer = 10, fraction = 2, message = "{validation.price.digits}")
     private BigDecimal purchasingPrice; // закупочная цена, по идее должна присваиваться цена с последней накладной, если ее значение превышает предыдущее
 
-    @Column(precision = 3)
-    @DecimalMin(value = "0", message = "{validation.markup.min}")
-    @Digits(integer = 4, fraction = 2, message = "{validation.price.digits}")
+    @Column(precision = 5, scale = 2)
+    @DecimalMin(value = "0.0", message = "{validation.percentage.min}")
+    @Digits(integer = 3, fraction = 2, message = "{validation.digits}")
     private BigDecimal markupPercentage; //наценка в %
 
-    @Column
-    @DecimalMin(value = "0.0", message = "{validation.price.min}")
+    @Column(precision = 12, scale = 2)
+    @DecimalMin(value = "0.0", message = "{validation.money.min}")
     @Digits(integer = 10, fraction = 2, message = "{validation.price.digits}")
     private BigDecimal sellingPrice;  // продажная цена, по идее должна присваиваться цена с последней продажи. Если продаж еще не было, то цена формируется из закупочной цены + 20%
 
-    @ManyToOne
-    @JoinColumn(name = "unit_of_measurement_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "unit_of_measurement_id", nullable = false)
     @NotNull(message = "{validation.notNull}")
     private UnitOfMeasurement unitOfMeasurement; // единица измерения
 
-    @Column(precision = 8, scale = 3)
+    @Column(precision = 13, scale = 3)
     @DecimalMin(value = "0.0", message = "{validation.weight.min}")
     @Digits(integer = 10, fraction = 3, message = "{validation.weight.digits}")
     private BigDecimal weight; // вес будет измерятся только в кг
@@ -83,25 +81,26 @@ public class Product {
     @NotNull(message = "{validation.notNull}")
     private ProductCategory productCategory; // категории продуктов, например электрика, механика, пневматика и т.д.
 
+    @Column(length = 1024)
     @Size( max = 1024, message = "{validation.description.size}")
     private String description; // доп.информация
 
-    @Column
+    @Column(length = 20)
     @Size(max = 20, message = "{validation.max.size}")
     private String customsNumber; // таможенный номер
 
     @Column
-    @PastOrPresent(message = "{validation.dateOfLastPurchase.pastOrPresent}")
+    @PastOrPresent(message = "{validation.date.pastOrPresent}")
     private LocalDateTime dateOfLastPurchase; // дата последней закупки/каталога
 
     @CreatedDate
-    @Column(updatable = false)
-    private LocalDateTime createdDate = LocalDateTime.now();// под вопросом
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdDate;
 
     @LastModifiedDate
     private LocalDateTime lastModifiedDate;
 
-    @Column
+    @Column(length = 30)
     @Size(max = 30, message = "{validation.max.size}")
     String storageLocation;
 

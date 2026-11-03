@@ -1,6 +1,7 @@
 package de.ait.smallBusiness_be.users.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,13 +11,12 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Schema(description = "DTO representing login request with user credentials")
-public class AuthRequestDto{
+@Schema(description = "Login credentials")
+public class AuthRequestDto {
 
-        @Schema(description = "Username", example = "user1")
-        String username;
+        @NotBlank(message = "Username is required")
+        private String username;
 
-        @Schema(description = "Password of the user", example = "Qwerty007!")
-        String password;
-
+        @NotBlank(message = "Password is required")
+        private String password;
 }

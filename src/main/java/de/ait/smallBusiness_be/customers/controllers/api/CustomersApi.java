@@ -183,6 +183,27 @@ public interface CustomersApi {
     List<CustomerPickDto> getCustomersWithCustomerNumber();
 
     @PreAuthorize("isAuthenticated()")
+    @GetMapping("/duplicates")
+    @Operation(
+            summary = "Find potential duplicate customers",
+            description = "Find existing business partners with the same name. " +
+                    "Optionally exclude the current customer when editing."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200",
+                    description = "Potential duplicates retrieved successfully.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = CustomerDto[].class))),
+            @ApiResponse(responseCode = "401", description = "User unauthorized."),
+            @ApiResponse(responseCode = "403", description = "Forbidden.")
+    })
+    @ResponseStatus(HttpStatus.OK)
+    List<CustomerDto> findPotentialDuplicates(
+            @RequestParam String name,
+            @RequestParam(required = false) Long excludeId
+    );
+
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     @Operation(
             summary = "Get customer by ID",

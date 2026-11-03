@@ -21,8 +21,6 @@ public class ValidationErrorDto {
 
     @Schema(description = "The name of the field where the error occurred", example = "password")
     private String field;
-    @Schema(description = "The value that the user entered and which was rejected by the server", example = "12345")
-    private String rejectedValue;
-    @Schema(description = "The message that we need to show the user", example = "Qwerty007!")
+    @Schema(description = "The validation error message", example = "Invalid password")
     private String message;
 }

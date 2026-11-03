@@ -19,5 +19,4 @@ public class ProductPickDto {
     BigDecimal purchasingPrice;
     BigDecimal sellingPrice;
     Long categoryId;
-
 }

@@ -35,28 +35,31 @@ public class ProductionItem {
     @NotNull(message = "{validation.notNull}")
     Product product;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "production_id", referencedColumnName = "id", nullable = false)
     @NotNull(message = "{validation.notNull}")
     @JsonBackReference
     Production production;
 
-    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
     TypeOfOperation type;
 
-    @Column(nullable = false)
-    @DecimalMin(value = "0.0", message = "{validation.price.min}")
-    @Digits(integer = 6, fraction = 3, message = "{validation.price.digits}")
+    @NotNull(message = "{validation.notNull}")
+    @Column(precision = 9, scale = 3, nullable = false)
+    @DecimalMin(value = "0.001", message = "{validation.positive}")
+    @Digits(integer = 6, fraction = 3, message = "{validation.quantity.digits}")
     BigDecimal quantity;
 
-    @Column(precision = 8, scale = 2)
-    @DecimalMin(value = "0.0", message = "{validation.price.min}")
-    @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
+    @NotNull(message = "{validation.notNull}")
+    @Column(precision = 12, scale = 2, nullable = false)
+    @DecimalMin(value = "0.0", message = "{validation.money.min}")
+    @Digits(integer = 10, fraction = 2, message = "{validation.price.digits}")
     BigDecimal unitPrice;
 
-    @Column(precision = 8, scale = 2)
-    @DecimalMin(value = "0.0", message = "{validation.price.min}")
-    @Digits(integer = 6, fraction = 2, message = "{validation.price.digits}")
+    @NotNull(message = "{validation.notNull}")
+    @Column(precision = 12, scale = 2, nullable = false)
+    @DecimalMin(value = "0.01", message = "{validation.positive}")
+    @Digits(integer = 10, fraction = 2, message = "{validation.amount.digits}")
     BigDecimal totalPrice;// Общая стоимость.
 }

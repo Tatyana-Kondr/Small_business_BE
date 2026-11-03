@@ -14,6 +14,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 @Repository
 public class ProductionRepositoryCustomImpl implements ProductionRepositoryCustom {
@@ -28,7 +29,9 @@ public class ProductionRepositoryCustomImpl implements ProductionRepositoryCusto
         Root<Production> root = query.from(Production.class);
 
         List<Predicate> predicates = buildSearchPredicates(cb, root, searchQuery);
-        query.where(cb.or(predicates.toArray(new Predicate[0])));
+        if (!predicates.isEmpty()) {
+            query.where(cb.or(predicates.toArray(new Predicate[0])));
+        }
         applySorting(pageable, cb, root, query);
 
         TypedQuery<Production> typedQuery = entityManager.createQuery(query);
@@ -38,7 +41,13 @@ public class ProductionRepositoryCustomImpl implements ProductionRepositoryCusto
         // Подсчет количества записей
         CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
         Root<Production> countRoot = countQuery.from(Production.class);
-        countQuery.select(cb.count(countRoot)).where(cb.or(buildSearchPredicates(cb, countRoot, searchQuery).toArray(new Predicate[0])));
+        countQuery.select(cb.count(countRoot));
+
+        List<Predicate> countPredicates = buildSearchPredicates(cb, countRoot, searchQuery);
+
+        if (!countPredicates.isEmpty()) {
+            countQuery.where(cb.or(countPredicates.toArray(new Predicate[0])));
+        }
 
         Long totalCount = entityManager.createQuery(countQuery).getSingleResult();
 
@@ -121,30 +130,31 @@ public class ProductionRepositoryCustomImpl implements ProductionRepositoryCusto
     private List<Predicate> buildSearchPredicates(CriteriaBuilder cb, Root<Production> root, String searchQuery) {
         List<Predicate> predicates = new ArrayList<>();
 
-        if (searchQuery != null && !searchQuery.isEmpty()) {
-            String likePattern = "%" + searchQuery.toLowerCase() + "%";
-
-            // Поиск по ID
-            try {
-                Long id = Long.parseLong(searchQuery);
-                predicates.add(cb.equal(root.get("id"), id));
-            } catch (NumberFormatException ignored) {}
-
-            // Поиск по ID продукта
-            try {
-                Long productId = Long.parseLong(searchQuery);
-                predicates.add(cb.equal(root.get("product").get("id"), productId));
-            } catch (NumberFormatException ignored) {}
-
-            // Поиск по amount (BigDecimal -> строка)
-            predicates.add(cb.like(cb.lower(cb.function("str", String.class, root.get("amount"))), likePattern));
-
-            // Поиск по имени продукта (product.name)
-            predicates.add(cb.like(cb.lower(root.get("product").get("article")), likePattern));
-
-          // Поиск по имени продукта (product.name)
-         predicates.add(cb.like(cb.lower(root.get("product").get("name")), likePattern));
+        if (searchQuery == null || searchQuery.isBlank()) {
+            return predicates;
         }
+
+        String search = searchQuery.trim();
+        String likePattern = "%" + search.toLowerCase(Locale.ROOT) + "%";
+
+        // ID производства и ID товара
+        try {
+            Long id = Long.parseLong(search);
+
+            predicates.add(cb.equal(root.get("id"), id));
+            predicates.add(cb.equal(root.get("product").get("id"), id));
+
+        } catch (NumberFormatException ignored) {}
+
+        // Сумма производства
+        predicates.add(cb.like(cb.lower(cb.function("str", String.class, root.get("amount"))), likePattern));
+
+        // Артикул товара
+        predicates.add(cb.like(cb.lower(root.get("product").get("article")), likePattern));
+
+        // Наименование товара
+        predicates.add(cb.like(cb.lower(root.get("product").get("name")), likePattern));
+
         return predicates;
     }
 
@@ -163,12 +173,7 @@ public class ProductionRepositoryCustomImpl implements ProductionRepositoryCusto
         return predicates;
     }
 
-    private void applySorting(
-            Pageable pageable,
-            CriteriaBuilder cb,
-            Root<Production> root,
-            CriteriaQuery<?> query
-    ) {
+    private void applySorting(Pageable pageable, CriteriaBuilder cb, Root<Production> root, CriteriaQuery<?> query) {
         List<Order> orders = new ArrayList<>();
 
         pageable.getSort().forEach(order -> {
@@ -176,48 +181,33 @@ public class ProductionRepositoryCustomImpl implements ProductionRepositoryCusto
 
             if (property.equals("productArticle")) {
                 if (order.getDirection().isAscending()) {
-                    orders.add(
-                            cb.asc(root.get("product").get("article"))
-                    );
+                    orders.add(cb.asc(root.get("product").get("article")));
                 } else {
-                    orders.add(
-                            cb.desc(root.get("product").get("article"))
-                    );
+                    orders.add(cb.desc(root.get("product").get("article")));
                 }
 
             } else if (property.equals("productName")) {
                 if (order.getDirection().isAscending()) {
-                    orders.add(
-                            cb.asc(root.get("product").get("name"))
-                    );
+                    orders.add(cb.asc(root.get("product").get("name")));
                 } else {
-                    orders.add(
-                            cb.desc(root.get("product").get("name"))
-                    );
+                    orders.add(cb.desc(root.get("product").get("name")));
                 }
 
             } else {
                 if (order.getDirection().isAscending()) {
-                    orders.add(
-                            cb.asc(root.get(property))
-                    );
+                    orders.add(cb.asc(root.get(property)));
                 } else {
-                    orders.add(
-                            cb.desc(root.get(property))
-                    );
+                    orders.add(cb.desc(root.get(property)));
                 }
             }
         });
 
-        // Сортировка по умолчанию:
-        // dateOfProduction DESC -> id DESC
         if (orders.isEmpty()) {
-            orders.add(
-                    cb.desc(root.get("dateOfProduction"))
-            );
-            orders.add(
-                    cb.desc(root.get("id"))
-            );
+            orders.add(cb.desc(root.get("dateOfProduction")));
+        }
+        boolean hasIdSort = pageable.getSort().stream().anyMatch(order -> order.getProperty().equals("id"));
+        if (!hasIdSort) {
+            orders.add(cb.desc(root.get("id")));
         }
 
         query.orderBy(orders);

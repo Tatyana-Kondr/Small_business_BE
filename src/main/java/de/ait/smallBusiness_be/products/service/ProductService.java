@@ -1,10 +1,7 @@
 package de.ait.smallBusiness_be.products.service;
 
 
-import de.ait.smallBusiness_be.products.dto.NewProductDto;
-import de.ait.smallBusiness_be.products.dto.ProductPickDto;
-import de.ait.smallBusiness_be.products.dto.UpdateProductDto;
-import de.ait.smallBusiness_be.products.dto.ProductDto;
+import de.ait.smallBusiness_be.products.dto.*;
 import de.ait.smallBusiness_be.products.model.Product;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,13 +21,11 @@ public interface ProductService {
     ProductDto getProductById(Long id);
     void deleteProductById(Long id);
     ProductDto updateProduct(Long id, UpdateProductDto updateProductDto);
+    ProductDto updateProductArticle(Long id, UpdateProductArticleDto dto);
     Page<ProductDto> findProducts(String searchTerm, Pageable pageable);
-    List<ProductDto> getAllProducts(String searchTerm);
     Page<ProductDto> findProductsByCategoryId(Long categoryId, String searchTerm, Pageable pageable);
-    List<ProductDto> getAllProductsByCategoryId(Long categoryId, String searchTerm);
     Product getProductOrThrow(Long id);
-    ProductDto findProductByArticle(String article);
-    List<ProductDto> findProductsByVendorArticle(String vendorArticle);
-    List<ProductDto> findProductsByName(String name);
     List<ProductPickDto> pick(String searchTerm, Long categoryId, Integer limit);
+    List<ProductPickDto> findSimilarProducts(String name, String vendorArticle);
+    List<ProductPickDto> findSimilarProductsForUpdate(Long productId, String name, String article, String vendorArticle);
 }

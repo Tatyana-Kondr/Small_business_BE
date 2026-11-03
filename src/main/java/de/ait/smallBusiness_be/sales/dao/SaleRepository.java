@@ -13,6 +13,9 @@ import java.util.List;
 public interface SaleRepository extends JpaRepository<Sale, Long>, SaleRepositoryCustom {
 
         boolean existsByInvoiceNumber(String invoiceNumber);
+        boolean existsByTermsOfPayment_Id(Long termId);
+        boolean existsByShipping_Id(Long shippingId);
+        boolean existsByCustomer_Id(Long customerId);
 
         @Query("SELECT MAX(CAST(SUBSTRING(s.invoiceNumber, 7, 3) AS int)) FROM Sale s WHERE FUNCTION('YEAR', s.salesDate) = :year")
         Integer findLastInvoiceSequenceForYear(@Param("year") int year);

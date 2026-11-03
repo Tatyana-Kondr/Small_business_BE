@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.security.Principal;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.Objects;
 
 
 /**
@@ -70,7 +71,13 @@ public class UsersServiceImpl implements UsersService {
         }
 
         if (updateUserDto.getEmail() != null) {
-            user.setEmail(updateUserDto.getEmail());
+            String newEmail = updateUserDto.getEmail();
+
+            if (!Objects.equals(user.getEmail(), newEmail) && usersRepository.existsByEmail(newEmail)) {
+                throw new RestApiException(ErrorDescription.EMAIL_ALREADY_EXISTS, HttpStatus.CONFLICT);
+            }
+
+            user.setEmail(newEmail);
         }
 
         usersRepository.save(user);
@@ -84,6 +91,10 @@ public class UsersServiceImpl implements UsersService {
         User user = usersRepository.findById(userId).orElseThrow(() ->
                 new RestApiException(ErrorDescription.USER_NOT_FOUND, HttpStatus.NOT_FOUND));
 
+        if (dto.getRole() == null || dto.getRole().isBlank()) {
+            throw new RestApiException(ErrorDescription.INVALID_ROLE, HttpStatus.BAD_REQUEST);
+        }
+
         try {
             Role newRole = Role.valueOf(dto.getRole().toUpperCase());
             user.setRole(newRole);
@@ -95,30 +106,37 @@ public class UsersServiceImpl implements UsersService {
         return modelMapper.map(updatedUser, UserDto.class);
     }
 
+
     @Override
     @Transactional
     public UserDto changePassword(Long id, ChangePasswordDto dto, Principal principal) {
+        User currentUser = usersRepository
+                .findByUsername(principal.getName())
+                .orElseThrow(() -> new RestApiException(ErrorDescription.USER_NOT_FOUND, HttpStatus.NOT_FOUND));
 
-        User currentUser = usersRepository.findByUsername(principal.getName())
-                .orElseThrow(() ->
-                        new RestApiException(ErrorDescription.USER_NOT_FOUND, HttpStatus.NOT_FOUND));
+        User user = usersRepository
+                .findById(id)
+                .orElseThrow(() -> new RestApiException(ErrorDescription.USER_NOT_FOUND, HttpStatus.NOT_FOUND));
 
-        // Найдём пользователя, чей пароль нужно менять
-        User user = usersRepository.findById(id).orElseThrow(() ->
-                new RestApiException(ErrorDescription.USER_NOT_FOUND, HttpStatus.NOT_FOUND));
-
-        // Проверка прав
         boolean isAdmin = currentUser.getRole() == Role.ADMIN;
         boolean isSelf = currentUser.getId().equals(id);
 
+        // Обычный пользователь может менять только свой пароль
         if (!isAdmin && !isSelf) {
-            throw new RestApiException(ErrorDescription.FORBIDDEN, HttpStatus.FORBIDDEN);
+            throw new RestApiException(
+                    ErrorDescription.FORBIDDEN,
+                    HttpStatus.FORBIDDEN
+            );
         }
 
-        // Если меняет сам себе — проверяем старый пароль
-        if (!isAdmin) {
-            if (!passwordEncoder.matches(dto.getOldPassword(), user.getPassword())) {
-                throw new RestApiException(ErrorDescription.INVALID_PASSWORD, HttpStatus.BAD_REQUEST);
+        // При смене собственного пароля проверяем старый пароль
+        if (isSelf) {
+            if (dto.getOldPassword() == null ||
+                    !passwordEncoder.matches(
+                            dto.getOldPassword(),
+                            user.getPassword()
+                    )) {
+                throw new RestApiException(ErrorDescription.INVALID_OLD_PASSWORD, HttpStatus.BAD_REQUEST);
             }
         }
 
@@ -129,4 +147,5 @@ public class UsersServiceImpl implements UsersService {
 
         return modelMapper.map(user, UserDto.class);
     }
+
 }

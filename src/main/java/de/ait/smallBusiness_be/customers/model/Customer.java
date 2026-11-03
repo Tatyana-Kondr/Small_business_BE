@@ -26,13 +26,13 @@ public class Customer {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column
-    @NotBlank(message = "validation.notBlank")
-    @Size(min = 3, max = 100, message = "{validation.name.size}")
+    @Column(length = 200, nullable = false)
+    @NotBlank(message = "{validation.notBlank}")
+    @Size(min = 3, max = 200, message = "{validation.name.size}")
     private String name;
 
-    @Column
-    @Size( max = 6, message = "{validation.name.size}")
+    @Column(name = "customer_number", unique = true, length = 6)
+    @Size(max = 6, message = "{validation.customerNumber.size}")
     private String customerNumber;
 
     @Embedded

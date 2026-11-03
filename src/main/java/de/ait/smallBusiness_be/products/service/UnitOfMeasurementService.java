@@ -2,6 +2,7 @@ package de.ait.smallBusiness_be.products.service;
 
 import de.ait.smallBusiness_be.products.dto.NewUnitOfMeasurementDto;
 import de.ait.smallBusiness_be.products.dto.UnitOfMeasurementDto;
+import de.ait.smallBusiness_be.products.model.UnitOfMeasurement;
 
 import java.util.List;
 
@@ -11,4 +12,5 @@ public interface UnitOfMeasurementService {
     UnitOfMeasurementDto updateUnitOfMeasurement(Long id, NewUnitOfMeasurementDto newUnitOfMeasurementDto);
     UnitOfMeasurementDto getUnitOfMeasurementById(Long id);
     void deleteUnitOfMeasurement(Long id);
+    UnitOfMeasurement getUnitOfMeasurementOrThrow(Long id);
 }

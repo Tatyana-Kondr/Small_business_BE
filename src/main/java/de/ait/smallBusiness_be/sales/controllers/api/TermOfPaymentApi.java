@@ -45,7 +45,14 @@ public interface TermOfPaymentApi {
             @ApiResponse(responseCode = "403",
                     description = "Forbidden.",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(type = "string")))
+                            schema = @Schema(type = "string"))),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "Term of payment already exists.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDto.class)
+                    )
+            )
     })
     @ResponseStatus(HttpStatus.CREATED)
     TermOfPaymentDto addTermOfPayment(
@@ -62,10 +69,6 @@ public interface TermOfPaymentApi {
                     description = "List of terms of payment retrieved successfully.",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = TermOfPaymentDto[].class))),
-            @ApiResponse(responseCode = "404",
-                    description = "No terms of payment found.",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponseDto.class))),
             @ApiResponse(responseCode = "401",
                     description = "User unauthorized.",
                     content = @Content(mediaType = "application/json",
@@ -114,7 +117,15 @@ public interface TermOfPaymentApi {
             @ApiResponse(responseCode = "403",
                     description = "Forbidden.",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(type = "string")))
+                            schema = @Schema(type = "string"))),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "Term of payment already exists.",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDto.class)
+                    )
+            )
     })
     @ResponseStatus(HttpStatus.OK)
     TermOfPaymentDto updateTermOfPayment(
@@ -141,7 +152,15 @@ public interface TermOfPaymentApi {
             @ApiResponse(responseCode = "404",
                     description = "Term of payment not found.",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponseDto.class)))
+                            schema = @Schema(implementation = ErrorResponseDto.class))),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "Term of payment is in use.",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDto.class)
+                    )
+            )
     })
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void deleteTermOfPayment(@PathVariable Long id);

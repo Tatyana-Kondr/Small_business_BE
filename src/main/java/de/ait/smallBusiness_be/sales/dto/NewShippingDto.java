@@ -16,7 +16,7 @@ import lombok.Setter;
 public class NewShippingDto {
 
     @NotBlank(message = "{validation.notBlank}")
-    @Size(max = 50, message = "Shipping name must not exceed 50 characters")
+    @Size(max = 50, message = "{validation.max.size}")
     @Schema(description = "Name of the shipping", example = "Hermes", required = true)
     private String name;
 }

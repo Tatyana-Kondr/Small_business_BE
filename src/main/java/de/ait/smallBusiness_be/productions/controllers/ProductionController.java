@@ -50,7 +50,7 @@ public class ProductionController implements ProductionsApi {
     }
 
     @Override
-    public Page<ProductionDto> searchProductions(Pageable pageable, String sort, String query) {
+    public Page<ProductionDto> searchProductions(Pageable pageable, String query) {
         return productionService.searchProduction(pageable, query);
     }
 

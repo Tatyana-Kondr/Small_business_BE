@@ -1,7 +1,6 @@
 package de.ait.smallBusiness_be.users.controllers;
 
 import de.ait.smallBusiness_be.exceptions.ErrorResponseDto;
-import de.ait.smallBusiness_be.exceptions.RestApiException;
 import de.ait.smallBusiness_be.users.dto.*;
 import de.ait.smallBusiness_be.users.services.AuthService;
 import lombok.RequiredArgsConstructor;
@@ -55,19 +54,9 @@ public class AuthController {
                             schema = @Schema(implementation = ErrorResponseDto.class)))
     })
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody @Valid AuthRequestDto authRequest) {
-        try {
-            AuthResponseDto authResponse = authService.login(authRequest);
-            return ResponseEntity.ok(authResponse);
-        } catch (RestApiException e) {
-            // Кастомные ошибки с понятным message
-            return ResponseEntity.status(e.getStatus())
-                    .body(new ErrorResponseDto(e.getMessage()));
-        } catch (Exception e) {
-            // Неожиданные ошибки
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponseDto("Internal server error"));
-        }
+    public ResponseEntity<AuthResponseDto> login(@RequestBody @Valid AuthRequestDto authRequest) {
+        AuthResponseDto authResponse = authService.login(authRequest);
+        return ResponseEntity.ok(authResponse);
     }
 
 
@@ -78,7 +67,7 @@ public class AuthController {
             @ApiResponse(responseCode = "403", description = "Refresh token invalid or expired")
     })
     @PostMapping("/refresh")
-    public AuthResponseDto refreshToken(@RequestBody RefreshRequestDto dto) {
+    public AuthResponseDto refreshToken(@RequestBody @Valid RefreshRequestDto dto) {
         log.info("Refresh token requested");
         return authService.refreshToken(dto.getRefreshToken());
     }
@@ -90,7 +79,7 @@ public class AuthController {
             @ApiResponse(responseCode = "200", description = "Logout successful")
     })
     @PostMapping("/logout")
-    public void logout(@RequestBody RefreshRequestDto dto) {
+    public void logout(@RequestBody @Valid RefreshRequestDto dto) {
         log.info("Logout requested");
         authService.logout(dto.getRefreshToken());
     }

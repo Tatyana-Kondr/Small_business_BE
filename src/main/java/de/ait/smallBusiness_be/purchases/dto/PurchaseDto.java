@@ -34,8 +34,10 @@ public class PurchaseDto {
     TypeOfDocument document;
     String documentNumber;
     BigDecimal subtotal; // Подитог
+    BigDecimal discountAmount; // Общая сумма скидок
     BigDecimal taxSum; // Сумма налога
     BigDecimal total; // Общая сумма
     String paymentStatus;
+    boolean hasPayments;
     List<PurchaseItemDto> purchaseItems;
 }

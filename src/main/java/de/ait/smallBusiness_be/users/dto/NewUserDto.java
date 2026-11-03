@@ -2,6 +2,7 @@ package de.ait.smallBusiness_be.users.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
@@ -16,6 +17,7 @@ import lombok.NoArgsConstructor;
  * @author Chechkina (AIT TR)
  */
 
+
 @Data
 @Builder
 @AllArgsConstructor
@@ -23,17 +25,21 @@ import lombok.NoArgsConstructor;
 @Schema(name = "New User", description = "Registration data")
 public class NewUserDto {
 
-    @NotNull
-    @Schema(description = "User's name", example = "user_1")
+    @NotBlank(message = "Username is required")
+    @Schema(description = "Username", example = "user_1")
     private String username;
 
-    @NotNull
-    @Pattern(regexp = "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)\\S{4,}$")
-    @Schema(description = "User's password", example = "Qwerty007!")
+    @NotBlank(message = "Password is required")
+    @Pattern(
+            regexp = "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[@#$%^&+=!])(?=\\S+$).{8,}$",
+            message = "Password must contain at least 8 characters, uppercase and lowercase letters, a number and a special character"
+    )
+    @Schema(description = "Password", example = "Qwerty007!")
     private String password;
 
-    @Email
-    @NotNull
-    @Schema(description = "User's email address", example = "user@gmail.com")
+    @NotBlank(message = "Email is required")
+    @Email(message = "Invalid email format")
+    @Schema(description = "Email address", example = "user@gmail.com")
     private String email;
 }
+

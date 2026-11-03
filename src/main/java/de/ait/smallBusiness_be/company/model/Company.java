@@ -23,41 +23,41 @@ public class Company {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
-    @Column
-    @NotBlank(message = "validation.notBlank")
+    @Column(nullable = false, length = 100)
+    @NotBlank(message = "{validation.notBlank}")
     @Size(min = 3, max = 100, message = "{validation.name.size}")
-    String name;
+    private String name;
 
-    @Column
-    @NotBlank(message = "validation.notBlank")
+    @Column(nullable = false)
+    @NotBlank(message = "{validation.notBlank}")
     String address;
 
     @Column
     @Pattern(regexp = PHONE_REGEX, message = "{phone.Pattern.message}")
     String phone;
 
-    @Column
+    @Column(nullable = false)
     @Pattern(regexp = EMAIL_REGEX, message = "{email.Pattern.message}")
-    @NotBlank(message = "validation.notBlank")
+    @NotBlank(message = "{validation.notBlank}")
     String email;
 
-    @Column
-    @NotBlank(message = "validation.notBlank")
+    @Column(nullable = false)
+    @NotBlank(message = "{validation.notBlank}")
     String bank;
 
-    @Column
+    @Column(nullable = false)
     @Pattern(regexp = IBAN_DE_REGEX, message = "{iban.Pattern.message}")
-    @NotBlank(message = "validation.notBlank")
+    @NotBlank(message = "{validation.notBlank}")
     String ibanNumber;
 
-    @Column
+    @Column(nullable = false, length = 11)
     @Size(min = 8, max = 11, message = "{validation.swift.size}")
-    @NotBlank(message = "validation.notBlank")
-    String bicNumber;
+    @NotBlank(message = "{validation.notBlank}")
+    private String bicNumber;
 
-    @Column
+    @Column(nullable = false)
     @Pattern(regexp = "^DE[0-9]{9}$", message = "{vat.Pattern.message}")
-    @NotBlank(message = "validation.notBlank")
+    @NotBlank(message = "{validation.notBlank}")
     String vatId;
 
     @Column

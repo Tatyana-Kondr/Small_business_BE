@@ -3,6 +3,7 @@ package de.ait.smallBusiness_be.products.service;
 
 import de.ait.smallBusiness_be.products.dto.NewProductCategoryDto;
 import de.ait.smallBusiness_be.products.dto.ProductCategoryDto;
+import de.ait.smallBusiness_be.products.model.ProductCategory;
 
 import java.util.List;
 
@@ -19,5 +20,5 @@ public interface ProductCategoryService {
     void deleteProductCategoryById(Long id);
     ProductCategoryDto updateProductCategory(Long id, NewProductCategoryDto newProductCategoryDto);
     List<ProductCategoryDto> findAllProductCategories();
-
+    ProductCategory getProductCategoryOrThrow(Long id);
 }

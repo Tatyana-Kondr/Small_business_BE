@@ -22,22 +22,26 @@ import static de.ait.smallBusiness_be.constaints.EntityValidationConstants.*;
 @NoArgsConstructor
 public class Address {
 
-    @Length(min = 4, max = 10, message = "{javax.validation.constraints.Size.message}")
+    @Column(name = "postal_code", length = 10)
+    @Length(min = 4, max = 10, message = "{validation.size}")
     @Pattern(regexp = POSTAL_CODE_REGEX, message = "{address.postalCode.Pattern.message}")
     private String postalCode;
 
-    @NotBlank(message = "{javax.validation.constraints.NotBlank.message}")
+    @NotBlank(message = "{validation.notBlank}")
     private String country;
 
-    @Length(min = 3, max = 50, message = "{javax.validation.constraints.Size.message}")
+    @Column(length = 50)
+    @Length(min = 3, max = 50, message = "{validation.size}")
     @Pattern(regexp = CITY_REGEX, message = "{address.city.Pattern.message}")
     private String city;
 
-    @Length(min = 3, max = 100, message = "{javax.validation.constraints.Size.message}")
+    @Column(length = 100)
+    @Length(min = 3, max = 100, message = "{validation.size}")
     @Pattern(regexp = STREET_REGEX, message = "{address.street.Pattern.message}")
     private String street;
 
-    @Length(min = 1, max = 6, message = "{javax.validation.constraints.Size.message}")
+    @Column(length = 20)
+    @Length(min = 1, max = 20, message = "{validation.size}")
     @Pattern(regexp = BUILDING_REGEX, message = "{address.building.Pattern.message}")
     private String building;
 }

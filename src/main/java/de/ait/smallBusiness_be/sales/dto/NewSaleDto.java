@@ -1,11 +1,8 @@
 package de.ait.smallBusiness_be.sales.dto;
 
-import de.ait.smallBusiness_be.purchases.model.PaymentStatus;
 import de.ait.smallBusiness_be.purchases.model.TypeOfOperation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.DecimalMax;
-import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
@@ -16,7 +13,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -35,7 +31,6 @@ public class NewSaleDto {
         @Schema(description = "Invoice number")
         String invoiceNumber;
 
-        @Size(max = 100, message = "{javax.validation.constraints.Size.message}")
         @Schema(description = "Account object (optional)", example = "Project Alpha")
         String accountObject;
 
@@ -61,19 +56,11 @@ public class NewSaleDto {
         @Schema(description = "Date of the sale", example = "2025-02-05")
         LocalDate salesDate;
 
-        @NotNull(message = "{validation.notNull}")
-        @Schema(description = "Payment status", example = "OFFEN")
-        PaymentStatus paymentStatus;
-
-        @PastOrPresent(message = "{validation.dateOfLastPurchase.pastOrPresent}")
-        @Schema(description = "Date of the payment", example = "2025-02-01")
-        LocalDate paymentDate;
-
-        @Size(max = 50, message = "{javax.validation.constraints.Size.message}")
+        @Size(max = 50, message = "{validation.max.size}")
         @Schema(description = "Order number", example = "12345")
         String orderNumber;
 
-        @Size(max = 100, message = "{javax.validation.constraints.Size.message}")
+        @Size(max = 100, message = "{validation.max.size}")
         @Schema(description = "Order type", example = "A.Muller")
         String orderType;
 
@@ -82,18 +69,6 @@ public class NewSaleDto {
 
         @Schema(description = "Delivery bill number")
         String deliveryBill;
-
-        @NotNull(message = "{validation.notNull}")
-        @DecimalMin(value = "0.0", inclusive = true, message = "{validation.percentage.min}")
-        @DecimalMax(value = "100.0", inclusive = true, message = "{validation.percentage.max}")
-        @Schema(description = "Default tax percentage")
-        BigDecimal defaultTax;
-
-        @NotNull(message = "{validation.notNull}")
-        @DecimalMin(value = "0.0", inclusive = true, message = "{validation.percentage.min}")
-        @DecimalMax(value = "100.0", inclusive = true, message = "{validation.percentage.max}")
-        @Schema(description = "Default discount percentage")
-        BigDecimal defaultDiscount;
 
         @Valid
         @NotEmpty(message = "{validation.sale.items.notEmpty}")

@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
-import java.util.Objects;
 
 /**
  * 19.09.2024
@@ -26,7 +25,7 @@ public class ProductPhoto {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "product_id", nullable = false)
     @NotNull(message = "{validation.notNull}")
     private Product product;
@@ -41,17 +40,23 @@ public class ProductPhoto {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        ProductPhoto that = (ProductPhoto) o;
-        return Objects.equals(id, that.id);
+        if (!(o instanceof ProductPhoto that)) return false;
+
+        return id != null && id.equals(that.getId());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(id);
+        return getClass().hashCode();
     }
 
     @Override
     public String toString() {
-        return String.format("productPhoto: ID - %d, product_id - %s, position - %s", id, product, position);}
+        return String.format(
+                "ProductPhoto: id - %d, productId - %s, position - %s",
+                id,
+                product != null ? product.getId() : null,
+                position
+        );
+    }
 }

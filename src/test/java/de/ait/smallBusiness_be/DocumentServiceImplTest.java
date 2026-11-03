@@ -2,6 +2,7 @@ package de.ait.smallBusiness_be;
 
 import de.ait.smallBusiness_be.company.dao.CompanyRepository;
 import de.ait.smallBusiness_be.company.model.Company;
+import de.ait.smallBusiness_be.exceptions.ErrorDescription;
 import de.ait.smallBusiness_be.exceptions.RestApiException;
 import de.ait.smallBusiness_be.sales.models.Sale;
 import de.ait.smallBusiness_be.sales.services.impl.DocumentServiceImpl;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
@@ -73,35 +75,15 @@ class DocumentServiceImplTest {
 
     @Test
     void generateInvoicePdf_success() {
-        when(templateEngine.process(
-                eq("invoice"),
-                any(Context.class)
-        )).thenReturn(
-                "<html><body><h1>Test Invoice</h1></body></html>"
-        );
+        when(templateEngine.process(eq("invoice"), any(Context.class))).thenReturn("<html><body><h1>Test Invoice</h1></body></html>");
 
-        assertDoesNotThrow(() ->
-                documentService.generateInvoicePdf(
-                        sale,
-                        baseFolder
-                )
-        );
+        assertDoesNotThrow(() -> documentService.generateInvoicePdf(sale, baseFolder));
 
-        Path expectedPdf = Path.of(
-                baseFolder,
-                "2026",
-                "RE2026001.pdf"
-        );
+        Path expectedPdf = Path.of(baseFolder, "2026", "RE2026001.pdf");
 
-        assertTrue(
-                Files.exists(expectedPdf),
-                "The invoice PDF must be generated"
-        );
+        assertTrue(Files.exists(expectedPdf), "The invoice PDF must be generated");
 
-        assertTrue(
-                expectedPdf.toFile().length() > 0,
-                "The generated invoice PDF must not be empty"
-        );
+        assertTrue(expectedPdf.toFile().length() > 0, "The generated invoice PDF must not be empty");
     }
 
     @Test
@@ -109,32 +91,14 @@ class DocumentServiceImplTest {
         when(templateEngine.process(
                 eq("delivery-bill"),
                 any(Context.class)
-        )).thenReturn(
-                "<html><body><h1>Test Delivery Bill</h1></body></html>"
-        );
+        )).thenReturn("<html><body><h1>Test Delivery Bill</h1></body></html>");
 
-        assertDoesNotThrow(() ->
-                documentService.generateDeliveryBillPdf(
-                        sale,
-                        baseFolder
-                )
-        );
+        assertDoesNotThrow(() -> documentService.generateDeliveryBillPdf(sale, baseFolder));
 
-        Path expectedPdf = Path.of(
-                baseFolder,
-                "2026",
-                "LF2026001.pdf"
-        );
+        Path expectedPdf = Path.of(baseFolder, "2026", "LF2026001.pdf");
 
-        assertTrue(
-                Files.exists(expectedPdf),
-                "The delivery bill PDF must be generated"
-        );
-
-        assertTrue(
-                expectedPdf.toFile().length() > 0,
-                "The generated delivery bill PDF must not be empty"
-        );
+        assertTrue(Files.exists(expectedPdf), "The delivery bill PDF must be generated");
+        assertTrue(expectedPdf.toFile().length() > 0, "The generated delivery bill PDF must not be empty");
     }
 
     @Test
@@ -142,14 +106,9 @@ class DocumentServiceImplTest {
         when(templateEngine.process(
                 eq("invoice"),
                 any(Context.class)
-        )).thenReturn(
-                "<html><body><h1>Test Invoice</h1></body></html>"
-        );
+        )).thenReturn("<html><body><h1>Test Invoice</h1></body></html>");
 
-        Path tempFile = documentService.generateInvoiceTempPdf(
-                sale,
-                baseFolder
-        );
+        Path tempFile = documentService.generateInvoiceTempPdf(sale, baseFolder);
 
         assertNotNull(tempFile);
         assertTrue(Files.exists(tempFile));
@@ -165,15 +124,9 @@ class DocumentServiceImplTest {
         when(templateEngine.process(
                 eq("delivery-bill"),
                 any(Context.class)
-        )).thenReturn(
-                "<html><body><h1>Test Delivery Bill</h1></body></html>"
-        );
+        )).thenReturn("<html><body><h1>Test Delivery Bill</h1></body></html>");
 
-        Path tempFile =
-                documentService.generateDeliveryBillTempPdf(
-                        sale,
-                        baseFolder
-                );
+        Path tempFile = documentService.generateDeliveryBillTempPdf(sale, baseFolder);
 
         assertNotNull(tempFile);
         assertTrue(Files.exists(tempFile));
@@ -192,26 +145,15 @@ class DocumentServiceImplTest {
         Path oldPdf = yearFolder.resolve("RE2026001.pdf");
         Files.writeString(oldPdf, "old invoice");
 
-        Path tempFile = Files.createTempFile(
-                yearFolder,
-                "RE2026001-",
-                ".tmp.pdf"
-        );
+        Path tempFile = Files.createTempFile(yearFolder, "RE2026001-", ".tmp.pdf");
         Files.writeString(tempFile, "new invoice");
 
-        documentService.replaceInvoicePdf(
-                sale,
-                baseFolder,
-                tempFile
-        );
+        documentService.replaceInvoicePdf(sale, baseFolder, tempFile);
 
         assertFalse(Files.exists(tempFile));
         assertTrue(Files.exists(oldPdf));
 
-        assertEquals(
-                "new invoice",
-                Files.readString(oldPdf)
-        );
+        assertEquals("new invoice", Files.readString(oldPdf));
     }
 
     @Test
@@ -222,48 +164,26 @@ class DocumentServiceImplTest {
         Path oldPdf = yearFolder.resolve("LF2026001.pdf");
         Files.writeString(oldPdf, "old delivery bill");
 
-        Path tempFile = Files.createTempFile(
-                yearFolder,
-                "LF2026001-",
-                ".tmp.pdf"
-        );
+        Path tempFile = Files.createTempFile(yearFolder, "LF2026001-", ".tmp.pdf");
         Files.writeString(tempFile, "new delivery bill");
 
-        documentService.replaceDeliveryBillPdf(
-                sale,
-                baseFolder,
-                tempFile
-        );
+        documentService.replaceDeliveryBillPdf(sale, baseFolder, tempFile);
 
         assertFalse(Files.exists(tempFile));
         assertTrue(Files.exists(oldPdf));
 
-        assertEquals(
-                "new delivery bill",
-                Files.readString(oldPdf)
-        );
+        assertEquals("new delivery bill", Files.readString(oldPdf));
     }
 
     @Test
     void replaceInvoicePdf_missingTempFile_throws() {
-        Path missingTempFile = Path.of(
-                baseFolder,
-                "missing.tmp.pdf"
-        );
+        Path missingTempFile = Path.of(baseFolder, "missing.tmp.pdf");
 
         RestApiException exception = assertThrows(
-                RestApiException.class,
-                () -> documentService.replaceInvoicePdf(
-                        sale,
-                        baseFolder,
-                        missingTempFile
-                )
-        );
+                RestApiException.class, () -> documentService.replaceInvoicePdf(sale, baseFolder, missingTempFile));
 
-        assertTrue(
-                exception.getMessage()
-                        .contains("Temporary PDF file does not exist")
-        );
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.getStatus());
+        assertTrue(exception.getMessage().contains(ErrorDescription.PDF_REPLACEMENT_FAILED.getDescription()));
     }
 
     @Test
@@ -271,23 +191,12 @@ class DocumentServiceImplTest {
         Path yearFolder = Path.of(baseFolder, "2026");
         Files.createDirectories(yearFolder);
 
-        Path pdfFile = yearFolder.resolve(
-                sale.getInvoiceNumber() + ".pdf"
-        );
+        Path pdfFile = yearFolder.resolve(sale.getInvoiceNumber() + ".pdf");
 
         Files.createFile(pdfFile);
 
-        assertDoesNotThrow(() ->
-                documentService.deleteInvoicePdf(
-                        sale,
-                        baseFolder
-                )
-        );
-
-        assertFalse(
-                Files.exists(pdfFile),
-                "The invoice PDF must be deleted"
-        );
+        assertDoesNotThrow(() -> documentService.deleteInvoicePdf(sale, baseFolder));
+        assertFalse(Files.exists(pdfFile), "The invoice PDF must be deleted");
     }
 
     @Test
@@ -295,58 +204,40 @@ class DocumentServiceImplTest {
         Path yearFolder = Path.of(baseFolder, "2026");
         Files.createDirectories(yearFolder);
 
-        Path pdfFile = yearFolder.resolve(
-                sale.getDeliveryBill() + ".pdf"
-        );
+        Path pdfFile = yearFolder.resolve(sale.getDeliveryBill() + ".pdf");
 
         Files.createFile(pdfFile);
 
-        assertDoesNotThrow(() ->
-                documentService.deleteDeliveryBillPdf(
-                        sale,
-                        baseFolder
-                )
-        );
-
-        assertFalse(
-                Files.exists(pdfFile),
-                "The delivery bill PDF must be deleted"
-        );
+        assertDoesNotThrow(() -> documentService.deleteDeliveryBillPdf(sale, baseFolder));
+        assertFalse(Files.exists(pdfFile), "The delivery bill PDF must be deleted");
     }
 
     @Test
     void deleteInvoicePdf_fileDoesNotExist_doesNotThrow() {
-        assertDoesNotThrow(() ->
-                documentService.deleteInvoicePdf(
-                        sale,
-                        baseFolder
-                )
-        );
+        assertDoesNotThrow(() -> documentService.deleteInvoicePdf(sale, baseFolder));
     }
 
     @Test
     void deleteTempFile_null_doesNotThrow() {
-        assertDoesNotThrow(() ->
-                documentService.deleteTempFile(null)
-        );
+        assertDoesNotThrow(() -> documentService.deleteTempFile(null));
+    }
+
+    @Test
+    void deleteTempFile_missingFile_doesNotThrow() {
+        Path missingFile = Path.of(baseFolder, "missing.tmp.pdf");
+
+        assertDoesNotThrow(() -> documentService.deleteTempFile(missingFile));
     }
 
     @Test
     void generatePdf_companyNotFound_throws() {
-        when(companyRepository.findById(1L))
-                .thenReturn(Optional.empty());
+        when(companyRepository.findById(1L)).thenReturn(Optional.empty());
 
         RestApiException exception = assertThrows(
-                RestApiException.class,
-                () -> documentService.generateInvoicePdf(
-                        sale,
-                        baseFolder
-                )
-        );
+                RestApiException.class, () -> documentService.generateInvoicePdf(sale, baseFolder));
 
-        assertTrue(
-                exception.getMessage().contains("Company not found")
-        );
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+        assertTrue(exception.getMessage().contains(ErrorDescription.COMPANY_NOT_FOUND.getDescription()));
     }
 
     @Test
@@ -354,17 +245,36 @@ class DocumentServiceImplTest {
         sale.setInvoiceNumber("INVALID");
 
         RestApiException exception = assertThrows(
-                RestApiException.class,
-                () -> documentService.generateInvoicePdf(
-                        sale,
-                        baseFolder
-                )
-        );
+                RestApiException.class, () -> documentService.generateInvoicePdf(sale, baseFolder));
 
-        assertTrue(
-                exception.getMessage()
-                        .contains("Invalid document number format")
-        );
+        assertTrue(exception.getMessage().contains("Invalid document number format"));
+    }
+
+    @Test
+    void generateInvoiceTempPdf_companyNotFound_cleansTempFile()
+            throws IOException {
+        when(companyRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(RestApiException.class, () -> documentService.generateInvoiceTempPdf(sale, baseFolder));
+
+        Path yearFolder = Path.of(baseFolder, "2026");
+
+        try (var files = Files.list(yearFolder)) {
+            assertTrue(files.noneMatch(path -> path.getFileName().toString().endsWith(".tmp.pdf")));
+        }
+    }
+
+    @Test
+    void generateInvoicePdf_templateError_throws() {
+        when(templateEngine.process(
+                eq("invoice"),
+                any(Context.class)
+        )).thenThrow(new IllegalStateException("Template failed"));
+
+        RestApiException exception = assertThrows(RestApiException.class, () -> documentService.generateInvoicePdf(sale, baseFolder));
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.getStatus());
+        assertTrue(exception.getMessage().contains(ErrorDescription.PDF_GENERATION_FAILED.getDescription()));
     }
 
     private void deleteTestFolder() throws IOException {

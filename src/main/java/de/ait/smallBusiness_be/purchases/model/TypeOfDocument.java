@@ -1,6 +1,7 @@
 package de.ait.smallBusiness_be.purchases.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
@@ -16,7 +17,8 @@ public class TypeOfDocument {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false)
+    @NotBlank(message = "{validation.notBlank}")
     @Size(max = 30, message = "{validation.max.size}")
+    @Column(name = "name", unique = true, nullable = false, length = 30)
     private String name;
 }

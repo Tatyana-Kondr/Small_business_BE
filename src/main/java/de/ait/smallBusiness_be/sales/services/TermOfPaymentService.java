@@ -2,6 +2,7 @@ package de.ait.smallBusiness_be.sales.services;
 
 import de.ait.smallBusiness_be.sales.dto.NewTermOfPaymentDto;
 import de.ait.smallBusiness_be.sales.dto.TermOfPaymentDto;
+import de.ait.smallBusiness_be.sales.models.TermOfPayment;
 
 import java.util.List;
 
@@ -10,5 +11,6 @@ public interface TermOfPaymentService {
     List<TermOfPaymentDto> findAllTermsOfPayment();
     TermOfPaymentDto findTermOfPaymentById(long id);
     TermOfPaymentDto updateTermOfPayment(Long id, NewTermOfPaymentDto newTermOfPaymentDto);
+    TermOfPayment getTermOfPaymentOrThrow(Long id);
     void deleteTermOfPayment(long id);
 }

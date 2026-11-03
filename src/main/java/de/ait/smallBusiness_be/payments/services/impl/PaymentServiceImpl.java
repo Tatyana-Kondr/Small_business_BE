@@ -27,9 +27,7 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,26 +53,36 @@ public class PaymentServiceImpl implements PaymentService {
 
 
     @Override
+    @Transactional(readOnly = true)
     public PaymentPrefillDto getPrefillDataForSale(Long saleId) {
         Sale sale = saleRepository.findById(saleId)
-                .orElseThrow(() -> new EntityNotFoundException("Sale not found with id: " + saleId));
+                .orElseThrow(() -> new EntityNotFoundException(ErrorDescription.SALE_NOT_FOUND.getDescription()));
 
         List<Payment> payments = paymentRepository.findBySaleId(saleId);
 
         BigDecimal alreadyPaid = payments.stream()
-                .map(Payment::getAmount)
+                .map(payment -> switch (payment.getType()) {
+                    case EINNAHME -> payment.getAmount();
+                    case AUSGABE -> payment.getAmount().negate();
+                })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal overpayment = alreadyPaid
+                .subtract(sale.getTotalAmount())
+                .max(BigDecimal.ZERO);
 
         BigDecimal amountLeft = sale.getTotalAmount().subtract(alreadyPaid).max(BigDecimal.ZERO);
 
         TypeOfDocument document = typeOfDocumentRepository.findByName("RECHNUNG")
-                .orElseThrow(() -> new EntityNotFoundException("Type of document 'RECHNUNG' not found"));
+                .orElseThrow(() -> new EntityNotFoundException(ErrorDescription.TYPE_OF_DOCUMENT_NOT_FOUND.getDescription()));
 
         return PaymentPrefillDto.builder()
                 .customerId(sale.getCustomer().getId())
                 .customerName(sale.getCustomer().getName())
                 .amount(sale.getTotalAmount())
                 .amountLeft(amountLeft)
+                .alreadyPaid(alreadyPaid)
+                .overpayment(overpayment)
                 .saleId(sale.getId())
                 .documentId(document.getId())
                 .documentName(document.getName())
@@ -84,15 +92,23 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PaymentPrefillDto getPrefillDataForPurchase(Long purchaseId) {
         Purchase purchase = purchaseRepository.findById(purchaseId)
-                .orElseThrow(() -> new EntityNotFoundException("Purchase not found with id: " + purchaseId));
+                .orElseThrow(() -> new EntityNotFoundException(ErrorDescription.PURCHASE_NOT_FOUND.getDescription()));
 
         List<Payment> payments = paymentRepository.findByPurchaseId(purchaseId);
 
         BigDecimal alreadyPaid = payments.stream()
-                .map(Payment::getAmount)
+                .map(payment -> switch (payment.getType()) {
+                    case AUSGABE -> payment.getAmount();
+                    case EINNAHME -> payment.getAmount().negate();
+                })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal overpayment = alreadyPaid
+                .subtract(purchase.getTotal())
+                .max(BigDecimal.ZERO);
 
         BigDecimal amountLeft = purchase.getTotal().subtract(alreadyPaid).max(BigDecimal.ZERO);
 
@@ -103,6 +119,8 @@ public class PaymentServiceImpl implements PaymentService {
                 .customerName(purchase.getVendor().getName())
                 .amount(purchase.getTotal())
                 .amountLeft(amountLeft)
+                .alreadyPaid(alreadyPaid)
+                .overpayment(overpayment)
                 .purchaseId(purchase.getId())
                 .documentId(document.getId())
                 .documentName(document.getName())
@@ -111,136 +129,109 @@ public class PaymentServiceImpl implements PaymentService {
                 .build();
     }
 
+
     @Override
+    @Transactional
     public PaymentDto createPayment(NewPaymentDto newPaymentDto) {
 
-        Customer customer = customerRepository.findById(newPaymentDto.getCustomerId())
-                .orElseThrow(() -> new EntityNotFoundException("Customer not found"));
+        validatePaymentReferences(newPaymentDto);
 
-        PaymentMethod method = paymentMethodRepository.findById(newPaymentDto.getPaymentMethodId())
-                .orElseThrow(() -> new EntityNotFoundException("Payment method not found"));
-
-        PaymentProcess process = paymentProcessRepository.findById(newPaymentDto.getPaymentProcessId())
-                .orElseThrow(() -> new EntityNotFoundException("Payment process not found"));
-
-        TypeOfDocument document = typeOfDocumentRepository.findById(newPaymentDto.getDocumentId())
-                .orElseThrow(() -> new EntityNotFoundException("Document not found"));
-
-        Sale sale = null;
-        if (newPaymentDto.getSaleId() != null) {
-            sale = saleRepository.findById(newPaymentDto.getSaleId())
-                    .orElseThrow(() -> new EntityNotFoundException("Sale not found"));
-        }
-
-        Purchase purchase = null;
-        if (newPaymentDto.getPurchaseId() != null) {
-            purchase = purchaseRepository.findById(newPaymentDto.getPurchaseId())
-                    .orElseThrow(() -> new EntityNotFoundException("Purchase not found"));
-        }
+        PaymentReferences references = getPaymentReferences(newPaymentDto);
 
         Payment payment = new Payment();
-        payment.setPaymentDate(newPaymentDto.getPaymentDate());
-        payment.setCustomer(customer);
-        payment.setType(newPaymentDto.getType());
-        payment.setAmount(newPaymentDto.getAmount());
-        payment.setSale(sale);
-        payment.setPurchase(purchase);
-        payment.setDocument(document);
-        payment.setDocumentNumber(newPaymentDto.getDocumentNumber());
-        payment.setPaymentMethod(method);
-        payment.setPaymentProcess(process);
 
-        Payment saved = paymentRepository.save(payment);
+        updatePaymentFields(payment, newPaymentDto, references);
+
+        Payment saved = paymentRepository.saveAndFlush(payment);
+
+        updateRelatedPaymentStatus(saved.getSale(), saved.getPurchase());
+
         return modelMapper.map(saved, PaymentDto.class);
     }
 
 
     @Override
+    @Transactional(readOnly = true)
     public Page<PaymentDto> getPayments(Pageable pageable) {
-
-        Page<Payment> payments = paymentRepository.findAllWithSorting(pageable);
-        if (payments.isEmpty()) {
-            throw new RestApiException(ErrorDescription.LIST_PAYMENTS_IS_EMPTY, HttpStatus.NOT_FOUND);
-        }
-        return payments.map(payment -> modelMapper.map(payment, PaymentDto.class));
+        return paymentRepository
+                .findAllWithSorting(pageable)
+                .map(payment -> modelMapper.map(payment, PaymentDto.class));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<PaymentDto> searchPayments(Pageable pageable, String query) {
         return paymentRepository.searchPayments(pageable, query)
                 .map(payment -> modelMapper.map(payment, PaymentDto.class));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<PaymentDto> getAllPaymentsByFilter(Pageable pageable, Long id, Long customerId, String customerName, Long saleId, Long purchaseId, LocalDate startDate, LocalDate endDate, Long documentId, String documentNumber, BigDecimal amount, String searchQuery) {
         return paymentRepository.filterByPaymentsFields(pageable, id, customerId, customerName, saleId, purchaseId, startDate, endDate, documentId, documentNumber, amount, searchQuery)
                 .map(payment -> modelMapper.map(payment, PaymentDto.class));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PaymentDto getPayment(Long id) {
-        Payment payment = paymentRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Payment not found"));
-        return modelMapper.map(payment, PaymentDto.class);
+        return modelMapper.map(getPaymentOrThrow(id), PaymentDto.class);
     }
+
 
     @Override
+    @Transactional
     public PaymentDto updatePayment(Long id, NewPaymentDto newPaymentDto) {
-        Payment existing = paymentRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Payment not found"));
+        Payment existing = getPaymentOrThrow(id);
 
-        Customer customer = customerRepository.findById(newPaymentDto.getCustomerId())
-                .orElseThrow(() -> new EntityNotFoundException("Customer not found"));
+        Long oldSaleId = existing.getSale() != null ? existing.getSale().getId() : null;
 
-        PaymentMethod method = paymentMethodRepository.findById(newPaymentDto.getPaymentMethodId())
-                .orElseThrow(() -> new EntityNotFoundException("Payment method not found"));
+        Long oldPurchaseId = existing.getPurchase() != null ? existing.getPurchase().getId() : null;
 
-        PaymentProcess process = paymentProcessRepository.findById(newPaymentDto.getPaymentProcessId())
-                .orElseThrow(() -> new EntityNotFoundException("Payment process not found"));
+        validatePaymentReferences(newPaymentDto);
 
-        TypeOfDocument document = typeOfDocumentRepository.findById(newPaymentDto.getDocumentId())
-                .orElseThrow(() -> new EntityNotFoundException("Document not found"));
+        PaymentReferences references = getPaymentReferences(newPaymentDto);
 
-        Sale sale = null;
-        if (newPaymentDto.getSaleId() != null) {
-            sale = saleRepository.findById(newPaymentDto.getSaleId())
-                    .orElseThrow(() -> new EntityNotFoundException("Sale not found"));
+        updatePaymentFields(existing, newPaymentDto, references);
+
+        Payment saved = paymentRepository.saveAndFlush(existing);
+
+        if (oldSaleId != null) {
+            saleService.updatePaymentStatus(oldSaleId);
         }
 
-        Purchase purchase = null;
-        if (newPaymentDto.getPurchaseId() != null) {
-            purchase = purchaseRepository.findById(newPaymentDto.getPurchaseId())
-                    .orElseThrow(() -> new EntityNotFoundException("Purchase not found"));
+        if (oldPurchaseId != null) {
+            purchaseService.updatePaymentStatus(oldPurchaseId);
         }
 
-        existing.setPaymentDate(newPaymentDto.getPaymentDate());
-        existing.setCustomer(customer);
-        existing.setType(newPaymentDto.getType());
-        existing.setAmount(newPaymentDto.getAmount());
-        existing.setSale(sale);
-        existing.setPurchase(purchase);
-        existing.setDocument(document);
-        existing.setDocumentNumber(newPaymentDto.getDocumentNumber());
-        existing.setPaymentMethod(method);
-        existing.setPaymentProcess(process);
+        boolean saleChanged = saved.getSale() != null && !saved.getSale().getId().equals(oldSaleId);
 
-        return modelMapper.map(paymentRepository.save(existing), PaymentDto.class);
+        boolean purchaseChanged = saved.getPurchase() != null && !saved.getPurchase().getId().equals(oldPurchaseId);
+
+        if (saleChanged || purchaseChanged) {
+            updateRelatedPaymentStatus(saleChanged ? saved.getSale() : null, purchaseChanged ? saved.getPurchase() : null);
+        }
+
+        return modelMapper.map(saved, PaymentDto.class);
     }
+
+
 
     @Override
     @Transactional
     public void deletePayment(Long id) {
-        Payment payment = paymentRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Payment not found"));
 
-        paymentRepository.deleteById(id);
+        Payment payment = getPaymentOrThrow(id);
 
-        if (payment.getPurchase() != null) {
-            purchaseService.updatePaymentStatus(payment.getPurchase().getId());
-        } else if (payment.getSale() != null) {
-            saleService.updatePaymentStatus(payment.getSale().getId());
-        }
+        Sale sale = payment.getSale();
+        Purchase purchase = payment.getPurchase();
+
+        paymentRepository.delete(payment);
+        paymentRepository.flush();
+
+        updateRelatedPaymentStatus(sale, purchase);
     }
+
 
     @Override
     public List<Long> getAllSaleIds() {
@@ -251,4 +242,98 @@ public class PaymentServiceImpl implements PaymentService {
     public List<Long> getAllPurchaseIds() {
         return paymentRepository.findDistinctPurchaseIds();
     }
+
+
+    private Payment getPaymentOrThrow(Long id) {
+        return paymentRepository.findById(id).orElseThrow(() -> new EntityNotFoundException(ErrorDescription.PAYMENT_NOT_FOUND.getDescription()));
+    }
+
+    private void validatePaymentReferences(NewPaymentDto newPaymentDto) {
+        if (newPaymentDto.getSaleId() != null && newPaymentDto.getPurchaseId() != null) {
+            throw new RestApiException(ErrorDescription.PAYMENT_MULTIPLE_REFERENCES, HttpStatus.CONFLICT);
+        }
+    }
+
+
+    private PaymentReferences getPaymentReferences(NewPaymentDto newPaymentDto) {
+
+        // Zahlungsmethode
+        PaymentMethod paymentMethod = paymentMethodRepository.findById(newPaymentDto.getPaymentMethodId())
+                .orElseThrow(() -> new EntityNotFoundException(ErrorDescription.PAYMENT_METHOD_NOT_FOUND.getDescription()));
+
+        // Zahlungsart
+        PaymentProcess paymentProcess = paymentProcessRepository.findById(newPaymentDto.getPaymentProcessId())
+                .orElseThrow(() -> new EntityNotFoundException(ErrorDescription.PAYMENT_PROCESS_NOT_FOUND.getDescription()));
+
+        // Dokument
+        TypeOfDocument document = typeOfDocumentRepository.findById(newPaymentDto.getDocumentId())
+                .orElseThrow(() -> new EntityNotFoundException(ErrorDescription.TYPE_OF_DOCUMENT_NOT_FOUND.getDescription()));
+
+        // Verkauf
+        Sale sale = null;
+
+        if (newPaymentDto.getSaleId() != null) {
+            sale = saleRepository.findById(newPaymentDto.getSaleId())
+                    .orElseThrow(() -> new EntityNotFoundException(ErrorDescription.SALE_NOT_FOUND.getDescription()));
+        }
+
+        // Einkauf
+        Purchase purchase = null;
+
+        if (newPaymentDto.getPurchaseId() != null) {
+            purchase = purchaseRepository.findById(newPaymentDto.getPurchaseId())
+                    .orElseThrow(() -> new EntityNotFoundException(ErrorDescription.PURCHASE_NOT_FOUND.getDescription()));
+        }
+
+        // Geschäftspartner automatisch bestimmen
+        Customer customer;
+
+        if (sale != null) {
+            customer = sale.getCustomer();
+
+        } else if (purchase != null) {
+            customer = purchase.getVendor();
+
+        } else {
+            customer = customerRepository.findById(newPaymentDto.getCustomerId())
+                    .orElseThrow(() -> new EntityNotFoundException(ErrorDescription.CUSTOMER_NOT_FOUND.getDescription()));
+        }
+
+        return new PaymentReferences(customer, paymentMethod, paymentProcess, document, sale, purchase);
+    }
+
+    private void updateRelatedPaymentStatus(Sale sale, Purchase purchase) {
+        if (sale != null) {
+            saleService.updatePaymentStatus(sale.getId());
+        }
+
+        if (purchase != null) {
+            purchaseService.updatePaymentStatus(purchase.getId());
+        }
+    }
+
+
+    private void updatePaymentFields(Payment payment, NewPaymentDto dto, PaymentReferences references) {
+        payment.setPaymentDate(dto.getPaymentDate());
+        payment.setCustomer(references.customer());
+        payment.setType(dto.getType());
+        payment.setAmount(dto.getAmount());
+        payment.setSale(references.sale());
+        payment.setPurchase(references.purchase());
+        payment.setDocument(references.document());
+        payment.setDocumentNumber(dto.getDocumentNumber());
+        payment.setPaymentMethod(references.paymentMethod());
+        payment.setPaymentProcess(references.paymentProcess());
+    }
+
+    private record PaymentReferences(
+            Customer customer,
+            PaymentMethod paymentMethod,
+            PaymentProcess paymentProcess,
+            TypeOfDocument document,
+            Sale sale,
+            Purchase purchase
+    ) {
+    }
 }
+

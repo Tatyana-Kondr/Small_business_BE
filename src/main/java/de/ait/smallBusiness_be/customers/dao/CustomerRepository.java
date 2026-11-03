@@ -21,13 +21,15 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
 
     Page<Customer> findAllByCustomerNumberIsNotNullAndCustomerNumberNot(Pageable pageable, String emptyStr);
 
-    List<Customer> findAllByCustomerNumberIsNotNull();
+    List<Customer> findAllByCustomerNumberIsNotNullAndCustomerNumberNot(String emptyStr);
 
     boolean existsByNameAndAddress(String name, Address map);
 
     boolean existsByCustomerNumber(String customerNumber);
 
     Page<Customer> findByNameContainingIgnoreCase(String name, Pageable pageable);
+
+    List<Customer> findByNameIgnoreCase(String name);
 
     Page<Customer> findByCustomerNumberIsNotNullAndCustomerNumberNotAndNameContainingIgnoreCase(String emptyStr, String name, Pageable pageable);
 }

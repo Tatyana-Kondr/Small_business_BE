@@ -2,513 +2,373 @@ package de.ait.smallBusiness_be;
 
 import de.ait.smallBusiness_be.customers.dao.CustomerRepository;
 import de.ait.smallBusiness_be.customers.model.Customer;
-import de.ait.smallBusiness_be.payments.dao.PaymentMethodRepository;
-import de.ait.smallBusiness_be.payments.dao.PaymentProcessRepository;
-import de.ait.smallBusiness_be.payments.dao.PaymentRepository;
-import de.ait.smallBusiness_be.payments.dto.NewPaymentDto;
-import de.ait.smallBusiness_be.payments.dto.PaymentDto;
-import de.ait.smallBusiness_be.payments.dto.PaymentPrefillDto;
-import de.ait.smallBusiness_be.payments.model.Payment;
-import de.ait.smallBusiness_be.payments.model.PaymentMethod;
-import de.ait.smallBusiness_be.payments.model.PaymentProcess;
-import de.ait.smallBusiness_be.payments.model.PaymentType;
+import de.ait.smallBusiness_be.exceptions.RestApiException;
+import de.ait.smallBusiness_be.payments.dao.*;
+import de.ait.smallBusiness_be.payments.dto.*;
+import de.ait.smallBusiness_be.payments.model.*;
 import de.ait.smallBusiness_be.payments.services.impl.PaymentServiceImpl;
-import de.ait.smallBusiness_be.purchases.dao.PurchaseRepository;
-import de.ait.smallBusiness_be.purchases.dao.TypeOfDocumentRepository;
-import de.ait.smallBusiness_be.purchases.model.Purchase;
-import de.ait.smallBusiness_be.purchases.model.TypeOfDocument;
+import de.ait.smallBusiness_be.purchases.dao.*;
+import de.ait.smallBusiness_be.purchases.model.*;
 import de.ait.smallBusiness_be.purchases.services.PurchaseService;
 import de.ait.smallBusiness_be.sales.dao.SaleRepository;
 import de.ait.smallBusiness_be.sales.models.Sale;
 import de.ait.smallBusiness_be.sales.services.SaleService;
-import org.junit.jupiter.api.AfterEach;
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.*;
+import org.springframework.http.HttpStatus;
 
-import jakarta.persistence.EntityNotFoundException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class PaymentServiceImplTest {
+    @Mock PaymentRepository paymentRepository;
+    @Mock CustomerRepository customerRepository;
+    @Mock SaleRepository saleRepository;
+    @Mock PurchaseRepository purchaseRepository;
+    @Mock PaymentMethodRepository paymentMethodRepository;
+    @Mock PaymentProcessRepository paymentProcessRepository;
+    @Mock TypeOfDocumentRepository typeOfDocumentRepository;
+    @Mock PurchaseService purchaseService;
+    @Mock SaleService saleService;
+    @Mock ModelMapper modelMapper;
+    @InjectMocks PaymentServiceImpl service;
 
-    @InjectMocks
-    private PaymentServiceImpl service;
-
-    @Mock
-    private PaymentRepository paymentRepository;
-    @Mock
-    private CustomerRepository customerRepository;
-    @Mock
-    private SaleRepository saleRepository;
-    @Mock
-    private PurchaseRepository purchaseRepository;
-    @Mock
-    private PaymentMethodRepository paymentMethodRepository;
-    @Mock
-    private PaymentProcessRepository paymentProcessRepository;
-    @Mock
-    private TypeOfDocumentRepository typeOfDocumentRepository;
-    @Mock
-    private PurchaseService purchaseService;
-    @Mock
-    private SaleService saleService;
-    @Mock
-    private ModelMapper modelMapper;
-
-    private AutoCloseable closeable;
+    private Customer customer;
+    private PaymentMethod method;
+    private PaymentProcess process;
+    private TypeOfDocument document;
+    private NewPaymentDto input;
 
     @BeforeEach
     void setUp() {
-        closeable = MockitoAnnotations.openMocks(this);
-    }
-
-    @AfterEach
-    void tearDown() throws Exception {
-        closeable.close();
-    }
-
-    // ===== PREFILL FOR SALE =====
-    @Test
-    void getPrefillDataForSale_success() {
-        // Arrange
-        Customer customer = new Customer();
+        customer = new Customer();
         customer.setId(1L);
-        customer.setName("John");
-
-        // Документ (из репозитория)
-        TypeOfDocument document = new TypeOfDocument();
-        document.setId(1L);
-        document.setName("RECHNUNG");
-
-        // Продажа
-        Sale sale = new Sale();
-        sale.setId(1L);
-        sale.setTotalAmount(BigDecimal.valueOf(100));
-        sale.setCustomer(customer);
-        sale.setInvoiceNumber("INV-001");
-
-        // Уже существующий платёж
-        Payment payment = new Payment();
-        payment.setAmount(BigDecimal.valueOf(30));
-
-        // Моки
-        when(saleRepository.findById(1L)).thenReturn(Optional.of(sale));
-        when(paymentRepository.findBySaleId(1L)).thenReturn(List.of(payment));
-        when(typeOfDocumentRepository.findByName("RECHNUNG")).thenReturn(Optional.of(document));
-
-        // Act
-        PaymentPrefillDto result = service.getPrefillDataForSale(1L);
-
-        // Assert
-        assertThat(result).isNotNull();
-        assertThat(result.getCustomerId()).isEqualTo(1L);
-        assertThat(result.getCustomerName()).isEqualTo("John");
-        assertThat(result.getAmount()).isEqualTo(BigDecimal.valueOf(100));
-        assertThat(result.getAmountLeft()).isEqualTo(BigDecimal.valueOf(70));
-        assertThat(result.getSaleId()).isEqualTo(1L);
-        assertThat(result.getDocumentId()).isEqualTo(1L);
-        assertThat(result.getDocumentName()).isEqualTo("RECHNUNG");
-        assertThat(result.getType()).isEqualTo(PaymentType.EINNAHME);
-
-        // Проверяем, что репозиторий документа вызывался
-        verify(typeOfDocumentRepository).findByName("RECHNUNG");
-    }
-
-
-    @Test
-    void getPrefillDataForSale_notFound_throws() {
-        when(saleRepository.findById(1L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> service.getPrefillDataForSale(1L))
-                .isInstanceOf(EntityNotFoundException.class)
-                .hasMessageContaining("Sale not found");
-    }
-
-    // ===== PREFILL FOR PURCHASE =====
-    @Test
-    void getPrefillDataForPurchase_success() {
-        // Arrange
-        Customer vendor = new Customer();
-        vendor.setId(2L);
-        vendor.setName("Vendor1");
-
-        // Документ, связанный с покупкой
-        TypeOfDocument document = new TypeOfDocument();
-        document.setId(2L);
-        document.setName("EINKAUFSRECHNUNG");
-
-        // Покупка
-        Purchase purchase = new Purchase();
-        purchase.setId(1L);
-        purchase.setTotal(BigDecimal.valueOf(200));
-        purchase.setVendor(vendor);
-        purchase.setDocumentNumber("DOC-001");
-        purchase.setDocument(document);
-
-        // Уже оплаченная часть
-        Payment payment = new Payment();
-        payment.setAmount(BigDecimal.valueOf(50));
-
-        // Моки
-        when(purchaseRepository.findById(1L)).thenReturn(Optional.of(purchase));
-        when(paymentRepository.findByPurchaseId(1L)).thenReturn(List.of(payment));
-
-        // Act
-        PaymentPrefillDto result = service.getPrefillDataForPurchase(1L);
-
-        // Assert
-        assertThat(result).isNotNull();
-        assertThat(result.getCustomerId()).isEqualTo(2L);
-        assertThat(result.getCustomerName()).isEqualTo("Vendor1");
-        assertThat(result.getAmount()).isEqualTo(BigDecimal.valueOf(200));
-        assertThat(result.getAmountLeft()).isEqualTo(BigDecimal.valueOf(150));
-        assertThat(result.getPurchaseId()).isEqualTo(1L);
-        assertThat(result.getDocumentId()).isEqualTo(2L);
-        assertThat(result.getDocumentName()).isEqualTo("EINKAUFSRECHNUNG");
-        assertThat(result.getDocumentNumber()).isEqualTo("DOC-001");
-        assertThat(result.getType()).isEqualTo(PaymentType.AUSGABE);
-
-        // Verify — убеждаемся, что репозитории вызваны корректно
-        verify(purchaseRepository).findById(1L);
-        verify(paymentRepository).findByPurchaseId(1L);
-    }
-
-    @Test
-    void getPrefillDataForPurchase_notFound_throws() {
-        when(purchaseRepository.findById(1L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> service.getPrefillDataForPurchase(1L))
-                .isInstanceOf(EntityNotFoundException.class)
-                .hasMessageContaining("Purchase not found");
-    }
-
-    // ===== CREATE PAYMENT =====
-    @Test
-    void createPayment_success() {
-        // Arrange
-        NewPaymentDto newDto = new NewPaymentDto();
-        newDto.setCustomerId(1L);
-        newDto.setPaymentMethodId(2L);
-        newDto.setPaymentProcessId(3L);
-        newDto.setAmount(BigDecimal.valueOf(100));
-        newDto.setPaymentDate(LocalDate.now());
-        newDto.setType(PaymentType.EINNAHME);
-        newDto.setDocumentId(1L);
-
-        // Entities
-        Customer customer = new Customer();
-        customer.setId(1L);
-
-        PaymentMethod method = new PaymentMethod();
+        customer.setName("Muster GmbH");
+        method = new PaymentMethod();
         method.setId(2L);
-
-        PaymentProcess process = new PaymentProcess();
+        process = new PaymentProcess();
         process.setId(3L);
-
-        TypeOfDocument document = new TypeOfDocument();
-        document.setId(1L);
+        document = new TypeOfDocument();
+        document.setId(4L);
         document.setName("RECHNUNG");
+        input = new NewPaymentDto();
+        input.setCustomerId(1L);
+        input.setPaymentMethodId(2L);
+        input.setPaymentProcessId(3L);
+        input.setDocumentId(4L);
+        input.setAmount(new BigDecimal("100.00"));
+        input.setPaymentDate(LocalDate.of(2026, 10, 28));
+        input.setType(PaymentType.EINNAHME);
+        input.setDocumentNumber("RE2026001");
+    }
 
-        // Моки репозиториев
-        when(customerRepository.findById(1L)).thenReturn(Optional.of(customer));
+    private void stubCommonReferences() {
         when(paymentMethodRepository.findById(2L)).thenReturn(Optional.of(method));
         when(paymentProcessRepository.findById(3L)).thenReturn(Optional.of(process));
-        when(typeOfDocumentRepository.findById(1L)).thenReturn(Optional.of(document));
-
-        // Сохраняемый и возвращаемый объект
-        Payment payment = new Payment();
-        payment.setId(10L);
-        payment.setDocument(document);
-
-        PaymentDto dto = new PaymentDto();
-        dto.setId(10L);
-        dto.setDocument(document);
-
-        // Моки маппинга и сохранения
-        when(paymentRepository.save(any(Payment.class))).thenReturn(payment);
-        when(modelMapper.map(payment, PaymentDto.class)).thenReturn(dto);
-
-        // Act
-        PaymentDto result = service.createPayment(newDto);
-
-        // Assert
-        assertThat(result).isNotNull();
-        assertThat(result.getDocument()).isNotNull();
-        assertThat(result.getDocument().getName()).isEqualTo("RECHNUNG");
-        verify(paymentRepository).save(any(Payment.class));
-        verify(typeOfDocumentRepository).findById(1L);
+        when(typeOfDocumentRepository.findById(4L)).thenReturn(Optional.of(document));
     }
 
-
-    @Test
-    void createPayment_customerNotFound_throws() {
-        NewPaymentDto newDto = new NewPaymentDto();
-        newDto.setCustomerId(1L);
-
-        when(customerRepository.findById(1L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> service.createPayment(newDto))
-                .isInstanceOf(EntityNotFoundException.class)
-                .hasMessageContaining("Customer not found");
-    }
-
-    // ===== GET PAYMENTS =====
-    @Test
-    void getPayments_success() {
-        Pageable pageable = PageRequest.of(0, 10);
-        Payment payment = new Payment();
-        PaymentDto dto = new PaymentDto();
-        Page<Payment> page = new PageImpl<>(List.of(payment));
-
-        when(paymentRepository.findAll(pageable)).thenReturn(page);
-        when(modelMapper.map(payment, PaymentDto.class)).thenReturn(dto);
-
-        Page<PaymentDto> result = service.getPayments(pageable);
-
-        assertThat(result.getContent()).hasSize(1);
-    }
-
-    @Test
-    void getPayments_empty_throws() {
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<Payment> page = Page.empty();
-
-        when(paymentRepository.findAll(pageable)).thenReturn(page);
-
-        assertThatThrownBy(() -> service.getPayments(pageable))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("List of payments is empty");
-    }
-
-    // ===== DELETE PAYMENT =====
-    @Test
-    void deletePayment_success_sale() {
-        Payment payment = new Payment();
+    private Sale sale(long id, String total) {
         Sale sale = new Sale();
-        sale.setId(1L);
-        payment.setSale(sale);
-
-        when(paymentRepository.findById(1L)).thenReturn(Optional.of(payment));
-
-        service.deletePayment(1L);
-
-        verify(paymentRepository).deleteById(1L);
-        verify(saleService).updatePaymentStatus(1L);
-    }
-
-    @Test
-    void deletePayment_success_purchase() {
-        Payment payment = new Payment();
-        Purchase purchase = new Purchase();
-        purchase.setId(2L);
-        payment.setPurchase(purchase);
-
-        when(paymentRepository.findById(1L)).thenReturn(Optional.of(payment));
-
-        service.deletePayment(1L);
-
-        verify(paymentRepository).deleteById(1L);
-        verify(purchaseService).updatePaymentStatus(2L);
-    }
-
-    @Test
-    void deletePayment_notFound_throws() {
-        when(paymentRepository.findById(1L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> service.deletePayment(1L))
-                .isInstanceOf(EntityNotFoundException.class)
-                .hasMessageContaining("Payment not found");
-    }
-
-    // ===== UPDATE PAYMENT =====
-    @Test
-    void updatePayment_success_sale() {
-        // Arrange
-        NewPaymentDto newDto = new NewPaymentDto();
-        newDto.setCustomerId(1L);
-        newDto.setPaymentMethodId(2L);
-        newDto.setPaymentProcessId(3L);
-        newDto.setAmount(BigDecimal.valueOf(150));
-        newDto.setPaymentDate(LocalDate.now());
-        newDto.setType(PaymentType.EINNAHME);
-        newDto.setDocumentId(1L);
-        newDto.setDocumentNumber("INV-123");
-        newDto.setSaleId(10L);
-
-        Payment existing = new Payment();
-        existing.setId(5L);
-
-        Customer customer = new Customer();
-        PaymentMethod method = new PaymentMethod();
-        PaymentProcess process = new PaymentProcess();
-        Sale sale = new Sale();
-
-        TypeOfDocument document = new TypeOfDocument();
-        document.setId(1L);
-        document.setName("RECHNUNG");
-
-        when(paymentRepository.findById(5L)).thenReturn(Optional.of(existing));
-        when(customerRepository.findById(1L)).thenReturn(Optional.of(customer));
-        when(paymentMethodRepository.findById(2L)).thenReturn(Optional.of(method));
-        when(paymentProcessRepository.findById(3L)).thenReturn(Optional.of(process));
-        when(saleRepository.findById(10L)).thenReturn(Optional.of(sale));
-        when(typeOfDocumentRepository.findById(1L)).thenReturn(Optional.of(document));
-
-        Payment saved = new Payment();
-        PaymentDto dto = new PaymentDto();
-        dto.setId(5L);
-        dto.setDocument(document);
-
-        when(paymentRepository.save(existing)).thenReturn(saved);
-        when(modelMapper.map(saved, PaymentDto.class)).thenReturn(dto);
-
-        // Act
-        PaymentDto result = service.updatePayment(5L, newDto);
-
-        // Assert
-        assertThat(result).isNotNull();
-        verify(paymentRepository).save(existing);
-        assertThat(existing.getAmount()).isEqualTo(BigDecimal.valueOf(150));
-        assertThat(existing.getSale()).isEqualTo(sale);
-        assertThat(existing.getCustomer()).isEqualTo(customer);
-        assertThat(existing.getPaymentMethod()).isEqualTo(method);
-        assertThat(existing.getPaymentProcess()).isEqualTo(process);
-        assertThat(existing.getDocument()).isEqualTo(document);
-        verify(typeOfDocumentRepository).findById(1L);
-    }
-
-
-    // ===== UPDATE PAYMENT WITH PURCHASE =====
-    @Test
-    void updatePayment_success_purchase() {
-        // Arrange
-        NewPaymentDto newDto = new NewPaymentDto();
-        newDto.setCustomerId(1L);
-        newDto.setPaymentMethodId(2L);
-        newDto.setPaymentProcessId(3L);
-        newDto.setAmount(BigDecimal.valueOf(200));
-        newDto.setPaymentDate(LocalDate.now());
-        newDto.setType(PaymentType.AUSGABE);
-        newDto.setDocumentId(1L);
-        newDto.setDocumentNumber("PUR-123");
-        newDto.setPurchaseId(20L);
-
-        Payment existing = new Payment();
-        existing.setId(6L);
-
-        Customer customer = new Customer();
-        PaymentMethod method = new PaymentMethod();
-        PaymentProcess process = new PaymentProcess();
-        Purchase purchase = new Purchase();
-
-        TypeOfDocument document = new TypeOfDocument();
-        document.setId(1L);
-        document.setName("EINKAUFSRECHNUNG");
-
-        when(paymentRepository.findById(6L)).thenReturn(Optional.of(existing));
-        when(customerRepository.findById(1L)).thenReturn(Optional.of(customer));
-        when(paymentMethodRepository.findById(2L)).thenReturn(Optional.of(method));
-        when(paymentProcessRepository.findById(3L)).thenReturn(Optional.of(process));
-        when(purchaseRepository.findById(20L)).thenReturn(Optional.of(purchase));
-        when(typeOfDocumentRepository.findById(1L)).thenReturn(Optional.of(document));
-
-        Payment saved = new Payment();
-        PaymentDto dto = new PaymentDto();
-        dto.setId(6L);
-        dto.setDocument(document);
-
-        when(paymentRepository.save(existing)).thenReturn(saved);
-        when(modelMapper.map(saved, PaymentDto.class)).thenReturn(dto);
-
-        // Act
-        PaymentDto result = service.updatePayment(6L, newDto);
-
-        // Assert
-        assertThat(result).isNotNull();
-        verify(paymentRepository).save(existing);
-        assertThat(existing.getAmount()).isEqualTo(BigDecimal.valueOf(200));
-        assertThat(existing.getPurchase()).isEqualTo(purchase);
-        assertThat(existing.getCustomer()).isEqualTo(customer);
-        assertThat(existing.getDocument()).isEqualTo(document);
-        verify(typeOfDocumentRepository).findById(1L);
-    }
-
-    // ===== PREFILL WITH ZERO PAYMENT LEFT =====
-    @Test
-    void getPrefillDataForSale_amountLeftZero() {
-        // Arrange
-        Customer customer = new Customer();
-        customer.setId(1L);
-        customer.setName("Alice");
-
-        TypeOfDocument document = new TypeOfDocument();
-        document.setId(1L);
-        document.setName("RECHNUNG");
-
-        Sale sale = new Sale();
-        sale.setId(1L);
-        sale.setTotalAmount(BigDecimal.valueOf(50));
+        sale.setId(id);
         sale.setCustomer(customer);
-        sale.setInvoiceNumber("INV-002");
+        sale.setTotalAmount(new BigDecimal(total));
+        sale.setInvoiceNumber("RE2026001");
+        return sale;
+    }
 
-        Payment payment = new Payment();
-        payment.setAmount(BigDecimal.valueOf(50));
+    private Purchase purchase(long id, String total) {
+        Purchase purchase = new Purchase();
+        purchase.setId(id);
+        purchase.setVendor(customer);
+        purchase.setTotal(new BigDecimal(total));
+        purchase.setDocument(document);
+        purchase.setDocumentNumber("EK-001");
+        return purchase;
+    }
 
-        when(saleRepository.findById(1L)).thenReturn(Optional.of(sale));
-        when(paymentRepository.findBySaleId(1L)).thenReturn(List.of(payment));
+    private Payment payment(PaymentType type, String amount) {
+        Payment p = new Payment();
+        p.setType(type);
+        p.setAmount(new BigDecimal(amount));
+        return p;
+    }
+
+    @Test
+    void salePrefill_partialPaymentAndRefund() {
+        Sale sale = sale(10L, "100.00");
+        when(saleRepository.findById(10L)).thenReturn(Optional.of(sale));
+        when(paymentRepository.findBySaleId(10L)).thenReturn(List.of(
+                payment(PaymentType.EINNAHME, "60.00"),
+                payment(PaymentType.AUSGABE, "10.00")));
         when(typeOfDocumentRepository.findByName("RECHNUNG")).thenReturn(Optional.of(document));
 
-        // Act
-        PaymentPrefillDto result = service.getPrefillDataForSale(1L);
-
-        // Assert
-        assertThat(result.getAmountLeft()).isEqualTo(BigDecimal.ZERO);
-        assertThat(result.getDocumentId()).isEqualTo(1L);
-        assertThat(result.getDocumentName()).isEqualTo("RECHNUNG");
+        PaymentPrefillDto result = service.getPrefillDataForSale(10L);
+        assertThat(result.getAlreadyPaid()).isEqualByComparingTo("50.00");
+        assertThat(result.getAmountLeft()).isEqualByComparingTo("50.00");
+        assertThat(result.getOverpayment()).isEqualByComparingTo("0");
+        assertThat(result.getType()).isEqualTo(PaymentType.EINNAHME);
+        assertThat(result.getCustomerId()).isEqualTo(1L);
+        assertThat(result.getDocumentId()).isEqualTo(4L);
     }
 
-    // ===== PREFILL FOR PURCHASE WITH ZERO LEFT =====
     @Test
-    void getPrefillDataForPurchase_amountLeftZero() {
-        // Arrange
-        Customer vendor = new Customer();
-        vendor.setId(2L);
-        vendor.setName("Vendor2");
-
-        TypeOfDocument document = new TypeOfDocument();
-        document.setId(2L);
-        document.setName("EINKAUFSRECHNUNG");
-
-        Purchase purchase = new Purchase();
-        purchase.setId(1L);
-        purchase.setTotal(BigDecimal.valueOf(100));
-        purchase.setVendor(vendor);
-        purchase.setDocumentNumber("DOC-002");
-        purchase.setDocument(document);
-
-        Payment payment = new Payment();
-        payment.setAmount(BigDecimal.valueOf(150));
-
-        when(purchaseRepository.findById(1L)).thenReturn(Optional.of(purchase));
-        when(paymentRepository.findByPurchaseId(1L)).thenReturn(List.of(payment));
-
-        // Act
-        PaymentPrefillDto result = service.getPrefillDataForPurchase(1L);
-
-        // Assert
-        assertThat(result.getAmountLeft()).isEqualTo(BigDecimal.ZERO);
-        assertThat(result.getDocumentId()).isEqualTo(2L);
-        assertThat(result.getDocumentName()).isEqualTo("EINKAUFSRECHNUNG");
+    void salePrefill_overpayment() {
+        when(saleRepository.findById(10L)).thenReturn(Optional.of(sale(10L, "100.00")));
+        when(paymentRepository.findBySaleId(10L)).thenReturn(List.of(payment(PaymentType.EINNAHME, "125.00")));
+        when(typeOfDocumentRepository.findByName("RECHNUNG")).thenReturn(Optional.of(document));
+        PaymentPrefillDto result = service.getPrefillDataForSale(10L);
+        assertThat(result.getAmountLeft()).isEqualByComparingTo("0");
+        assertThat(result.getOverpayment()).isEqualByComparingTo("25.00");
     }
 
+    @Test
+    void salePrefill_saleNotFound() {
+        when(saleRepository.findById(10L)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> service.getPrefillDataForSale(10L))
+                .isInstanceOf(EntityNotFoundException.class);
+    }
+
+    @Test
+    void salePrefill_documentNotFound() {
+        when(saleRepository.findById(10L)).thenReturn(Optional.of(sale(10L, "100.00")));
+        when(paymentRepository.findBySaleId(10L)).thenReturn(List.of());
+        when(typeOfDocumentRepository.findByName("RECHNUNG")).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> service.getPrefillDataForSale(10L))
+                .isInstanceOf(EntityNotFoundException.class);
+    }
+
+    @Test
+    void purchasePrefill_partialPaymentAndRefund() {
+        when(purchaseRepository.findById(20L)).thenReturn(Optional.of(purchase(20L, "200.00")));
+        when(paymentRepository.findByPurchaseId(20L)).thenReturn(List.of(
+                payment(PaymentType.AUSGABE, "80.00"),
+                payment(PaymentType.EINNAHME, "20.00")));
+        PaymentPrefillDto result = service.getPrefillDataForPurchase(20L);
+        assertThat(result.getAlreadyPaid()).isEqualByComparingTo("60.00");
+        assertThat(result.getAmountLeft()).isEqualByComparingTo("140.00");
+        assertThat(result.getType()).isEqualTo(PaymentType.AUSGABE);
+        assertThat(result.getPurchaseId()).isEqualTo(20L);
+    }
+
+    @Test
+    void purchasePrefill_overpayment() {
+        when(purchaseRepository.findById(20L)).thenReturn(Optional.of(purchase(20L, "100.00")));
+        when(paymentRepository.findByPurchaseId(20L)).thenReturn(List.of(payment(PaymentType.AUSGABE, "150.00")));
+        PaymentPrefillDto result = service.getPrefillDataForPurchase(20L);
+        assertThat(result.getAmountLeft()).isEqualByComparingTo("0");
+        assertThat(result.getOverpayment()).isEqualByComparingTo("50.00");
+    }
+
+    @Test
+    void purchasePrefill_notFound() {
+        when(purchaseRepository.findById(20L)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> service.getPrefillDataForPurchase(20L))
+                .isInstanceOf(EntityNotFoundException.class);
+    }
+
+    @Test
+    void createPayment_standalone() {
+        stubCommonReferences();
+        when(customerRepository.findById(1L)).thenReturn(Optional.of(customer));
+        when(paymentRepository.saveAndFlush(any(Payment.class))).thenAnswer(inv -> inv.getArgument(0));
+        PaymentDto expected = new PaymentDto();
+        when(modelMapper.map(any(Payment.class), eq(PaymentDto.class))).thenReturn(expected);
+
+        PaymentDto result = service.createPayment(input);
+        assertThat(result).isSameAs(expected);
+        org.mockito.ArgumentCaptor<Payment> captor = org.mockito.ArgumentCaptor.forClass(Payment.class);
+        verify(paymentRepository).saveAndFlush(captor.capture());
+        assertThat(captor.getValue().getCustomer()).isSameAs(customer);
+        assertThat(captor.getValue().getPaymentMethod()).isSameAs(method);
+        assertThat(captor.getValue().getPaymentProcess()).isSameAs(process);
+        assertThat(captor.getValue().getDocument()).isSameAs(document);
+        assertThat(captor.getValue().getAmount()).isEqualByComparingTo("100.00");
+        verifyNoInteractions(saleService, purchaseService);
+    }
+
+    @Test
+    void createPayment_forSale_usesSaleCustomerAndUpdatesStatus() {
+        input.setSaleId(10L);
+        Sale sale = sale(10L, "100.00");
+        stubCommonReferences();
+        when(saleRepository.findById(10L)).thenReturn(Optional.of(sale));
+        when(paymentRepository.saveAndFlush(any(Payment.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(modelMapper.map(any(Payment.class), eq(PaymentDto.class))).thenReturn(new PaymentDto());
+        service.createPayment(input);
+        verify(customerRepository, never()).findById(anyLong());
+        verify(saleService).updatePaymentStatus(10L);
+        verifyNoInteractions(purchaseService);
+    }
+
+    @Test
+    void createPayment_forPurchase_usesVendorAndUpdatesStatus() {
+        input.setPurchaseId(20L);
+        stubCommonReferences();
+        when(purchaseRepository.findById(20L)).thenReturn(Optional.of(purchase(20L, "100.00")));
+        when(paymentRepository.saveAndFlush(any(Payment.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(modelMapper.map(any(Payment.class), eq(PaymentDto.class))).thenReturn(new PaymentDto());
+        service.createPayment(input);
+        verify(customerRepository, never()).findById(anyLong());
+        verify(purchaseService).updatePaymentStatus(20L);
+        verifyNoInteractions(saleService);
+    }
+
+    @Test
+    void createPayment_bothReferences_throwsConflict() {
+        input.setSaleId(10L);
+        input.setPurchaseId(20L);
+        RestApiException ex = catchThrowableOfType(() -> service.createPayment(input), RestApiException.class);
+        assertThat(ex).isNotNull();
+        assertThat(ex.getStatus()).isEqualTo(HttpStatus.CONFLICT);
+        verifyNoInteractions(paymentRepository, saleRepository, purchaseRepository);
+    }
+
+    @Test
+    void createPayment_missingMethod_throws() {
+        when(paymentMethodRepository.findById(2L)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> service.createPayment(input)).isInstanceOf(EntityNotFoundException.class);
+        verify(paymentRepository, never()).saveAndFlush(any(Payment.class));
+    }
+
+    @Test
+    void createPayment_missingCustomer_throws() {
+        stubCommonReferences();
+        when(customerRepository.findById(1L)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> service.createPayment(input)).isInstanceOf(EntityNotFoundException.class);
+    }
+
+    @Test
+    void getPayments_usesSortingRepository() {
+        Pageable pageable = PageRequest.of(0, 10);
+        Payment p = payment(PaymentType.EINNAHME, "20");
+        when(paymentRepository.findAllWithSorting(pageable)).thenReturn(new PageImpl<>(List.of(p)));
+        PaymentDto dto = new PaymentDto();
+        when(modelMapper.map(p, PaymentDto.class)).thenReturn(dto);
+        assertThat(service.getPayments(pageable).getContent()).containsExactly(dto);
+    }
+
+    @Test
+    void getPayments_emptyPageIsValid() {
+        Pageable pageable = PageRequest.of(0, 10);
+        when(paymentRepository.findAllWithSorting(pageable)).thenReturn(Page.empty(pageable));
+        assertThat(service.getPayments(pageable).getContent()).isEmpty();
+    }
+
+    @Test
+    void getPayment_byId() {
+        Payment p = payment(PaymentType.EINNAHME, "20");
+        PaymentDto dto = new PaymentDto();
+        when(paymentRepository.findById(5L)).thenReturn(Optional.of(p));
+        when(modelMapper.map(p, PaymentDto.class)).thenReturn(dto);
+        assertThat(service.getPayment(5L)).isSameAs(dto);
+    }
+
+    @Test
+    void getPayment_notFound() {
+        when(paymentRepository.findById(5L)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> service.getPayment(5L)).isInstanceOf(EntityNotFoundException.class);
+    }
+
+    @Test
+    void updatePayment_sameSale_updatesStatus() {
+        input.setSaleId(10L);
+        Sale sale = sale(10L, "100");
+        Payment existing = payment(PaymentType.EINNAHME, "30");
+        existing.setSale(sale);
+        when(paymentRepository.findById(5L)).thenReturn(Optional.of(existing));
+        stubCommonReferences();
+        when(saleRepository.findById(10L)).thenReturn(Optional.of(sale));
+        when(paymentRepository.saveAndFlush(existing)).thenReturn(existing);
+        when(modelMapper.map(existing, PaymentDto.class)).thenReturn(new PaymentDto());
+        service.updatePayment(5L, input);
+        verify(saleService, times(1)).updatePaymentStatus(10L);
+        assertThat(existing.getAmount()).isEqualByComparingTo("100.00");
+    }
+
+    @Test
+    void updatePayment_movesFromSaleToPurchase_updatesBoth() {
+        input.setPurchaseId(20L);
+        Sale oldSale = sale(10L, "100");
+        Purchase newPurchase = purchase(20L, "100");
+        Payment existing = payment(PaymentType.EINNAHME, "30");
+        existing.setSale(oldSale);
+        when(paymentRepository.findById(5L)).thenReturn(Optional.of(existing));
+        stubCommonReferences();
+        when(purchaseRepository.findById(20L)).thenReturn(Optional.of(newPurchase));
+        when(paymentRepository.saveAndFlush(existing)).thenReturn(existing);
+        when(modelMapper.map(existing, PaymentDto.class)).thenReturn(new PaymentDto());
+        service.updatePayment(5L, input);
+        verify(saleService).updatePaymentStatus(10L);
+        verify(purchaseService).updatePaymentStatus(20L);
+        assertThat(existing.getSale()).isNull();
+        assertThat(existing.getPurchase()).isSameAs(newPurchase);
+        assertThat(existing.getCustomer()).isSameAs(customer);
+    }
+
+    @Test
+    void updatePayment_multipleReferences_throws() {
+        Payment existing = new Payment();
+        when(paymentRepository.findById(5L)).thenReturn(Optional.of(existing));
+        input.setSaleId(10L);
+        input.setPurchaseId(20L);
+        assertThatThrownBy(() -> service.updatePayment(5L, input)).isInstanceOf(RestApiException.class);
+        verify(paymentRepository, never()).saveAndFlush(any(Payment.class));
+    }
+
+    @Test
+    void deletePayment_sale_flushesBeforeStatusUpdate() {
+        Payment p = payment(PaymentType.EINNAHME, "50");
+        p.setSale(sale(10L, "100"));
+        when(paymentRepository.findById(5L)).thenReturn(Optional.of(p));
+        service.deletePayment(5L);
+        org.mockito.InOrder order = inOrder(paymentRepository, saleService);
+        order.verify(paymentRepository).delete(p);
+        order.verify(paymentRepository).flush();
+        order.verify(saleService).updatePaymentStatus(10L);
+    }
+
+    @Test
+    void deletePayment_purchase_updatesStatus() {
+        Payment p = payment(PaymentType.AUSGABE, "50");
+        p.setPurchase(purchase(20L, "100"));
+        when(paymentRepository.findById(5L)).thenReturn(Optional.of(p));
+        service.deletePayment(5L);
+        verify(paymentRepository).delete(p);
+        verify(paymentRepository).flush();
+        verify(purchaseService).updatePaymentStatus(20L);
+    }
+
+    @Test
+    void deletePayment_notFound() {
+        when(paymentRepository.findById(5L)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> service.deletePayment(5L)).isInstanceOf(EntityNotFoundException.class);
+        verify(paymentRepository, never()).delete(any(Payment.class));
+    }
+
+    @Test
+    void getAllSaleIds() {
+        when(paymentRepository.findDistinctSaleIds()).thenReturn(List.of(1L, 2L));
+        assertThat(service.getAllSaleIds()).containsExactly(1L, 2L);
+    }
+
+    @Test
+    void getAllPurchaseIds() {
+        when(paymentRepository.findDistinctPurchaseIds()).thenReturn(List.of(3L));
+        assertThat(service.getAllPurchaseIds()).containsExactly(3L);
+    }
 }

@@ -46,7 +46,15 @@ public interface ShippingApi {
             @ApiResponse(responseCode = "403",
                     description = "Forbidden.",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(type = "string")))
+                            schema = @Schema(type = "string"))),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "Shipping method already exists.",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDto.class)
+                    )
+            )
     })
     @ResponseStatus(HttpStatus.CREATED)
     ShippingDto addShipping(
@@ -115,7 +123,15 @@ public interface ShippingApi {
             @ApiResponse(responseCode = "403",
                     description = "Forbidden.",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(type = "string")))
+                            schema = @Schema(type = "string"))),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "Shipping method already exists.",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDto.class)
+                    )
+            )
     })
     @ResponseStatus(HttpStatus.OK)
     ShippingDto updateShipping(
@@ -142,7 +158,15 @@ public interface ShippingApi {
             @ApiResponse(responseCode = "404",
                     description = "Shipping not found.",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponseDto.class)))
+                            schema = @Schema(implementation = ErrorResponseDto.class))),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "Shipping method is already in use.",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDto.class)
+                    )
+            )
     })
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void deleteShipping(@PathVariable Long id);

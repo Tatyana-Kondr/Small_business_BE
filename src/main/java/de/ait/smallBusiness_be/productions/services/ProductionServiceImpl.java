@@ -27,7 +27,6 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 
 /**
@@ -49,174 +48,81 @@ public class ProductionServiceImpl implements ProductionService {
     @Override
     @Transactional
     public ProductionDto createProduction(NewProductionDto newProductionDto) {
-        Product product = productRepository.findById(newProductionDto.getProductId())
-                .orElseThrow(() -> new IllegalArgumentException("Product not found with ID: " + newProductionDto.getProductId()));
+        Product product = getProductOrThrow(newProductionDto.getProductId());
+
         Production production = modelMapper.map(newProductionDto, Production.class);
+        production.setProductionItems(new ArrayList<>());
         production.setProduct(product);
+        production.setType(TypeOfOperation.PRODUKTION);
 
-        BigDecimal amount = production.getUnitPrice()
-                .multiply(production.getQuantity())
-                .setScale(2, RoundingMode.HALF_UP);
+        production.setAmount(calculateAmount(newProductionDto.getUnitPrice(), newProductionDto.getQuantity()));
 
-        production.setAmount(amount);
+        BigDecimal totalPriceItems = BigDecimal.ZERO;
 
-        AtomicReference<BigDecimal> totalPriceItems = new AtomicReference<>(BigDecimal.ZERO);
-
-        if (newProductionDto.getProductionItems() != null && !newProductionDto.getProductionItems().isEmpty()) {
-            List<ProductionItem> productionItems = newProductionDto.getProductionItems().stream()
-                    .map(newProductionItemDto -> {
-                        Product productForItem = productRepository.findById(newProductionItemDto.getProductId())
-                                .orElseThrow(() -> new IllegalArgumentException(
-                                        "Product not found with ID: " + newProductionItemDto.getProductId()
-                                ));
-                        ProductionItem productionItem = modelMapper.map(newProductionItemDto, ProductionItem.class);
-                        productionItem.setProduct(productForItem);
-                        productionItem.setProduction(production);
-                        BigDecimal totalPrice = productionItem.getUnitPrice()
-                                .multiply(productionItem.getQuantity())
-                                .setScale(2, RoundingMode.HALF_UP);
-                        productionItem.setTotalPrice(totalPrice);
-
-                        totalPriceItems.updateAndGet(value -> value.add(productionItem.getTotalPrice()));
-
-                        return productionItem;
-                    })
-                    .toList();
-
-            production.setProductionItems(productionItems);
+        for (NewProductionItemDto dto : newProductionDto.getProductionItems()) {
+            ProductionItem item = createProductionItem(dto, production);
+            production.getProductionItems().add(item);
+            totalPriceItems = totalPriceItems.add(item.getTotalPrice());
         }
-        if (production.getAmount().compareTo(totalPriceItems.get()) <= 0) {
-            throw new RestApiException(ErrorDescription.PRODUCTION_AMOUNT, HttpStatus.CONFLICT);
-        }
+
+        validateProductionAmount(production.getAmount(), totalPriceItems);
+
         Production savedProduction = productionRepository.save(production);
 
-        // Обновляем склад
-        savedProduction.getProductionItems().forEach(item -> {
-            warehouseService.recordOperation(
-                    item.getProduct(),
-                    TypeOfOperation.PRODUKTIONSMATERIAL,
-                    item.getQuantity(),
-                    savedProduction.getId(),
-                    null,
-                    savedProduction.getDateOfProduction()
-            );
-        });
-        warehouseService.recordOperation(
-                savedProduction.getProduct(),
-                TypeOfOperation.PRODUKTION,
-                savedProduction.getQuantity(),
-                savedProduction.getId(),
-                null,
-                savedProduction.getDateOfProduction()
-        );
-
+        recordWarehouseOperations(savedProduction);
 
         return modelMapper.map(savedProduction, ProductionDto.class);
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public Page<ProductionDto> getAllProductions(Pageable pageable) {
-
         Page<Production> productions = productionRepository.findAllWithSorting(pageable);
-
-        if (productions.isEmpty()) {
-            throw new RestApiException(ErrorDescription.LIST_IS_EMPTY, HttpStatus.NOT_FOUND);
-        }
-
-        productions.forEach(production -> {Hibernate.initialize(production.getProductionItems());
-
-            production.getProductionItems().forEach(item -> Hibernate.initialize(item.getProduct()));
-        });
-
+        initializeProductionItems(productions);
         return productions.map(production -> modelMapper.map(production, ProductionDto.class));
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public ProductionDto getProductionById(Long id) {
-        Production production = productionRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Production not found with ID: " + id));
+        Production production = getProductionOrThrow(id);
         return modelMapper.map(production, ProductionDto.class);
     }
 
     @Override
     @Transactional
     public ProductionDto updateProduction(Long id, NewProductionDto newProductionDto) {
-        Production production = productionRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Production not found"));
-
-        Product product = productRepository.findById(newProductionDto.getProductId())
-                .orElseThrow(() -> new EntityNotFoundException("Product not found with ID: " + newProductionDto.getProductId()));
+        Production production = getProductionOrThrow(id);
+        Product product = getProductOrThrow(newProductionDto.getProductId());
 
         // Обновляем базовые поля
         production.setProduct(product);
         production.setDateOfProduction(newProductionDto.getDateOfProduction());
-        try {
-            production.setType(TypeOfOperation.valueOf(newProductionDto.getType().toUpperCase()));
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid type of operation: " + newProductionDto.getType());
-        }
+        production.setType(TypeOfOperation.PRODUKTION);
         production.setQuantity(newProductionDto.getQuantity());
         production.setUnitPrice(newProductionDto.getUnitPrice());
-        production.setAmount(newProductionDto.getUnitPrice().multiply(newProductionDto.getQuantity()).setScale(2, RoundingMode.HALF_UP));
-
+        production.setAmount(calculateAmount(newProductionDto.getUnitPrice(), newProductionDto.getQuantity()));
         // Удаляем все старые позиции
         production.getProductionItems().clear();
 
-        // Пересчет сумм
-        AtomicReference<BigDecimal> materialsTotal = new AtomicReference<>(BigDecimal.ZERO);
-        List<ProductionItem> newItems = new ArrayList<>();
+        BigDecimal totalPriceItems = BigDecimal.ZERO;
 
-        for (NewProductionItemDto itemDto : newProductionDto.getProductionItems()) {
-            Product itemProduct = productRepository.findById(itemDto.getProductId())
-                    .orElseThrow(() -> new EntityNotFoundException("Product not found: " + itemDto.getProductId()));
-
-            ProductionItem item = new ProductionItem();
-            item.setProduction(production);
-            item.setProduct(itemProduct);
-            try {
-                item.setType(TypeOfOperation.valueOf(itemDto.getType().toUpperCase()));
-            } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Invalid type for ProductionItem: " + itemDto.getType());
-            }
-            item.setQuantity(itemDto.getQuantity());
-            item.setUnitPrice(itemDto.getUnitPrice());
-            item.setTotalPrice(itemDto.getUnitPrice().multiply(itemDto.getQuantity()).setScale(2, RoundingMode.HALF_UP));
-
-            newItems.add(item);
-            materialsTotal.updateAndGet(v -> v.add(item.getTotalPrice()));
+        for (NewProductionItemDto dto : newProductionDto.getProductionItems()) {
+            ProductionItem item = createProductionItem(dto, production);
+            production.getProductionItems().add(item);
+            totalPriceItems = totalPriceItems.add(item.getTotalPrice());
         }
 
-        if (newItems.isEmpty()) {
-            throw new RestApiException(ErrorDescription.NO_PRODUCT_IN_PRODUCTION);
-        }
-
-        // Добавляем новые позиции
-        production.getProductionItems().addAll(newItems);
-
-        // Проверка: сумма главного продукта должна быть больше суммы материалов
-        if (production.getAmount().compareTo(materialsTotal.get()) <= 0) {
-            throw new RestApiException(ErrorDescription.PRODUCTION_AMOUNT, HttpStatus.CONFLICT);
-        }
+        validateProductionAmount(production.getAmount(), totalPriceItems);
 
         Production updatedProduction = productionRepository.save(production);
 
-        // Синхронизируем документ со складом
-        warehouseService.syncDocument(
-                TypeOfOperation.PRODUKTIONSMATERIAL,
+        // Откатываем старые движения документа
+        warehouseService.rollbackDocument(
                 updatedProduction.getId(),
-                null,
-                updatedProduction.getDateOfProduction(),
-                updatedProduction.getProductionItems()
+                List.of(TypeOfOperation.PRODUKTION, TypeOfOperation.PRODUKTIONSMATERIAL)
         );
-        warehouseService.syncDocument(
-                TypeOfOperation.PRODUKTION,
-                updatedProduction.getId(),
-                null,
-                updatedProduction.getDateOfProduction(),
-                List.of(production)
-        );
+        recordWarehouseOperations(updatedProduction);
 
         return modelMapper.map(updatedProduction, ProductionDto.class);
     }
@@ -224,38 +130,87 @@ public class ProductionServiceImpl implements ProductionService {
     @Override
     @Transactional
     public void deleteProduction(Long id) {
-        Production production = productionRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Production not found with ID: " + id));
-        warehouseService.rollbackDocument(production.getId());
+        Production production = getProductionOrThrow(id);
+        warehouseService.rollbackDocument(
+                production.getId(),
+                List.of(TypeOfOperation.PRODUKTION, TypeOfOperation.PRODUKTIONSMATERIAL));
         productionRepository.delete(production);
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public Page<ProductionDto> searchProduction(Pageable pageable, String query) {
         Page<Production> productions = productionRepository.searchProduction(pageable, query);
-
-        // Инициализация ленивых коллекций и вложенных продуктов
-        productions.forEach(production -> {
-            Hibernate.initialize(production.getProductionItems());
-            production.getProductionItems().forEach(item -> Hibernate.initialize(item.getProduct()));
-        });
-
+        initializeProductionItems(productions);
         return productions.map(production -> modelMapper.map(production, ProductionDto.class));
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public Page<ProductionDto> getAllProductionsByFilter(Pageable pageable, LocalDate startDate, LocalDate endDate, String searchQuery) {
         Page<Production> productions = productionRepository.getAllProductionsByFilter(pageable, startDate, endDate, searchQuery);
+        initializeProductionItems(productions);
+        return productions.map(production -> modelMapper.map(production, ProductionDto.class));
+    }
 
-        // Инициализация ленивых коллекций и вложенных продуктов
+    private Product getProductOrThrow(Long productId) {
+        return productRepository.findById(productId)
+                .orElseThrow(() -> new EntityNotFoundException(ErrorDescription.PRODUCT_NOT_FOUND.getDescription()));
+    }
+
+    private Production getProductionOrThrow(Long id) {
+        return productionRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException(ErrorDescription.PRODUCTION_NOT_FOUND.getDescription()));
+    }
+
+    private BigDecimal calculateAmount(BigDecimal unitPrice, BigDecimal quantity) {
+        return unitPrice.multiply(quantity).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private ProductionItem createProductionItem(NewProductionItemDto dto, Production production) {
+        Product product = getProductOrThrow(dto.getProductId());
+
+        ProductionItem item = modelMapper.map(dto, ProductionItem.class);
+
+        item.setProduction(production);
+        item.setProduct(product);
+        item.setType(TypeOfOperation.PRODUKTIONSMATERIAL);
+        item.setTotalPrice(calculateAmount(dto.getUnitPrice(), dto.getQuantity()));
+        return item;
+    }
+
+    private void initializeProductionItems(Page<Production> productions) {
         productions.forEach(production -> {
             Hibernate.initialize(production.getProductionItems());
             production.getProductionItems().forEach(item -> Hibernate.initialize(item.getProduct()));
         });
-
-        return productions.map(production -> modelMapper.map(production, ProductionDto.class));
     }
 
+    private void validateProductionAmount(BigDecimal productionAmount, BigDecimal materialsAmount) {
+        if (productionAmount.compareTo(materialsAmount) <= 0) {
+            throw new RestApiException(ErrorDescription.PRODUCTION_AMOUNT, HttpStatus.CONFLICT);
+        }
+    }
+
+    private void recordWarehouseOperations(Production production) {
+        production.getProductionItems().forEach(item -> {
+            warehouseService.recordOperation(
+                    item.getProduct(),
+                    TypeOfOperation.PRODUKTIONSMATERIAL,
+                    item.getQuantity(),
+                    production.getId(),
+                    null,
+                    production.getDateOfProduction()
+            );
+        });
+
+        warehouseService.recordOperation(
+                production.getProduct(),
+                TypeOfOperation.PRODUKTION,
+                production.getQuantity(),
+                production.getId(),
+                null,
+                production.getDateOfProduction()
+        );
+    }
 }

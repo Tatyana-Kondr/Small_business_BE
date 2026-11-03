@@ -1,6 +1,7 @@
 package de.ait.smallBusiness_be.sales.models;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
@@ -12,11 +13,13 @@ import lombok.*;
 @Entity
 @Table(name = "terms_of_payment")
 public class TermOfPayment {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false)
+    @NotBlank(message = "{validation.notBlank}")
     @Size(max = 50, message = "{validation.max.size}")
+    @Column(name = "name", unique = true, nullable = false, length = 50)
     private String name;
 }

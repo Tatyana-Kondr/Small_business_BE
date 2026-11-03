@@ -16,13 +16,15 @@ import lombok.Setter;
 public class NewPaymentMethodDto {
 
     @NotBlank(message = "{validation.notBlank}")
+    @Size(max = 50, message = "{validation.max.size}")
     @Schema(description = "Payment provider name (e.g., bank or card type)", example = "PostBank VISA", required = true)
     private String provider;
 
+    @Size(max = 30, message = "{validation.max.size}")
     @Schema(description = "Masked card or account number", example = "**** **** **** 1234")
     private String maskedNumber;
 
-    @Size(max = 50, message = "Details must not exceed 50 characters")
+    @Size(max = 50, message = "{validation.max.size}")
     @Schema(description = "Additional information (e.g., expiry date)", example = "02/29")
     private String details;
 

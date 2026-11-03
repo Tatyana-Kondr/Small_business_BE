@@ -18,10 +18,12 @@ public class RefreshToken {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne
-    @JoinColumn(name = "user_id", referencedColumnName = "id")
+    // Один пользователь может иметь несколько refresh tokens
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)
     private User user;
 
+    // Каждый refresh token уникален
     @Column(nullable = false, unique = true)
     private String token;
 

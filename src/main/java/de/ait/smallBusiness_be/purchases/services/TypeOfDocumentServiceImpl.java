@@ -2,6 +2,8 @@ package de.ait.smallBusiness_be.purchases.services;
 
 import de.ait.smallBusiness_be.exceptions.ErrorDescription;
 import de.ait.smallBusiness_be.exceptions.RestApiException;
+import de.ait.smallBusiness_be.payments.dao.PaymentRepository;
+import de.ait.smallBusiness_be.purchases.dao.PurchaseRepository;
 import de.ait.smallBusiness_be.purchases.dao.TypeOfDocumentRepository;
 import de.ait.smallBusiness_be.purchases.dto.NewTypeOfDocumentDto;
 import de.ait.smallBusiness_be.purchases.dto.TypeOfDocumentDto;
@@ -11,25 +13,29 @@ import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class TypeOfDocumentServiceImpl implements TypeOfDocumentService {
 
     private final TypeOfDocumentRepository typeOfDocumentRepository;
+    private final PurchaseRepository purchaseRepository;
+    private final PaymentRepository paymentRepository;
     private final ModelMapper modelMapper;
 
     @Override
     public TypeOfDocumentDto createTypeOfDocument(NewTypeOfDocumentDto newTypeOfDocument) {
-        if (typeOfDocumentRepository.existsByName(newTypeOfDocument.getName())) {
-            throw new IllegalArgumentException("Type Of Document with name '" + newTypeOfDocument.getName() + "' already exists");
+
+        String name = newTypeOfDocument.getName().trim();
+
+        if (typeOfDocumentRepository.existsByName(name)) {
+            throw new RestApiException(ErrorDescription.TYPE_OF_DOCUMENT_ALREADY_EXISTS, HttpStatus.CONFLICT);
         }
-        TypeOfDocument type = TypeOfDocument.builder()
-                .name(newTypeOfDocument.getName())
-                .build();
+
+        TypeOfDocument type = TypeOfDocument.builder().name(name).build();
         TypeOfDocument savedType = typeOfDocumentRepository.save(type);
 
         return modelMapper.map(savedType, TypeOfDocumentDto.class);
@@ -37,30 +43,48 @@ public class TypeOfDocumentServiceImpl implements TypeOfDocumentService {
 
     @Override
     public List<TypeOfDocumentDto> findAllTypeOfDocument() {
-        List<TypeOfDocument> typeOfDocuments = typeOfDocumentRepository.findAll();
-        if (typeOfDocuments.isEmpty()) {throw new RestApiException(ErrorDescription.LIST_IS_EMPTY, HttpStatus.NOT_FOUND);}
-        return typeOfDocuments.stream().map(typeOfDocument -> modelMapper.map(typeOfDocument, TypeOfDocumentDto.class)).collect(Collectors.toList());
+        return typeOfDocumentRepository.findAll()
+                .stream()
+                .map(typeOfDocument -> modelMapper.map(typeOfDocument, TypeOfDocumentDto.class))
+                .toList();
     }
 
     @Override
     public TypeOfDocumentDto getTypeOfDocumentById(Long id) {
-        TypeOfDocument typeOfDocument = typeOfDocumentRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Type Of Document not found"));
+        TypeOfDocument typeOfDocument = typeOfDocumentRepository.findById(id).orElseThrow(() ->
+                new EntityNotFoundException(ErrorDescription.TYPE_OF_DOCUMENT_NOT_FOUND.getDescription()));
         return modelMapper.map(typeOfDocument, TypeOfDocumentDto.class);
     }
 
     @Override
     public TypeOfDocumentDto updateTypeOfDocument(Long id, NewTypeOfDocumentDto newTypeOfDocument) {
-        TypeOfDocument typeOfDocument = typeOfDocumentRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Type Of Document not found"));
-        typeOfDocument.setName(newTypeOfDocument.getName());
+
+        TypeOfDocument typeOfDocument = typeOfDocumentRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException(ErrorDescription.TYPE_OF_DOCUMENT_NOT_FOUND.getDescription()));
+
+        String name = newTypeOfDocument.getName().trim();
+
+        if (!typeOfDocument.getName().equals(name) && typeOfDocumentRepository.existsByName(name)) {
+            throw new RestApiException(ErrorDescription.TYPE_OF_DOCUMENT_ALREADY_EXISTS, HttpStatus.CONFLICT);
+        }
+
+        typeOfDocument.setName(name);
         TypeOfDocument savedType = typeOfDocumentRepository.save(typeOfDocument);
+
         return modelMapper.map(savedType, TypeOfDocumentDto.class);
     }
 
     @Override
+    @Transactional
     public void deleteTypeOfDocument(Long id) {
-        if (typeOfDocumentRepository.existsById(id)) {
-            throw new EntityNotFoundException("Type Of Document with id '" + id + "' not found");
+        TypeOfDocument type = typeOfDocumentRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException(ErrorDescription.TYPE_OF_DOCUMENT_NOT_FOUND.getDescription()));
+
+        if (purchaseRepository.existsByDocument_Id(id) || paymentRepository.existsByDocument_Id(id)) {
+            throw new RestApiException(ErrorDescription.TYPE_OF_DOCUMENT_IN_USE, HttpStatus.CONFLICT);
         }
-        typeOfDocumentRepository.deleteById(id);
+
+        typeOfDocumentRepository.delete(type);
+        typeOfDocumentRepository.flush();
     }
 }

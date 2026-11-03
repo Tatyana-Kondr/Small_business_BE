@@ -49,7 +49,12 @@ public interface ProductionsApi {
             @ApiResponse(responseCode = "403",
                     description = "Forbidden.",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(type = "string")))
+                            schema = @Schema(type = "string"))),
+            @ApiResponse(responseCode = "409",
+                    description = "Production amount must exceed materials amount.",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDto.class)))
     })
     @ResponseStatus(HttpStatus.CREATED)
     ProductionDto addProduction(
@@ -65,10 +70,6 @@ public interface ProductionsApi {
                     description = "List of Productions retrieved successfully.",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ProductionDto[].class))),
-            @ApiResponse(responseCode = "404",
-                    description = "No productions found.",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponseDto.class))),
             @ApiResponse(responseCode = "401",
                     description = "User unauthorized.",
                     content = @Content(mediaType = "application/json",
@@ -117,7 +118,12 @@ public interface ProductionsApi {
             @ApiResponse(responseCode = "403",
                     description = "Forbidden.",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(type = "string")))
+                            schema = @Schema(type = "string"))),
+            @ApiResponse(responseCode = "409",
+                    description = "Production amount must exceed materials amount.",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDto.class)))
     })
     @ResponseStatus(HttpStatus.OK)
     ProductionDto updateProduction(
@@ -159,14 +165,16 @@ public interface ProductionsApi {
                     description = "Forbidden.",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponseDto.class))),
-            @ApiResponse(responseCode = "404", description = "No productions found.",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDto.class)))
     })
     @ResponseStatus(HttpStatus.OK)
     Page<ProductionDto> searchProductions(
-            @PageableDefault(size = 15) Pageable pageable,
-            @RequestParam(defaultValue = "dateOfProduction") String sort,
-            @PathVariable String query);
+            @PageableDefault(
+                    size = 15,
+                    sort = "dateOfProduction",
+                    direction = Sort.Direction.DESC
+            ) Pageable pageable,
+            @PathVariable String query
+    );
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/filter")
@@ -179,8 +187,6 @@ public interface ProductionsApi {
                     description = "Forbidden.",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponseDto.class))),
-            @ApiResponse(responseCode = "404", description = "No productions found.",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDto.class)))
     })
     @ResponseStatus(HttpStatus.OK)
     Page<ProductionDto> getProductionsByFilter(

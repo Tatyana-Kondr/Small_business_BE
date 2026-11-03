@@ -18,7 +18,7 @@ import java.time.LocalDate;
 public class NewPaymentDto {
 
     @NotNull(message = "{validation.notNull}")
-    @PastOrPresent(message = "{validation.dateOfLastPurchase.pastOrPresent}")
+    @PastOrPresent(message = "{validation.date.pastOrPresent}")
     @Schema(description = "Payment date", example = "2025-07-15", required = true)
     private LocalDate paymentDate;
 
@@ -31,8 +31,8 @@ public class NewPaymentDto {
     private PaymentType type;
 
     @NotNull(message = "{validation.notNull}")
-    @DecimalMin(value = "0.0", message = "{validation.price.min}")
-    @Digits(integer = 10, fraction = 2, message = "{validation.price.digits}")
+    @DecimalMin(value = "0.01", message = "{validation.positive}")
+    @Digits(integer = 10, fraction = 2, message = "{validation.amount.digits}")
     @Schema(description = "Payment amount", example = "1250.50", required = true)
     private BigDecimal amount;
 
@@ -43,10 +43,11 @@ public class NewPaymentDto {
     private Long purchaseId;
 
     @NotNull(message = "{validation.notNull}")
-    @Schema(description = "Document type", example = "RECHNUNG")
+    @Schema(description = "ID of the document type", example = "1", required = true)
     private Long documentId;
 
     @NotBlank(message = "{validation.notBlank}")
+    @Size(max = 150, message = "{validation.max.size}")
     @Schema(description = "Document number", example = "RE-2025-056")
     private String documentNumber;
 

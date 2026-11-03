@@ -8,42 +8,48 @@ import de.ait.smallBusiness_be.customers.dto.NewCustomerDto;
 import de.ait.smallBusiness_be.customers.model.Address;
 import de.ait.smallBusiness_be.customers.model.Customer;
 import de.ait.smallBusiness_be.exceptions.ErrorDescription;
-import de.ait.smallBusiness_be.exceptions.RestApiException;
+import de.ait.smallBusiness_be.exceptions.FieldValidationException;
+import de.ait.smallBusiness_be.payments.dao.PaymentRepository;
+import de.ait.smallBusiness_be.purchases.dao.PurchaseRepository;
+import de.ait.smallBusiness_be.sales.dao.SaleRepository;
+import de.ait.smallBusiness_be.validation.dto.ValidationErrorDto;
+import de.ait.smallBusiness_be.warehouse.dao.WarehouseRecordRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Objects;
 
 import static de.ait.smallBusiness_be.exceptions.ErrorDescription.CUSTOMER_ALREADY_EXISTS;
 import static de.ait.smallBusiness_be.exceptions.ErrorDescription.CUSTOMER_NUMBER_ALREADY_EXISTS;
 
-
-/**
- * @author Kondratyeva
- * @date 28.11.2024
- */
 
 @Service
 @RequiredArgsConstructor
 public class CustomerServiceImpl implements CustomerService {
 
     private final CustomerRepository customerRepository;
+    private final PurchaseRepository purchaseRepository;
+    private final SaleRepository saleRepository;
+    private final WarehouseRecordRepository warehouseRecordRepository;
+    private final PaymentRepository paymentRepository;
     private final ModelMapper modelMapper;
-    private static final Logger log = LoggerFactory.getLogger(CustomerServiceImpl.class);
 
     @Override
     @Transactional
     public CustomerDto createCustomer(NewCustomerDto newCustomerDto) {
 
-        checkCustomer(newCustomerDto);
+        newCustomerDto.setCustomerNumber(normalizeCustomerNumber(newCustomerDto.getCustomerNumber()));
+
+        validateCustomerUniqueness(null, newCustomerDto);
 
         Customer customer = modelMapper.map(newCustomerDto, Customer.class);
 
@@ -53,12 +59,9 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     public Page<CustomerDto> getAllCustomers(Pageable pageable) {
-        Page<Customer> customers = customerRepository.findAll(pageable);
-
-        if (customers.isEmpty()) {
-            throw new RestApiException(ErrorDescription.LIST_IS_EMPTY, HttpStatus.NOT_FOUND);
-        }
-        return customers.map(customer -> modelMapper.map(customer, CustomerDto.class));
+        return customerRepository
+                .findAll(pageable)
+                .map(customer -> modelMapper.map(customer, CustomerDto.class));
     }
 
     @Override
@@ -69,14 +72,25 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     public List<CustomerPickDto> getCustomers() {
-        List<Customer> customers = customerRepository.findAll();
-        return customers.stream().map(customer -> modelMapper.map(customer, CustomerPickDto.class)).collect(Collectors.toList());
+        return customerRepository
+                .findAll(Sort.by(Sort.Direction.ASC, "name"))
+                .stream()
+                .map(customer -> modelMapper.map(customer, CustomerPickDto.class))
+                .toList();
     }
 
     @Override
     public List<CustomerPickDto> getCustomersWithCustomerNumber() {
-        List<Customer> customers = customerRepository.findAllByCustomerNumberIsNotNull();
-        return customers.stream().map(customer -> modelMapper.map(customer, CustomerPickDto.class)).collect(Collectors.toList());
+        return customerRepository
+                .findAllByCustomerNumberIsNotNullAndCustomerNumberNot("")
+                .stream()
+                .map(customer ->
+                        modelMapper.map(customer, CustomerPickDto.class))
+                .sorted(Comparator.comparing(
+                        CustomerPickDto::getName,
+                        String.CASE_INSENSITIVE_ORDER
+                ))
+                .toList();
     }
 
     @Override
@@ -88,142 +102,202 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     @Transactional
     public CustomerDto updateCustomer(Long id, NewCustomerDto newCustomerDto) {
-
         Customer customer = getCustomerOrThrow(id);
+        newCustomerDto.setCustomerNumber(normalizeCustomerNumber(newCustomerDto.getCustomerNumber()));
 
-        checkCustomerOnUpdate(id, newCustomerDto);
+        validateCustomerUniqueness(id, newCustomerDto);
 
-        if (newCustomerDto.getName() != null) {
-            customer.setName(newCustomerDto.getName());
-        }
-        if (newCustomerDto.getCustomerNumber() != null) {
-            customer.setCustomerNumber(newCustomerDto.getCustomerNumber());
-        }
+        customer.setName(newCustomerDto.getName());
+        customer.setCustomerNumber(newCustomerDto.getCustomerNumber());
 
-        if (newCustomerDto.getAddressDto() != null) {
-            Address address = customer.getAddress();
-            if (address == null) {
-                customer.setAddress(modelMapper.map(newCustomerDto.getAddressDto(), Address.class));
-            } else {
-                // Вместо создания нового объекта Address,
-                // существующий объект address обновляется новыми данными из DTO, сохраняя ссылку на оригинальный объект.
-                modelMapper.map(newCustomerDto.getAddressDto(), address);
-            }
+        AddressDto addressDto = newCustomerDto.getAddressDto();
+
+        Address address = customer.getAddress();
+
+        if (address == null) {
+            customer.setAddress(modelMapper.map(addressDto, Address.class));
+        } else {
+            modelMapper.map(addressDto, address);
         }
 
-        if (newCustomerDto.getPhone() != null) {
-            customer.setPhone(newCustomerDto.getPhone());
-        }
-        if (newCustomerDto.getEmail() != null) {
-            customer.setEmail(newCustomerDto.getEmail());
-        }
-        if (newCustomerDto.getWebsite() != null) {
-            customer.setWebsite(newCustomerDto.getWebsite());
-        }
+        customer.setPhone(newCustomerDto.getPhone());
+        customer.setEmail(newCustomerDto.getEmail());
+        customer.setWebsite(newCustomerDto.getWebsite());
 
-        // Сохранение изменений в базе
-        Customer customerSaved = customerRepository.save(customer);
+        Customer savedCustomer = customerRepository.save(customer);
 
-        // Возвращение обновленного клиента как DTO
-        return modelMapper.map(customerSaved, CustomerDto.class);
+        return modelMapper.map(savedCustomer, CustomerDto.class);
     }
 
     @Override
+    @Transactional
     public void deleteCustomer(Long id) {
+
         Customer customer = getCustomerOrThrow(id);
+
+        List<String> usedIn = new ArrayList<>();
+
+        if (purchaseRepository.existsByVendor_Id(id)) {
+            usedIn.add("Einkäufen");
+        }
+
+        if (saleRepository.existsByCustomer_Id(id)) {
+            usedIn.add("Verkäufen");
+        }
+
+        if (warehouseRecordRepository.existsByPartner_Id(id)) {
+            usedIn.add("Lagerbewegungen");
+        }
+
+        if (paymentRepository.existsByCustomer_Id(id)) {
+            usedIn.add("Zahlungen");
+        }
+
+        if (!usedIn.isEmpty()) {
+
+            String message =
+                    "Der Geschäftspartner kann nicht gelöscht werden, da er bereits in folgenden Vorgängen verwendet wird: " +
+                            String.join(", ", usedIn) + ".";
+
+            throw new FieldValidationException(
+                    List.of(ValidationErrorDto.builder().field("customer").message(message).build()));
+        }
+
         customerRepository.delete(customer);
+        customerRepository.flush();
     }
 
-    private void checkCustomer(NewCustomerDto newCustomerDto) {
-        if (newCustomerDto == null) {
-            throw new IllegalArgumentException("Error: newCustomerDto = null!");
+    private void validateCustomerUniqueness(Long currentCustomerId, NewCustomerDto dto) {
+        List<ValidationErrorDto> errors = new ArrayList<>();
+
+        String customerNumber = dto.getCustomerNumber();
+
+        // 1. Уникальность Kundennummer
+        if (customerNumber != null && !customerNumber.isBlank()) {
+            customerRepository.findByCustomerNumber(customerNumber)
+                    .filter(existing -> currentCustomerId == null || !Objects.equals(existing.getId(), currentCustomerId))
+                    .ifPresent(existing ->
+                            errors.add(ValidationErrorDto.builder()
+                                            .field("customerNumber")
+                                            .message(CUSTOMER_NUMBER_ALREADY_EXISTS.getDescription())
+                                            .build()
+                            )
+                    );
         }
 
-        AddressDto addressDto = newCustomerDto.getAddressDto();
-        if (addressDto == null) {
-            throw new IllegalArgumentException("addressDto cannot be null");
-        }
-
-        boolean existsByNameAndAddress = customerRepository.existsByNameAndAddress(
-                newCustomerDto.getName(),
-                modelMapper.map(newCustomerDto.getAddressDto(), Address.class)
+        // 2. Поиск точных дубликатов фирмы
+        Address newAddress = modelMapper.map(
+                dto.getAddressDto(),
+                Address.class
         );
 
-        boolean existsByCustomerNumber = newCustomerDto.getCustomerNumber() != null
-                && !newCustomerDto.getCustomerNumber().isBlank()
-                && customerRepository.existsByCustomerNumber(newCustomerDto.getCustomerNumber());
+        if (hasCompleteAddress(newAddress)) {
+            String normalizedName =
+                    CustomerDuplicateNormalizer.normalizeName(dto.getName());
 
-        if (existsByNameAndAddress) {
-            throw new RestApiException(CUSTOMER_ALREADY_EXISTS, HttpStatus.CONFLICT);
+            boolean duplicateExists = customerRepository.findAll()
+                    .stream()
+                    .filter(existing -> currentCustomerId == null || !Objects.equals(existing.getId(), currentCustomerId))
+                    .anyMatch(existing ->
+                            CustomerDuplicateNormalizer.normalizeName(existing.getName())
+                                    .equals(normalizedName) && isSameFullAddress(existing.getAddress(), newAddress));
+
+            if (duplicateExists) {
+                errors.add(
+                        ValidationErrorDto.builder()
+                                .field("name")
+                                .message(CUSTOMER_ALREADY_EXISTS.getDescription())
+                                .build()
+                );
+            }
         }
-        if (existsByCustomerNumber) {
-            throw new RestApiException(CUSTOMER_NUMBER_ALREADY_EXISTS, HttpStatus.CONFLICT);
+
+        if (!errors.isEmpty()) {
+            throw new FieldValidationException(errors);
         }
     }
 
     public Customer getCustomerOrThrow(Long id) {
         return customerRepository.findById(id)
-                .orElseThrow(() -> new RestApiException(ErrorDescription.CUSTOMER_NOT_FOUND, HttpStatus.NOT_FOUND));
-
+                .orElseThrow(() ->  new EntityNotFoundException(ErrorDescription.CUSTOMER_NOT_FOUND.getDescription()));
     }
 
     @Override
-    public Page<CustomerDto> searchCustomers(
-            String query,
-            Pageable pageable
-    ) {
-        Page<Customer> customers =
-                customerRepository.findByNameContainingIgnoreCase(
-                        query,
-                        pageable
-                );
+    public Page<CustomerDto> searchCustomers(String query, Pageable pageable) {
+        Page<Customer> customers = customerRepository.findByNameContainingIgnoreCase(query, pageable);
 
-        return customers.map(customer ->
-                modelMapper.map(customer, CustomerDto.class)
-        );
+        return customers.map(customer -> modelMapper.map(customer, CustomerDto.class));
     }
 
     @Override
-    public Page<CustomerDto> searchCustomersWithCustomerNumber(
-            String query,
-            Pageable pageable
-    ) {
-        Page<Customer> customers =
-                customerRepository
-                        .findByCustomerNumberIsNotNullAndCustomerNumberNotAndNameContainingIgnoreCase(
-                                "",
-                                query,
-                                pageable
-                        );
+    public Page<CustomerDto> searchCustomersWithCustomerNumber(String query, Pageable pageable) {
+        Page<Customer> customers = customerRepository.findByCustomerNumberIsNotNullAndCustomerNumberNotAndNameContainingIgnoreCase("", query, pageable);
 
-        return customers.map(customer ->
-                modelMapper.map(customer, CustomerDto.class)
-        );
+        return customers.map(customer -> modelMapper.map(customer, CustomerDto.class));
     }
 
-    private void checkCustomerOnUpdate(Long id, NewCustomerDto newCustomerDto) {
-        log.info("Переданный объект в checkCustomerOnUpdate: {}", newCustomerDto);
-        if (newCustomerDto == null) {
-            throw new IllegalArgumentException("newCustomerDto is null");
+    @Override
+    @Transactional(readOnly = true)
+    public List<CustomerDto> findPotentialDuplicates(
+            String name,
+            Long excludeId
+    ) {
+        if (name == null || name.isBlank()) {
+            return List.of();
         }
-        // Проверка на совпадение имени и адреса
-        log.info("AddressDto from newCustomerDto: {}", newCustomerDto.getAddressDto());
-        customerRepository.findByNameAndAddress(
-                        newCustomerDto.getName(),
-                        modelMapper.map(newCustomerDto.getAddressDto(), Address.class))
-                .ifPresent(existingCustomer -> {
-                    if (!existingCustomer.getId().equals(id)) {
-                        throw new RestApiException(CUSTOMER_ALREADY_EXISTS, HttpStatus.CONFLICT);
-                    }
-                });
-        // Проверка на совпадение клиентского номера
-        if (newCustomerDto.getCustomerNumber() != null && !newCustomerDto.getCustomerNumber().isBlank()) {
-            customerRepository.findByCustomerNumber(newCustomerDto.getCustomerNumber())
-                    .ifPresent(existingCustomer -> {
-                        if (!existingCustomer.getId().equals(id)) {
-                            throw new RestApiException(CUSTOMER_NUMBER_ALREADY_EXISTS, HttpStatus.CONFLICT);
-                        }
-                    });
+
+        String normalizedName =
+                CustomerDuplicateNormalizer.normalizeName(name);
+
+        return customerRepository.findAll()
+                .stream()
+                .filter(customer -> excludeId == null || !Objects.equals(customer.getId(), excludeId))
+                .filter(customer -> CustomerDuplicateNormalizer.normalizeName(customer.getName()).equals(normalizedName))
+                .map(customer -> modelMapper.map(customer, CustomerDto.class))
+                .toList();
+    }
+
+    private String normalizeCustomerNumber(String customerNumber) {
+        if (customerNumber == null || customerNumber.isBlank()) {
+            return null;
         }
+        return customerNumber.trim();
+    }
+
+    private boolean hasCompleteAddress(Address address) {
+        return address != null
+                && hasText(address.getCountry())
+                && hasText(address.getPostalCode())
+                && hasText(address.getCity())
+                && hasText(address.getStreet())
+                && hasText(address.getBuilding());
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
+    }
+
+    private boolean isSameFullAddress(
+            Address first,
+            Address second
+    ) {
+        if (!hasCompleteAddress(first) || !hasCompleteAddress(second)) {
+            return false;
+        }
+
+        return CustomerDuplicateNormalizer.normalizeCountry(first.getCountry())
+                .equals(CustomerDuplicateNormalizer.normalizeCountry(second.getCountry()))
+
+                && CustomerDuplicateNormalizer.normalizePostalCode(first.getPostalCode())
+                .equals(CustomerDuplicateNormalizer.normalizePostalCode(second.getPostalCode()))
+
+                && CustomerDuplicateNormalizer.normalizeCity(first.getCity())
+                .equals(CustomerDuplicateNormalizer.normalizeCity(second.getCity()))
+
+                && CustomerDuplicateNormalizer.normalizeStreet(first.getStreet())
+                .equals(CustomerDuplicateNormalizer.normalizeStreet(second.getStreet()))
+
+                && CustomerDuplicateNormalizer.normalizeBuilding(first.getBuilding())
+                .equals(CustomerDuplicateNormalizer.normalizeBuilding(second.getBuilding()));
     }
 }

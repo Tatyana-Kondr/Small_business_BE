@@ -4,4 +4,6 @@ import de.ait.smallBusiness_be.purchases.model.Purchase;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface PurchaseRepository extends JpaRepository<Purchase, Long>, PurchaseRepositoryCustom {
+    boolean existsByDocument_Id(Long documentId);
+    boolean existsByVendor_Id(Long vendorId);
 }

@@ -16,7 +16,7 @@ import lombok.Setter;
 public class NewPaymentProcessDto {
 
     @NotBlank(message = "{validation.notBlank}")
-    @Size(max = 30, message = "Process name must not exceed 30 characters")
+    @Size(max = 30, message = "{validation.max.size}")
     @Schema(description = "Name of the payment process (e.g., 'Bank Transfer', 'Kartenzahlung')", example = "Kartenzahlung", required = true)
     private String processName;
 }

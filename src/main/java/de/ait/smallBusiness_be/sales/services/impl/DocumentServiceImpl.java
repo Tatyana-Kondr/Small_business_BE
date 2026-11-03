@@ -18,9 +18,13 @@ import com.openhtmltopdf.outputdevice.helper.BaseRendererBuilder.FontStyle;
 
 import java.io.*;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.file.*;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 
 @Slf4j
@@ -34,11 +38,8 @@ public class DocumentServiceImpl implements DocumentService {
     private static final Set<Long> EXCLUDED_CATEGORY_IDS = Set.of(5L, 11L, 12L);
     private static final String INVOICE_TEMPLATE = "invoice";
     private static final String DELIVERY_BILL_TEMPLATE = "delivery-bill";
-
     private static final String REGULAR_FONT_PATH = "/fonts/NotoSans-Regular.ttf";
-
     private static final String BOLD_FONT_PATH = "/fonts/NotoSans-Bold.ttf";
-
     private static final String FONT_FAMILY = "Noto Sans";
 
     @Override
@@ -90,11 +91,7 @@ public class DocumentServiceImpl implements DocumentService {
         try {
             Files.deleteIfExists(tempFile);
         } catch (IOException e) {
-            log.warn(
-                    "Could not delete temporary PDF file: {}",
-                    tempFile,
-                    e
-            );
+            log.warn("Could not delete temporary PDF file: {}", tempFile, e);
         }
     }
 
@@ -102,61 +99,30 @@ public class DocumentServiceImpl implements DocumentService {
     // Обычная генерация PDF
     // =========================================================
 
-    private void generatePdf(
-            Sale sale,
-            String baseFolder,
-            String templateName,
-            String documentNumber
-    ) {
-        Path targetFile = resolveTargetFile(
-                baseFolder,
-                documentNumber
-        );
+    private void generatePdf(Sale sale, String baseFolder, String templateName, String documentNumber) {
+        Path targetFile = resolveTargetFile(baseFolder, documentNumber);
 
-        renderPdf(
-                sale,
-                templateName,
-                targetFile
-        );
+        renderPdf(sale, templateName, targetFile);
     }
 
     // =========================================================
     // Временная генерация PDF
     // =========================================================
 
-    private Path generateTempPdf(
-            Sale sale,
-            String baseFolder,
-            String templateName,
-            String documentNumber
-    ) {
-        Path yearFolder = resolveYearFolder(
-                baseFolder,
-                documentNumber
-        );
+    private Path generateTempPdf(Sale sale, String baseFolder, String templateName, String documentNumber) {
+        Path yearFolder = resolveYearFolder(baseFolder, documentNumber);
 
         final Path tempFile;
 
         try {
-            tempFile = Files.createTempFile(
-                    yearFolder,
-                    documentNumber + "-",
-                    ".tmp.pdf"
-            );
+            tempFile = Files.createTempFile(yearFolder, documentNumber + "-", ".tmp.pdf");
         } catch (IOException e) {
-            throw new RestApiException(
-                    "Failed to create temporary PDF file: "
-                            + e.getMessage(),
-                    HttpStatus.INTERNAL_SERVER_ERROR
-            );
+            log.error("Failed to create temporary PDF file for document: {}", documentNumber, e);
+            throw new RestApiException(ErrorDescription.FILE_STORAGE_FAILED, HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
         try {
-            renderPdf(
-                    sale,
-                    templateName,
-                    tempFile
-            );
+            renderPdf(sale, templateName, tempFile);
 
             return tempFile;
 
@@ -170,67 +136,33 @@ public class DocumentServiceImpl implements DocumentService {
     // Рендеринг Thymeleaf -> PDF
     // =========================================================
 
-    private void renderPdf(
-            Sale sale,
-            String templateName,
-            Path outputPath
-    ) {
+    private void renderPdf(Sale sale, String templateName, Path outputPath) {
         Company company = companyRepository.findById(1L)
-                .orElseThrow(() -> new RestApiException(
-                        ErrorDescription.COMPANY_NOT_FOUND,
-                        HttpStatus.NOT_FOUND
-                ));
+                .orElseThrow(() -> new RestApiException(ErrorDescription.COMPANY_NOT_FOUND, HttpStatus.NOT_FOUND));
 
         String logoPath = resolveCompanyLogoPath(company);
 
-        Context context = createTemplateContext(
-                sale,
-                company,
-                logoPath,
-                templateName
-        );
+        Context context = createTemplateContext(sale, company, logoPath, templateName);
 
-        String htmlContent = templateEngine.process(
-                templateName,
-                context
-        );
+        try {
+            String htmlContent = templateEngine.process(templateName, context);
 
-        try (
-                OutputStream outputStream =
-                        Files.newOutputStream(outputPath)
-        ) {
-            PdfRendererBuilder builder =
-                    new PdfRendererBuilder();
-
-            builder.useFastMode();
-
-            registerFonts(builder);
-
-            builder.withHtmlContent(
-                    htmlContent,
-                    new File(".").toURI().toString()
-            );
-
-            builder.toStream(outputStream);
-            builder.run();
+            try (OutputStream outputStream = Files.newOutputStream(outputPath)) {
+                PdfRendererBuilder builder = new PdfRendererBuilder();
+                builder.useFastMode();
+                registerFonts(builder);
+                builder.withHtmlContent(htmlContent, new File(".").toURI().toString());
+                builder.toStream(outputStream);
+                builder.run();
+            }
 
         } catch (Exception e) {
-            throw new RestApiException(
-                    "Error while creating PDF "
-                            + templateName
-                            + ": "
-                            + e.getMessage(),
-                    HttpStatus.INTERNAL_SERVER_ERROR
-            );
+            log.error("Failed to generate PDF. Template: {}, saleId: {}, outputPath: {}", templateName, sale.getId(), outputPath, e);
+            throw new RestApiException(ErrorDescription.PDF_GENERATION_FAILED, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    private Context createTemplateContext(
-            Sale sale,
-            Company company,
-            String logoPath,
-            String templateName
-    ) {
+    private Context createTemplateContext(Sale sale, Company company, String logoPath, String templateName) {
         Context context = new Context();
 
         context.setVariable("sale", sale);
@@ -238,23 +170,17 @@ public class DocumentServiceImpl implements DocumentService {
         context.setVariable("logoPath", logoPath);
 
         if (DELIVERY_BILL_TEMPLATE.equals(templateName)) {
-            context.setVariable(
-                    "items",
-                    printableDeliveryItems(sale)
-            );
+            context.setVariable("items", printableDeliveryItems(sale));
         } else {
-            context.setVariable(
-                    "items",
-                    sale.getSaleItems()
-            );
+            context.setVariable("items", sale.getSaleItems());
+            context.setVariable("taxSummary", calculateTaxSummary(sale));
+            context.setVariable("hasDiscount", hasDiscount(sale));
         }
 
         return context;
     }
 
-    private void registerFonts(
-            PdfRendererBuilder builder
-    ) {
+    private void registerFonts(PdfRendererBuilder builder) {
         builder.useFont(
                 () -> getRequiredResource(REGULAR_FONT_PATH),
                 FONT_FAMILY,
@@ -272,17 +198,11 @@ public class DocumentServiceImpl implements DocumentService {
         );
     }
 
-    private InputStream getRequiredResource(
-            String resourcePath
-    ) {
-        InputStream inputStream =
-                DocumentServiceImpl.class
-                        .getResourceAsStream(resourcePath);
+    private InputStream getRequiredResource(String resourcePath) {
+        InputStream inputStream = DocumentServiceImpl.class.getResourceAsStream(resourcePath);
 
         if (inputStream == null) {
-            throw new IllegalStateException(
-                    "Resource not found: " + resourcePath
-            );
+            throw new IllegalStateException("Resource not found: " + resourcePath);
         }
 
         return inputStream;
@@ -292,67 +212,33 @@ public class DocumentServiceImpl implements DocumentService {
     // Замена временного PDF на действующий
     // =========================================================
 
-    private void replacePdf(
-            String baseFolder,
-            String documentNumber,
-            Path tempFile
-    ) {
+    private void replacePdf(String baseFolder, String documentNumber, Path tempFile) {
+
         if (tempFile == null || !Files.exists(tempFile)) {
-            throw new RestApiException(
-                    "Temporary PDF file does not exist: "
-                            + tempFile,
-                    HttpStatus.INTERNAL_SERVER_ERROR
-            );
+            log.error("Temporary PDF file does not exist: {}", tempFile);
+            throw new RestApiException(ErrorDescription.PDF_REPLACEMENT_FAILED, HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
-        Path targetFile = resolveTargetFile(
-                baseFolder,
-                documentNumber
-        );
+        Path targetFile = resolveTargetFile(baseFolder, documentNumber);
 
         try {
-            Files.move(
-                    tempFile,
-                    targetFile,
-                    StandardCopyOption.REPLACE_EXISTING,
-                    StandardCopyOption.ATOMIC_MOVE
-            );
+            Files.move(tempFile, targetFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
 
         } catch (AtomicMoveNotSupportedException e) {
-            replaceWithoutAtomicMove(
-                    tempFile,
-                    targetFile
-            );
+            replaceWithoutAtomicMove(tempFile, targetFile);
 
         } catch (IOException e) {
-            throw new RestApiException(
-                    "Failed to replace PDF document "
-                            + targetFile
-                            + ": "
-                            + e.getMessage(),
-                    HttpStatus.INTERNAL_SERVER_ERROR
-            );
+            log.error("Failed to replace PDF document: {}", targetFile, e);
+            throw new RestApiException(ErrorDescription.PDF_REPLACEMENT_FAILED, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    private void replaceWithoutAtomicMove(
-            Path tempFile,
-            Path targetFile
-    ) {
+    private void replaceWithoutAtomicMove(Path tempFile, Path targetFile) {
         try {
-            Files.move(
-                    tempFile,
-                    targetFile,
-                    StandardCopyOption.REPLACE_EXISTING
-            );
+            Files.move(tempFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
-            throw new RestApiException(
-                    "Failed to replace PDF document "
-                            + targetFile
-                            + ": "
-                            + e.getMessage(),
-                    HttpStatus.INTERNAL_SERVER_ERROR
-            );
+            log.error("Failed to replace PDF document: {}", targetFile, e);
+            throw new RestApiException(ErrorDescription.PDF_REPLACEMENT_FAILED, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -360,25 +246,14 @@ public class DocumentServiceImpl implements DocumentService {
     // Удаление PDF
     // =========================================================
 
-    private void deletePdf(
-            String baseFolder,
-            String documentNumber
-    ) {
-        Path targetFile = resolveTargetFile(
-                baseFolder,
-                documentNumber
-        );
+    private void deletePdf(String baseFolder, String documentNumber) {
+        Path targetFile = resolveTargetFile(baseFolder, documentNumber);
 
         try {
             Files.deleteIfExists(targetFile);
         } catch (IOException e) {
-            throw new RestApiException(
-                    "Failed to delete PDF document: "
-                            + targetFile
-                            + ". "
-                            + e.getMessage(),
-                    HttpStatus.INTERNAL_SERVER_ERROR
-            );
+            log.error("Failed to delete PDF document: {}", targetFile, e);
+            throw new RestApiException(ErrorDescription.FILE_DELETE_FAILED, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -386,45 +261,24 @@ public class DocumentServiceImpl implements DocumentService {
     // Работа с путями
     // =========================================================
 
-    private Path resolveTargetFile(
-            String baseFolder,
-            String documentNumber
-    ) {
-        Path yearFolder = resolveYearFolder(
-                baseFolder,
-                documentNumber
-        );
+    private Path resolveTargetFile(String baseFolder, String documentNumber) {
+        Path yearFolder = resolveYearFolder(baseFolder, documentNumber);
 
-        return yearFolder.resolve(
-                documentNumber + ".pdf"
-        );
+        return yearFolder.resolve(documentNumber + ".pdf");
     }
 
-    private Path resolveYearFolder(
-            String baseFolder,
-            String documentNumber
-    ) {
-        String year = extractYearFromInvoiceNumber(
-                documentNumber
-        );
+    private Path resolveYearFolder(String baseFolder, String documentNumber) {
+        String year = extractYearFromInvoiceNumber(documentNumber);
 
-        Path yearFolder = Paths.get(
-                baseFolder,
-                year
-        );
+        Path yearFolder = Paths.get(baseFolder, year);
 
         try {
             Files.createDirectories(yearFolder);
             return yearFolder;
 
         } catch (IOException e) {
-            throw new RestApiException(
-                    "Failed to create folder for documents: "
-                            + yearFolder
-                            + ". "
-                            + e.getMessage(),
-                    HttpStatus.INTERNAL_SERVER_ERROR
-            );
+            log.error("Failed to create directory: {}", yearFolder, e);
+            throw new RestApiException(ErrorDescription.DIRECTORY_CREATION_FAILED, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -432,16 +286,11 @@ public class DocumentServiceImpl implements DocumentService {
     // Логотип
     // =========================================================
 
-    private String resolveCompanyLogoPath(
-            Company company
-    ) {
+    private String resolveCompanyLogoPath(Company company) {
         String logoUrl = company.getLogoUrl();
 
         if (logoUrl == null || logoUrl.isBlank()) {
-            log.warn(
-                    "Company logo URL is empty for company ID {}",
-                    company.getId()
-            );
+            log.warn("Company logo URL is empty for company ID {}", company.getId());
             return null;
         }
 
@@ -454,13 +303,9 @@ public class DocumentServiceImpl implements DocumentService {
                 .normalize();
 
         if (!Files.exists(logoPath)) {
-            log.warn(
-                    "Company logo not found at path: {}",
-                    logoPath
-            );
+            log.warn("Company logo not found at path: {}", logoPath);
             return null;
         }
-
         return logoPath.toUri().toString();
     }
 
@@ -468,30 +313,46 @@ public class DocumentServiceImpl implements DocumentService {
     // Документный номер
     // =========================================================
 
-    private String extractYearFromInvoiceNumber(
-            String documentNumber
-    ) {
-        if (
-                documentNumber != null
-                        && documentNumber.length() == 9
-        ) {
+    private String extractYearFromInvoiceNumber(String documentNumber) {
+        if (documentNumber != null && documentNumber.length() == 9) {
             return documentNumber.substring(2, 6);
         }
 
-        throw new RestApiException(
-                "Invalid document number format: "
-                        + documentNumber,
-                HttpStatus.BAD_REQUEST
+        throw new RestApiException("Invalid document number format: " + documentNumber, HttpStatus.BAD_REQUEST
         );
+    }
+
+    private Map<BigDecimal, BigDecimal> calculateTaxSummary(Sale sale) {
+
+        Map<BigDecimal, BigDecimal> taxSummary = new TreeMap<>();
+
+        if (sale.getSaleItems() == null) {
+            return taxSummary;
+        }
+
+        for (SaleItem item : sale.getSaleItems()) {
+
+            if (item.getTax() == null || item.getTaxAmount() == null) {
+                continue;
+            }
+
+            taxSummary.merge(
+                    item.getTax(),
+                    item.getTaxAmount(),
+                    BigDecimal::add
+            );
+        }
+
+        taxSummary.replaceAll((taxRate, taxAmount) -> taxAmount.setScale(2, RoundingMode.HALF_UP));
+
+        return taxSummary;
     }
 
     // =========================================================
     // Позиции Lieferschein
     // =========================================================
 
-    private List<SaleItem> printableDeliveryItems(
-            Sale sale
-    ) {
+    private List<SaleItem> printableDeliveryItems(Sale sale) {
         if (sale.getSaleItems() == null) {
             return List.of();
         }
@@ -499,159 +360,21 @@ public class DocumentServiceImpl implements DocumentService {
         return sale.getSaleItems()
                 .stream()
                 .filter(item -> item.getProduct() != null)
-                .filter(item ->
-                        item.getProduct()
-                                .getProductCategory() != null
-                )
+                .filter(item -> item.getProduct().getProductCategory() != null)
                 .filter(item -> {
-                    Long categoryId =
-                            item.getProduct()
-                                    .getProductCategory()
-                                    .getId();
-
-                    return categoryId == null
-                            || !EXCLUDED_CATEGORY_IDS.contains(
-                            categoryId
-                    );
+                    Long categoryId = item
+                            .getProduct()
+                            .getProductCategory()
+                            .getId();
+                    return categoryId == null || !EXCLUDED_CATEGORY_IDS.contains(categoryId);
                 })
                 .toList();
     }
 
-    // --- Общий метод генерации PDF ---
-//    private void generatePdf(Sale sale, String baseFolder, String templateName, String documentNumber) {
-//        String year = extractYearFromInvoiceNumber(documentNumber);
-//        String yearFolderPath = baseFolder + File.separator + year;
-//
-//        File yearFolder = new File(yearFolderPath);
-//        if (!yearFolder.exists() && !yearFolder.mkdirs()) {
-//            throw new RestApiException("Failed to create folder for documents: " + yearFolderPath,
-//                    HttpStatus.INTERNAL_SERVER_ERROR);
-//        }
-//
-//        String outputPath = yearFolderPath + File.separator + documentNumber + ".pdf";
-//        File outputFile = new File(outputPath);
-//
-//        if (outputFile.exists() && !outputFile.delete()) {
-//            throw new RestApiException("Failed to delete old PDF file: " + outputPath,
-//                    HttpStatus.INTERNAL_SERVER_ERROR);
-//        }
-//
-//        // Получаем данные компании
-//        Company company = companyRepository.findById(1L)
-//                .orElseThrow(() -> new RestApiException(ErrorDescription.COMPANY_NOT_FOUND, HttpStatus.NOT_FOUND));
-//
-//        // Пытаемся получить путь логотипа — может быть null
-//        String logoPath = resolveCompanyLogoPath(company);
-//
-//        // Подготавливаем контекст Thymeleaf
-//        Context context = new Context();
-//        context.setVariable("sale", sale);
-//        context.setVariable("company", company);
-//        context.setVariable("logoPath", logoPath);
-//        if ("delivery-bill".equals(templateName)) {
-//            context.setVariable("items", printableDeliveryItems(sale));
-//        } else {
-//            context.setVariable("items", sale.getSaleItems());
-//        }
-//
-//        String htmlContent = templateEngine.process(templateName, context);
-//
-//        // Генерируем PDF
-//        try (OutputStream outputStream = new FileOutputStream(outputFile)) {
-//            PdfRendererBuilder builder = new PdfRendererBuilder();
-//            builder.useFastMode();
-//            builder.useFont(
-//                    () -> getRequiredResource("/fonts/NotoSans-Regular.ttf"),
-//                    "Noto Sans",
-//                    400,
-//                    FontStyle.NORMAL,
-//                    true
-//            );
-//
-//            builder.useFont(
-//                    () -> getRequiredResource("/fonts/NotoSans-Bold.ttf"),
-//                    "Noto Sans",
-//                    700,
-//                    FontStyle.NORMAL,
-//                    true
-//            );
-//            builder.withHtmlContent(htmlContent, new File(".").toURI().toString());
-//            builder.toStream(outputStream);
-//            builder.run();
-//        } catch (Exception e) {
-//            throw new RestApiException("Error while creating PDF " + templateName + ": " + e.getMessage(),
-//                    HttpStatus.INTERNAL_SERVER_ERROR);
-//        }
-//    }
-//
-//    private InputStream getRequiredResource(String resourcePath) {
-//        InputStream inputStream =
-//                DocumentServiceImpl.class.getResourceAsStream(resourcePath);
-//
-//        if (inputStream == null) {
-//            throw new IllegalStateException(
-//                    "Resource not found: " + resourcePath
-//            );
-//        }
-//
-//        return inputStream;
-//    }
-//
-//    // --- Удаление PDF ---
-//    private void deletePdf(String baseFolder, String documentNumber) {
-//        String year = extractYearFromInvoiceNumber(documentNumber);
-//        String filePath = baseFolder + File.separator + year + File.separator + documentNumber + ".pdf";
-//        File file = new File(filePath);
-//        if (file.exists() && !file.delete()) {
-//            throw new RestApiException("Failed to delete PDF document: " + filePath,
-//                    HttpStatus.INTERNAL_SERVER_ERROR);
-//        }
-//    }
-//
-//    // --- Определение пути логотипа компании ---
-//    private String resolveCompanyLogoPath(Company company) {
-//        try {
-//            if (company.getLogoUrl() != null && !company.getLogoUrl().isEmpty()) {
-//                // Убираем возможный ведущий слеш, чтобы Paths корректно разрешил путь
-//                String relativePath = company.getLogoUrl().startsWith("/") ? company.getLogoUrl().substring(1) : company.getLogoUrl();
-//
-//                Path logoPath = Paths.get(relativePath).toAbsolutePath();
-//                File logoFile = logoPath.toFile();
-//
-//                if (logoFile.exists()) {
-//                    return logoFile.toURI().toString();
-//                } else {
-//                    System.out.println("Company logo not found at path: " + logoPath);
-//                    return null;
-//                }
-//            }
-//
-//            throw new RestApiException(ErrorDescription.LOGO_NOT_FOUND, HttpStatus.NOT_FOUND);
-//
-//        } catch (Exception e) {
-//            System.out.println("Error resolving logo path: " + e.getMessage());
-//        }
-//        return null;
-//    }
-//
-//
-//    private String extractYearFromInvoiceNumber(String invoiceNumber) {
-//        if (invoiceNumber != null && invoiceNumber.length() == 9) {
-//            return invoiceNumber.substring(2, 6); // YYYY
-//        }
-//        throw new RestApiException("Invalid document number format: " + invoiceNumber, HttpStatus.BAD_REQUEST);
-//    }
-//
-//    private List<SaleItem> printableDeliveryItems(Sale sale) {
-//        if (sale.getSaleItems() == null) return List.of();
-//
-//        return sale.getSaleItems().stream()
-//                .filter(i -> i.getProduct() != null)
-//                .filter(i -> i.getProduct().getProductCategory() != null)
-//                .filter(i -> {
-//                    Long catId = i.getProduct().getProductCategory().getId();
-//                    return catId == null || !EXCLUDED_CATEGORY_IDS.contains(catId);
-//                })
-//                .toList();
-//    }
+    private boolean hasDiscount(Sale sale) {
+        return sale.getSaleItems() != null && sale
+                .getSaleItems()
+                .stream()
+                .anyMatch(item -> item.getDiscount() != null && item.getDiscount().compareTo(BigDecimal.ZERO) > 0);
+    }
 }

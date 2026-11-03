@@ -45,7 +45,7 @@ public class EntityValidationConstants {
      *   <li>abc-def-ghij</li> (contains letters, which are not allowed)</li>
      * </ul>
      */
-    public static final String PHONE_REGEX = "^$|^\\+?[0-9]{1,3}[-\\s.]?[0-9]{1,4}[-\\s.]?[0-9]{1,4}[-\\s.]?[0-9]{1,9}$";
+    public static final String PHONE_REGEX =  "^(?:$|\\+?(?=(?:\\D*\\d){6,15}\\D*$)(?:\\d|[ ()./-])+)$";
 
     /**
      * Regular expression pattern for validating restaurant descriptions.
@@ -114,7 +114,9 @@ public class EntityValidationConstants {
      *   <li>"New|Old"</li> (contains invalid character '|')
      * </ul>
      */
-    public static final String NAME_REGEX = "^[A-Za-zÀ-ÖØ-öø-ÿ0-9\\s&'’‘\\-/,\\.]+$";
+    public static final String NAME_REGEX = "^[A-Za-zÀ-ÖØ-öø-ÿ0-9_\\s&'’‘\\-/,\\.]+$";
+
+    public static final String ART_NAME_REGEX = "^[A-Za-z0-9_]+$";
 
     /**
      * Regular expression pattern for validating postal codes.
@@ -151,7 +153,7 @@ public class EntityValidationConstants {
      * </ul>
      */
 
-    public static final String POSTAL_CODE_REGEX = "^([A-Z]{1,2}\\d[A-Z\\d]? \\d[A-Z]{2}|\\d{5}(-\\d{4})?|[A-Z]\\d[A-Z] \\d[A-Z]\\d|\\d{4}|\\d{4} [A-Z]{2}|\\d{3} \\d{2}|\\d{5})$";
+    public static final String POSTAL_CODE_REGEX =   "^([A-Z]{1,2}\\d[A-Z\\d]? \\d[A-Z]{2}|\\d{5}(-\\d{4})?|[A-Z]\\d[A-Z] \\d[A-Z]\\d|\\d{4}( [A-Z]{2})?|\\d{3} \\d{2}|\\d{6}|[A-Z]\\d{2}[A-Z]\\d[A-Z]\\d|LV-\\d{4})$";
 
     /**
      * Regular expression pattern for Country and City names validation.
@@ -192,7 +194,7 @@ public class EntityValidationConstants {
      * </ul>
      */
 
-    public static final String CITY_REGEX = "^[A-Za-zÄÖÜäöüß\\-\\s'\\.]+$";
+    public static final String CITY_REGEX =  "^(?!.*\\s{2,})[\\p{L}][\\p{L}\\s.,'’()\\-]*[\\p{L})]$";
 
 
     /**
@@ -235,7 +237,7 @@ public class EntityValidationConstants {
      * </ul>
      */
 
-    public static final String STREET_REGEX = "^[A-Za-z0-9ÄÖÜäöüß\\-\\s'\\.]+$";
+    public static final String STREET_REGEX =  "^(?!.*\\s{2,})[\\p{L}0-9][\\p{L}0-9\\s.,'’()/-]*[\\p{L}0-9.)]$|^[\\p{L}0-9]$";
 
     /**
      * Regular expression pattern for validating house numbers.
@@ -271,7 +273,7 @@ public class EntityValidationConstants {
      * </ul>
      */
 
-    public static final String BUILDING_REGEX = "^(?!\\s)(?!.*\\s{2,})[A-Za-z0-9-]+(?<!\\s)$";
+    public static final String BUILDING_REGEX = "^(?!.*\\s{2,})[\\p{L}0-9][\\p{L}0-9\\s.,/-]*[\\p{L}0-9]$|^[\\p{L}0-9]$";
 
     /**
      * Regex for validating German IBANs (always 22 characters).
@@ -338,7 +340,7 @@ public class EntityValidationConstants {
      * </ul>
      */
 
-    public static final String WEBSITE_REGEX = "^$|^(https?://)?([\\w-]+\\.)+[\\w-]+(/[\\w-./?%&=]*)?$";
+    public static final String WEBSITE_REGEX = "^$|^(https?://)?([\\w-]+\\.)+[\\w-]+(/[\\w\\-./?%&=+#@~!;:$()]*)?$";
 
     /**
      * Regular expression pattern for validating website URLs.

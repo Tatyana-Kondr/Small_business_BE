@@ -50,14 +50,12 @@ class ProductionItemServiceImplTest {
         closeable.close();
     }
 
-    // ===== CREATE =====
     @Test
     void createProductionItem_success() {
         NewProductionItemDto newDto = new NewProductionItemDto();
         newDto.setProductId(1L);
         newDto.setQuantity(BigDecimal.valueOf(2));
         newDto.setUnitPrice(BigDecimal.valueOf(10));
-        newDto.setType("PRODUKTIONSMATERIAL");
 
         Product product = new Product();
         Production production = new Production();
@@ -96,7 +94,6 @@ class ProductionItemServiceImplTest {
                 .hasMessageContaining("ProductionID must not be null");
     }
 
-    // ===== GET BY ID =====
     @Test
     void getProductionItemById_success() {
         ProductionItem entity = new ProductionItem();
@@ -119,7 +116,6 @@ class ProductionItemServiceImplTest {
                 .hasMessageContaining("ProductionItem not found");
     }
 
-    // ===== UPDATE =====
     @Test
     void updateProductionItem_success() {
         NewProductionItemDto newDto = new NewProductionItemDto();
@@ -162,7 +158,6 @@ class ProductionItemServiceImplTest {
                 .hasMessageContaining("ProductionItem not found");
     }
 
-    // ===== DELETE =====
     @Test
     void deleteProductionItem_success() {
         Production production = new Production();

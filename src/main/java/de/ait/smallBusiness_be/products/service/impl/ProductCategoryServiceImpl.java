@@ -5,11 +5,13 @@ import de.ait.smallBusiness_be.exceptions.ErrorDescription;
 import de.ait.smallBusiness_be.exceptions.FieldValidationException;
 import de.ait.smallBusiness_be.exceptions.RestApiException;
 import de.ait.smallBusiness_be.products.dao.ProductCategoryRepository;
+import de.ait.smallBusiness_be.products.dao.ProductRepository;
 import de.ait.smallBusiness_be.products.dto.NewProductCategoryDto;
 import de.ait.smallBusiness_be.products.dto.ProductCategoryDto;
 import de.ait.smallBusiness_be.products.model.ProductCategory;
 import de.ait.smallBusiness_be.products.service.ProductCategoryService;
 import de.ait.smallBusiness_be.validation.dto.ValidationErrorDto;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -20,7 +22,7 @@ import org.springframework.data.domain.Sort;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Locale;
 
 /**
  * SmallBusiness_BE
@@ -34,29 +36,33 @@ import java.util.stream.Collectors;
 public class ProductCategoryServiceImpl implements ProductCategoryService {
 
     final ProductCategoryRepository productCategoryRepository;
+    private final ProductRepository productRepository;
     final ModelMapper modelMapper;
 
     @Override
     @Transactional
     public ProductCategoryDto addProductCategory(NewProductCategoryDto newProductCategoryDto) {
-        String nameToUpperCase = newProductCategoryDto.getName().trim().toUpperCase();
-        String artNameToUpperCase = newProductCategoryDto.getArtName().trim().toUpperCase();
+        String nameToUpperCase = newProductCategoryDto.getName()
+                .trim()
+                .toUpperCase(Locale.ROOT);
+
+        String artNameToUpperCase = newProductCategoryDto.getArtName()
+                .trim()
+                .toUpperCase(Locale.ROOT);
 
         List<ValidationErrorDto> errors = new ArrayList<>();
 
         if (productCategoryRepository.existsByNameIgnoreCase(nameToUpperCase)) {
             errors.add(ValidationErrorDto.builder()
                     .field("name")
-                    .rejectedValue(nameToUpperCase)
-                    .message("Kategorie existiert bereits.")
+                    .message(ErrorDescription.CATEGORY_ALREADY_EXISTS.getDescription())
                     .build());
         }
 
         if (productCategoryRepository.existsByArtNameIgnoreCase(artNameToUpperCase)) {
             errors.add(ValidationErrorDto.builder()
                     .field("artName")
-                    .rejectedValue(artNameToUpperCase)
-                    .message("ArtName existiert bereits.")
+                    .message(ErrorDescription.CATEGORY_ARTNAME_ALREADY_EXISTS.getDescription())
                     .build());
         }
 
@@ -83,13 +89,23 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
     @Override
     @Transactional
     public void deleteProductCategoryById(Long id) {
-        ProductCategory productCategory = getProductCategoryOrThrow(id);
+        ProductCategory category = getProductCategoryOrThrow(id);
+
+        if (productRepository.existsByProductCategory_Id(id)) {
+            throw new RestApiException(
+                    ErrorDescription.CATEGORY_DELETE_FAILED,
+                    HttpStatus.CONFLICT
+            );
+        }
 
         try {
-            productCategoryRepository.delete(productCategory);
+            productCategoryRepository.delete(category);
             productCategoryRepository.flush();
         } catch (DataIntegrityViolationException e) {
-            throw new RestApiException(ErrorDescription.CATEGORY_DELETE_FAILED, HttpStatus.CONFLICT);
+            throw new RestApiException(
+                    ErrorDescription.CATEGORY_DELETE_FAILED,
+                    HttpStatus.CONFLICT
+            );
         }
     }
 
@@ -101,24 +117,27 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
     ) {
         ProductCategory productCategory = getProductCategoryOrThrow(id);
 
-        String nameToUpperCase = newProductCategoryDto.getName().trim().toUpperCase();
-        String artNameToUpperCase = newProductCategoryDto.getArtName().trim().toUpperCase();
+        String nameToUpperCase = newProductCategoryDto.getName()
+                .trim()
+                .toUpperCase(Locale.ROOT);
+
+        String artNameToUpperCase = newProductCategoryDto.getArtName()
+                .trim()
+                .toUpperCase(Locale.ROOT);
 
         List<ValidationErrorDto> errors = new ArrayList<>();
 
         if (productCategoryRepository.existsByNameIgnoreCaseAndIdNot(nameToUpperCase, id)) {
             errors.add(ValidationErrorDto.builder()
                     .field("name")
-                    .rejectedValue(nameToUpperCase)
-                    .message("Kategorie existiert bereits.")
+                    .message(ErrorDescription.CATEGORY_ALREADY_EXISTS.getDescription())
                     .build());
         }
 
         if (productCategoryRepository.existsByArtNameIgnoreCaseAndIdNot(artNameToUpperCase, id)) {
             errors.add(ValidationErrorDto.builder()
                     .field("artName")
-                    .rejectedValue(artNameToUpperCase)
-                    .message("ArtName existiert bereits.")
+                    .message(ErrorDescription.CATEGORY_ARTNAME_ALREADY_EXISTS.getDescription())
                     .build());
         }
 
@@ -135,17 +154,19 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ProductCategoryDto> findAllProductCategories() {
-        List<ProductCategory> categories = productCategoryRepository.findAll(Sort.by(Sort.Direction.ASC, "name"));
-
-        return categories.stream()
+        return productCategoryRepository
+                .findAll(Sort.by(Sort.Direction.ASC, "name"))
+                .stream()
                 .map(category -> modelMapper.map(category, ProductCategoryDto.class))
-                .collect(Collectors.toList());
+                .toList();
     }
 
-    private ProductCategory getProductCategoryOrThrow(Long id) {
+    @Override
+    public ProductCategory getProductCategoryOrThrow(Long id) {
         return productCategoryRepository
                 .findById(id)
-                .orElseThrow(() -> new RestApiException(ErrorDescription.CATEGORY_NOT_FOUND, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new EntityNotFoundException(ErrorDescription.CATEGORY_NOT_FOUND.getDescription()));
     }
 }

@@ -15,7 +15,7 @@ import lombok.Setter;
 @Schema(name = "NewTypeOfDocument", description = "Data for creating a new type of document")
 public class NewTypeOfDocumentDto {
     @NotBlank(message = "{validation.notBlank}")
-    @Size(max = 30, message = "Name must not exceed 30 characters")
+    @Size(max = 30, message = "{validation.max.size}")
     @Schema(description = "Name of the type of document", example = "RECHNUNG", required = true)
     String name;
 }

@@ -1,8 +1,5 @@
 package de.ait.smallBusiness_be.products.dto;
 
-
-import de.ait.smallBusiness_be.products.model.ProductCategory;
-import de.ait.smallBusiness_be.products.model.UnitOfMeasurement;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -31,10 +28,10 @@ public class ProductDto{
     BigDecimal purchasingPrice;
     BigDecimal markupPercentage;
     BigDecimal sellingPrice;
-    UnitOfMeasurement unitOfMeasurement;
+    UnitOfMeasurementDto unitOfMeasurement;
     BigDecimal weight;
     NewDimensionsDto newDimensions;
-    ProductCategory productCategory;
+    ProductCategoryDto productCategory;
     String description;
     String customsNumber;
     LocalDateTime createdDate;

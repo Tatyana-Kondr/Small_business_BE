@@ -8,6 +8,7 @@ import lombok.*;
 
 import java.util.Objects;
 
+import static de.ait.smallBusiness_be.constaints.EntityValidationConstants.ART_NAME_REGEX;
 import static de.ait.smallBusiness_be.constaints.EntityValidationConstants.NAME_REGEX;
 
 /**
@@ -30,27 +31,29 @@ public class ProductCategory {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "name", nullable = false, unique = true, length = 50)
     @NotBlank(message = "{validation.notBlank}")
     @Size(min = 3, max = 50, message = "{validation.name.size}")
     @Pattern(regexp = NAME_REGEX, message = "{name.Pattern.message}")
     private String name;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "art_name", nullable = false, unique = true, length = 6)
     @NotBlank(message = "{validation.notBlank}")
-    @Size(min=2, max = 6, message = "{validation.name.size}")
+    @Size(min = 2, max = 6, message = "{validation.name.size}")
+    @Pattern(regexp = ART_NAME_REGEX, message = "{validation.artName.pattern}")
     private String artName;
 
     @Override
     public boolean equals(Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
-        ProductCategory that = (ProductCategory) o;
-        return Objects.equals(id, that.id);
+        if (this == o) return true;
+        if (!(o instanceof ProductCategory that)) return false;
+
+        return id != null && id.equals(that.getId());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(id);
+        return getClass().hashCode();
     }
 
     @Override
