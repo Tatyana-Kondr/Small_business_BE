@@ -39,7 +39,7 @@ public class ProductPhotoServiceImpl implements ProductPhotoService {
     private String productsDir;
 
     private static final Set<String> PHOTO_TYPES = Set.of("jpg", "jpeg", "png");
-    private static final Set<String> DOCUMENT_TYPES = Set.of("pdf", "docx", "xlsx", "xls");
+    private static final Set<String> DOCUMENT_TYPES = Set.of("pdf", "doc", "docx", "xlsx", "xls");
 
     @Override
     @Transactional
